@@ -229,7 +229,6 @@
         <button class="subtab" data-cat="growth">成長性</button>
         <button class="subtab" data-cat="eff">効率性</button>
         <button class="subtab active" data-cat="prof">収益性</button>
-        <button class="subtab" data-cat="cost">コスト</button>
         <button class="subtab" data-cat="safe">安全性</button>
       </div>
       <div class="metricbtns" id="metricbtns"></div>
@@ -357,7 +356,7 @@ const zeros = ()=>{ const o={}; NUM_KEYS.forEach(k=> o[k]=0); DET_KEYS.forEach(k
 
 /* ---------- state ---------- */
 let periods = [ {year:1, vals:Object.assign({}, DEFAULTS)} ];
-let curIdx = 0, curCat='prof', curKey='roe', cmpN=3, cmpSeg='all';
+let curIdx = 0, curCat='prof', curKey='gm', cmpN=3, cmpSeg='all';
 const sortPeriods = () => periods.sort((a,b)=> a.year-b.year);
 
 /* ---------- compute ---------- */
@@ -402,6 +401,11 @@ function computeVals(v){
   const nopat=operatingProfit*(1-taxRate);
   const investedCap=ibd+na;
   const roic=investedCap>0? nopat/investedCap*100:0;
+  const atoturn=totalAssets? sales/totalAssets:0;
+  const faturn=fa? sales/fa:0;
+  const debtRatio=na? (cl+fl)/na*100:0;
+  const fixedRatio=na? fa/na*100:0;
+  const wc=ca-cl;
   const de=na? ibd/na:0;
   const ibdRatio=totalCapital? ibd/totalCapital*100:0;
   const netDe=na? (ibd-cash)/na:0;
@@ -416,12 +420,22 @@ function computeVals(v){
     sales,cogs,sga,noi,recint,noe,intexp,exg,exl,tax,dep,
     grossProfit,operatingProfit,ordinaryProfit,pretaxProfit,netIncome,busProfit,simpleCF,
     currentRatio,quickRatio,fixedLTRatio,roe,equityRatio,netMargin,opMargin,grossMargin,assetTurnover,finLeverage,ordMargin,roa,roic,nopat,investedCap,
-    de,ibdRatio,netDe,debtMonths,icr,debtYears,invTurnover,recvDays,ibdReady,quickReady,
+    de,ibdRatio,netDe,debtMonths,icr,debtYears,invTurnover,recvDays,ibdReady,quickReady,atoturn,faturn,debtRatio,fixedRatio,wc,
     matcost:g('matcost'),labcost:g('labcost'),subcon:g('subcon'),depcogs:g('depcogs'),othcogs:g('othcogs'),
     beginv:g('beginv'),purch:g('purch'),endinv:g('endinv'),perscost:g('perscost'),adv:g('adv'),rent:g('rent'),depsga:g('depsga'),othsga:g('othsga'),
     laborCost,costRatio,sgaRatio,personnelRatio,laborShare,personnelReady,detCogs:!!v.det_cogs,detSga:!!v.det_sga};
 }
-const derived = () => periods.map(p=> ({year:p.year, d:computeVals(p.vals)}));
+const derived = () => {
+  const arr=periods.map(p=> ({year:p.year, d:computeVals(p.vals)}));
+  const g=(cur,prev)=> (prev!=null && prev!==0) ? (cur-prev)/Math.abs(prev)*100 : null;
+  arr.forEach((r,i)=>{ const pv=i>0?arr[i-1].d:null;
+    r.d.gSales = pv? g(r.d.sales,pv.sales):null;
+    r.d.gGross = pv? g(r.d.grossProfit,pv.grossProfit):null;
+    r.d.gOp    = pv? g(r.d.operatingProfit,pv.operatingProfit):null;
+    r.d.gNa    = pv? g(r.d.na,pv.na):null;
+  });
+  return arr;
+};
 
 /* ---------- input form (BS/PL) ---------- */
 const BS_LEFT = [
@@ -633,88 +647,39 @@ function renderLegend(){
 /* ---------- metrics ---------- */
 function badge(kind,label){ return `<span class="badge b-${kind}">${label}</span>`; }
 const CATS = {
-  growth:{ name:'成長性', note:'※複数期を入力すると期間比較表に前期比（増収率・増益率）が表示されます。',
+  growth:{ name:'成長性', note:'※成長率は前期比。複数期を入力すると算出されます（第1期は—）。',
     metrics:[
-      { key:'sales', label:'売上高', v:d=>d.sales, unit:unitStr, dec:0, hi:{boxes:['sales']},
-        formula:d=>`当期 売上高 ＝ <b>${fmt(d.sales)}</b> ${unitStr()}`,
-        meaning:'本業で稼いだ収入の総額。成長性は前期比（増収率）で評価します。複数期入力で下の比較表に前期比が出ます。',
-        rows:[{lv:'good',name:'増収',range:'前期比 プラス',note:'売上が伸びている'},{lv:'warn',name:'横ばい',range:'前期比 0%前後',note:'ほぼ変化なし'},{lv:'bad',name:'減収',range:'前期比 マイナス',note:'売上が縮小'}], judge:d=>null },
-      { key:'ni', label:'当期純利益', v:d=>d.netIncome, unit:unitStr, dec:0, hi:{lines:['ni']},
-        formula:d=>`当期 当期純利益 ＝ <b>${fmt(d.netIncome)}</b> ${unitStr()}`,
-        meaning:'最終的に会社に残る利益。成長性は前期比（増益率）で評価します。',
-        rows:[{lv:'good',name:'増益',range:'前期比 プラス',note:'利益が伸びている'},{lv:'warn',name:'横ばい',range:'前期比 0%前後',note:'ほぼ変化なし'},{lv:'bad',name:'減益',range:'前期比 マイナス',note:'利益が縮小'}], judge:d=>null },
-    ]},
-  eff:{ name:'効率性', note:'※ROE＝当期純利益率×総資本回転率×財務レバレッジ（デュポン分解）。効率性の各指標で分解要因を確認できます。',
-    metrics:[
-      { key:'roe', label:'ROE', v:d=>d.roe, unit:'%', dec:2, hi:{boxes:['na'],lines:['ni']},
-        formula:d=>`当期純利益 <b>${fmt(d.netIncome)}</b> ÷ 純資産 <b>${fmt(d.na)}</b> × 100 ＝ <b>${p2(d.roe)}</b>%`,
-        meaning:'自己資本を使ってどれだけ利益を生んだか。ROE＝当期純利益率×総資本回転率×財務レバレッジ（デュポン分解）で要因分解できます。',
-        rows:[{lv:'good',name:'良好',range:'8% 以上',note:'自己資本を効率活用'},{lv:'warn',name:'低め',range:'0〜8%',note:'改善余地あり'},{lv:'bad',name:'赤字',range:'0% 未満',note:'自己資本を毀損'}],
-        judge:d=>{const v=d.roe; return v>=8?'good':v>=0?'warn':'bad';} },
-      { key:'finlev', label:'財務レバレッジ', v:d=>d.finLeverage, unit:'倍', dec:2, hi:{boxes:['ca','fa','na']},
-        formula:d=>`総資本 <b>${fmt(d.totalCapital)}</b> ÷ 自己資本(純資産) <b>${fmt(d.na)}</b> ＝ <b>${p2(d.finLeverage)}</b> 倍`,
-        meaning:'自己資本の何倍の総資本を使っているか（＝1÷自己資本比率）。高いほど負債活用が大きくROEを押し上げる一方、リスクも上がります。',
-        rows:[{lv:'good',name:'健全',range:'2.0倍 以下',note:'自己資本が厚い'},{lv:'warn',name:'標準',range:'2.0〜4.0倍',note:'一般的な水準'},{lv:'bad',name:'高い',range:'4.0倍 超',note:'負債依存が大きい'}],
-        judge:d=>{const v=d.finLeverage; return v<=2?'good':v<=4?'warn':'bad';} },
-      { key:'turnover', label:'総資本回転率', v:d=>d.assetTurnover, unit:'回', dec:2, hi:{boxes:['cl','fl','na','sales']},
-        formula:d=>`売上高 <b>${fmt(d.sales)}</b> ÷ 総資本 <b>${fmt(d.totalCapital)}</b> ＝ <b>${p2(d.assetTurnover)}</b> 回`,
-        meaning:'総資本が1年間に何回売上に変わったかを示す効率指標。大きいほど資産を効率よく使えています。',
-        rows:[{lv:'good',name:'高い',range:'1.0回 以上',note:'効率よく活用'},{lv:'warn',name:'普通',range:'0.5〜1.0回',note:'業種平均並み'},{lv:'bad',name:'低い',range:'0.5回 未満',note:'資産過大の可能性'}],
-        judge:d=>{const v=d.assetTurnover; return v>=1?'good':v>=0.5?'warn':'bad';} },
-      { key:'ordm', label:'売上高経常利益率', v:d=>d.ordMargin, unit:'%', dec:1, hi:{boxes:['sales']},
-        formula:d=>`経常利益 <b>${fmt(d.ordinaryProfit)}</b> ÷ 売上高 <b>${fmt(d.sales)}</b> × 100 ＝ <b>${p1(d.ordMargin)}</b>%`,
-        meaning:'本業＋財務活動を含む経常的な採算性。営業外（支払利息など）の影響も反映した総合的な収益力を表します。',
-        rows:[{lv:'good',name:'良好',range:'5% 以上',note:'経常的な採算が高い'},{lv:'warn',name:'普通',range:'2〜5%',note:'一般的な水準'},{lv:'bad',name:'低い',range:'2% 未満',note:'採算が弱い'}],
-        judge:d=>{const v=d.ordMargin; return v>=5?'good':v>=2?'warn':'bad';} },
-      { key:'roa', label:'ROA（総資産利益率）', v:d=>d.roa, unit:'%', dec:2, hi:{boxes:['ca','fa'],lines:['ni']},
-        formula:d=>`当期純利益 <b>${fmt(d.netIncome)}</b> ÷ 総資産 <b>${fmt(d.totalAssets)}</b> × 100 ＝ <b>${p2(d.roa)}</b>%`,
-        meaning:'総資産をどれだけ効率よく利益に変えたか。事業全体の資産効率を表します。',
-        rows:[{lv:'good',name:'良好',range:'5% 以上',note:'資産効率が高い'},{lv:'warn',name:'普通',range:'2〜5%',note:'一般的な水準'},{lv:'bad',name:'低い',range:'2% 未満',note:'資産効率が低い'}],
-        judge:d=>{const v=d.roa; return v>=5?'good':v>=2?'warn':'bad';} },
-      { key:'roic', detailOnly:true, label:'ROIC', v:d=>d.roic, unit:'%', dec:2, hi:{boxes:['cl','fl','na'],lines:['op']}, ready:d=>d.ibdReady,
-        formula:d=>`税引後営業利益 <b>${fmt(d.nopat)}</b> ÷ 投下資本 <b>${fmt(d.investedCap)}</b>（有利子負債＋純資産）× 100 ＝ <b>${p2(d.roic)}</b>%`,
-        meaning:'投下資本（有利子負債＋自己資本）に対する税引後営業利益の割合。資本コスト(WACC)を上回るほど価値を創造。負債の内訳入力が必要です。',
-        rows:[{lv:'good',name:'良好',range:'8% 以上',note:'資本コストを上回りやすい'},{lv:'warn',name:'普通',range:'4〜8%',note:'標準的'},{lv:'bad',name:'低い',range:'4% 未満',note:'資本効率が低い'}],
-        judge:d=>{const v=d.roic; return v>=8?'good':v>=4?'warn':'bad';} },
-      { key:'invturn', detailOnly:true, label:'棚卸資産回転率', v:d=>d.invTurnover, unit:'回', dec:2, hi:{boxes:['ca','sales']}, ready:d=>d.quickReady,
-        formula:d=>`売上原価 <b>${fmt(d.cogs)}</b> ÷ 棚卸資産 <b>${fmt(d.inv)}</b> ＝ <b>${p2(d.invTurnover)}</b> 回`,
-        meaning:'在庫が一定期間に何回入れ替わったかを示す指標。高いほど在庫効率が良い（※業種差が大きい）。詳細入力の棚卸資産が必要です。',
-        rows:[{lv:'good',name:'高い',range:'6回 以上',note:'在庫効率が良い'},{lv:'warn',name:'普通',range:'3〜6回',note:'標準的'},{lv:'bad',name:'低い',range:'3回 未満',note:'在庫過多の可能性'}],
-        judge:d=>{const v=d.invTurnover; return v>=6?'good':v>=3?'warn':'bad';} },
-      { key:'recvdays', detailOnly:true, label:'売上債権回転期間', v:d=>d.recvDays, unit:'日', dec:1, hi:{boxes:['ca','sales']}, ready:d=>d.quickReady,
-        formula:d=>`売上債権 <b>${fmt(d.recv)}</b> ÷（売上高 <b>${fmt(d.sales)}</b> ÷ 365）＝ <b>${p1(d.recvDays)}</b> 日`,
-        meaning:'売上債権が何日分の売上に相当するか＝回収の速さ。短いほど資金繰りが良い。詳細入力の売上債権が必要です。',
-        rows:[{lv:'good',name:'良好',range:'45日 以内',note:'回収が速い'},{lv:'warn',name:'普通',range:'45〜90日',note:'標準的'},{lv:'bad',name:'長い',range:'90日 超',note:'回収が遅い'}],
-        judge:d=>{const v=d.recvDays; return v<=45?'good':v<=90?'warn':'bad';} },
+      { key:'gsales', label:'売上高成長率', v:d=>d.gSales, unit:'%', dec:1, hi:{boxes:['sales']}, ready:d=>d.gSales!=null,
+        formula:d=>`（当期売上高 − 前期売上高）÷ 前期売上高 × 100 ＝ <b>${d.gSales!=null?p1(d.gSales):'—'}</b>%`,
+        meaning:'前期からの売上高の伸び率。事業拡大のペースを示します。',
+        rows:[{lv:'good',name:'増収',range:'+2% 以上',note:'売上が伸びている'},{lv:'warn',name:'横ばい',range:'−2〜+2%',note:'ほぼ変化なし'},{lv:'bad',name:'減収',range:'−2% 未満',note:'売上が縮小'}],
+        judge:d=>{ if(d.gSales==null) return null; const v=d.gSales; return v>=2?'good':v>-2?'warn':'bad'; } },
+      { key:'ggross', label:'売上総利益成長率', v:d=>d.gGross, unit:'%', dec:1, hi:{boxes:['sales']}, ready:d=>d.gGross!=null,
+        formula:d=>`（当期粗利 − 前期粗利）÷ 前期粗利 × 100 ＝ <b>${d.gGross!=null?p1(d.gGross):'—'}</b>%`,
+        meaning:'前期からの売上総利益（粗利）の伸び率。付加価値の拡大ペース。',
+        rows:[{lv:'good',name:'増加',range:'+2% 以上',note:'粗利が伸びている'},{lv:'warn',name:'横ばい',range:'−2〜+2%',note:'ほぼ変化なし'},{lv:'bad',name:'減少',range:'−2% 未満',note:'粗利が縮小'}],
+        judge:d=>{ if(d.gGross==null) return null; const v=d.gGross; return v>=2?'good':v>-2?'warn':'bad'; } },
+      { key:'gop', label:'営業利益成長率', v:d=>d.gOp, unit:'%', dec:1, hi:{lines:['op']}, ready:d=>d.gOp!=null,
+        formula:d=>`（当期営業利益 − 前期営業利益）÷ 前期営業利益 × 100 ＝ <b>${d.gOp!=null?p1(d.gOp):'—'}</b>%`,
+        meaning:'前期からの営業利益の伸び率。本業の稼ぐ力の拡大ペース。',
+        rows:[{lv:'good',name:'増益',range:'+2% 以上',note:'本業利益が伸びている'},{lv:'warn',name:'横ばい',range:'−2〜+2%',note:'ほぼ変化なし'},{lv:'bad',name:'減益',range:'−2% 未満',note:'本業利益が縮小'}],
+        judge:d=>{ if(d.gOp==null) return null; const v=d.gOp; return v>=2?'good':v>-2?'warn':'bad'; } },
+      { key:'gna', label:'純資産成長率', v:d=>d.gNa, unit:'%', dec:1, hi:{boxes:['na']}, ready:d=>d.gNa!=null,
+        formula:d=>`（当期純資産 − 前期純資産）÷ 前期純資産 × 100 ＝ <b>${d.gNa!=null?p1(d.gNa):'—'}</b>%`,
+        meaning:'前期からの純資産（自己資本）の伸び率。内部留保の蓄積・財務体質の強化度。',
+        rows:[{lv:'good',name:'増加',range:'+2% 以上',note:'自己資本が充実'},{lv:'warn',name:'横ばい',range:'−2〜+2%',note:'ほぼ変化なし'},{lv:'bad',name:'減少',range:'−2% 未満',note:'自己資本が減少'}],
+        judge:d=>{ if(d.gNa==null) return null; const v=d.gNa; return v>=2?'good':v>-2?'warn':'bad'; } },
     ]},
   prof:{ name:'収益性',
     metrics:[
-      { key:'roe', label:'ROE', v:d=>d.roe, unit:'%', dec:2, hi:{boxes:['na'],lines:['ni']},
-        formula:d=>`当期純利益 <b>${fmt(d.netIncome)}</b> ÷ 純資産 <b>${fmt(d.na)}</b> × 100 ＝ <b>${p2(d.roe)}</b>%`,
-        meaning:'自己資本を使ってどれだけ利益を生んだかを示す株主目線の指標。一般に8%以上が優良。',
-        rows:[{lv:'good',name:'良好',range:'8% 以上',note:'自己資本を効率活用'},{lv:'warn',name:'低め',range:'0〜8%',note:'改善余地あり'},{lv:'bad',name:'赤字',range:'0% 未満',note:'自己資本を毀損'}],
-        judge:d=>{const v=d.roe; return v>=8?'good':v>=0?'warn':'bad';} },
-      { key:'npm', label:'当期純利益率', v:d=>d.netMargin, unit:'%', dec:1, hi:{boxes:['sales'],lines:['ni']},
-        formula:d=>`当期純利益 <b>${fmt(d.netIncome)}</b> ÷ 売上高 <b>${fmt(d.sales)}</b> × 100 ＝ <b>${p1(d.netMargin)}</b>%`,
-        meaning:'売上のうち最終的に何％が利益として残るか。事業全体の総合採算性を表します。',
-        rows:[{lv:'good',name:'良好',range:'5% 以上',note:'高採算'},{lv:'warn',name:'普通',range:'0〜5%',note:'一般的な水準'},{lv:'bad',name:'赤字',range:'0% 未満',note:'最終赤字'}],
-        judge:d=>{const v=d.netMargin; return v>=5?'good':v>=0?'warn':'bad';} },
-      { key:'opm', label:'売上高営業利益率', v:d=>d.opMargin, unit:'%', dec:1, hi:{boxes:['sales'],lines:['op']},
-        formula:d=>`営業利益 <b>${fmt(d.operatingProfit)}</b> ÷ 売上高 <b>${fmt(d.sales)}</b> × 100 ＝ <b>${p1(d.opMargin)}</b>%`,
-        meaning:'本業でどれだけ効率的に利益を出せているか。企業の稼ぐ力の中核。',
-        rows:[{lv:'good',name:'良好',range:'10% 以上',note:'本業の収益力が高い'},{lv:'warn',name:'普通',range:'2〜10%',note:'一般的な水準'},{lv:'bad',name:'低い',range:'2% 未満',note:'本業の採算が弱い'}],
-        judge:d=>{const v=d.opMargin; return v>=10?'good':v>=2?'warn':'bad';} },
-    ]},
-  cost:{ name:'コスト', note:'※人件費率・労働分配率は原価/販管費の内訳（人件費・労務費）入力が必要です。',
-    metrics:[
-      { key:'gm', label:'粗利率', v:d=>d.grossMargin, unit:'%', dec:1, hi:{boxes:['sales']}, detailOnly:true,
+      { key:'gm', label:'売上総利益率', v:d=>d.grossMargin, unit:'%', dec:1, hi:{boxes:['sales']},
         formula:d=>`粗利 <b>${fmt(d.grossProfit)}</b> ÷ 売上高 <b>${fmt(d.sales)}</b> × 100 ＝ <b>${p1(d.grossMargin)}</b>%`,
-        meaning:'売上に対する粗利（売上総利益）の割合。商品・サービスの基礎的な収益力。100%−原価率。',
+        meaning:'売上に対する粗利の割合。商品・サービスの基礎的な収益力（100%−売上原価率）。',
         rows:[{lv:'good',name:'高い',range:'30% 以上',note:'付加価値が高い'},{lv:'warn',name:'普通',range:'15〜30%',note:'標準的'},{lv:'bad',name:'低い',range:'15% 未満',note:'薄利'}],
         judge:d=>{const v=d.grossMargin; return v>=30?'good':v>=15?'warn':'bad';} },
-      { key:'costr', label:'原価率', v:d=>d.costRatio, unit:'%', dec:1, hi:{boxes:['sales']},
+      { key:'costr', label:'売上原価率', v:d=>d.costRatio, unit:'%', dec:1, hi:{boxes:['sales']},
         formula:d=>`売上原価 <b>${fmt(d.cogs)}</b> ÷ 売上高 <b>${fmt(d.sales)}</b> × 100 ＝ <b>${p1(d.costRatio)}</b>%`,
-        meaning:'売上に対する売上原価の割合。低いほど粗利率が高い（100%−原価率＝粗利率）。',
+        meaning:'売上に対する売上原価の割合。低いほど粗利率が高い。',
         rows:[{lv:'good',name:'低い',range:'70% 以下',note:'粗利率が高い'},{lv:'warn',name:'普通',range:'70〜85%',note:'標準的'},{lv:'bad',name:'高い',range:'85% 超',note:'粗利が薄い'}],
         judge:d=>{const v=d.costRatio; return v<=70?'good':v<=85?'warn':'bad';} },
       { key:'sgar', label:'販管費率', v:d=>d.sgaRatio, unit:'%', dec:1, hi:{boxes:['sales'],lines:['op']},
@@ -722,14 +687,80 @@ const CATS = {
         meaning:'売上に対する販管費の割合。低いほど固定費負担が軽い。',
         rows:[{lv:'good',name:'低い',range:'15% 以下',note:'費用効率が良い'},{lv:'warn',name:'普通',range:'15〜30%',note:'標準的'},{lv:'bad',name:'高い',range:'30% 超',note:'固定費負担が重い'}],
         judge:d=>{const v=d.sgaRatio; return v<=15?'good':v<=30?'warn':'bad';} },
-      { key:'persr', label:'人件費率', v:d=>d.personnelRatio, unit:'%', dec:1, hi:{boxes:['sales']}, ready:d=>d.personnelReady,
+      { key:'opm', label:'営業利益率', v:d=>d.opMargin, unit:'%', dec:1, hi:{boxes:['sales'],lines:['op']},
+        formula:d=>`営業利益 <b>${fmt(d.operatingProfit)}</b> ÷ 売上高 <b>${fmt(d.sales)}</b> × 100 ＝ <b>${p1(d.opMargin)}</b>%`,
+        meaning:'本業でどれだけ効率的に利益を出せているか。企業の稼ぐ力の中核。',
+        rows:[{lv:'good',name:'良好',range:'10% 以上',note:'本業の収益力が高い'},{lv:'warn',name:'普通',range:'2〜10%',note:'一般的な水準'},{lv:'bad',name:'低い',range:'2% 未満',note:'本業の採算が弱い'}],
+        judge:d=>{const v=d.opMargin; return v>=10?'good':v>=2?'warn':'bad';} },
+      { key:'ordm', label:'経常利益率', v:d=>d.ordMargin, unit:'%', dec:1, hi:{boxes:['sales']},
+        formula:d=>`経常利益 <b>${fmt(d.ordinaryProfit)}</b> ÷ 売上高 <b>${fmt(d.sales)}</b> × 100 ＝ <b>${p1(d.ordMargin)}</b>%`,
+        meaning:'本業＋財務活動を含む経常的な採算性。支払利息などの影響も反映した総合的な収益力。',
+        rows:[{lv:'good',name:'良好',range:'5% 以上',note:'経常的な採算が高い'},{lv:'warn',name:'普通',range:'2〜5%',note:'一般的な水準'},{lv:'bad',name:'低い',range:'2% 未満',note:'採算が弱い'}],
+        judge:d=>{const v=d.ordMargin; return v>=5?'good':v>=2?'warn':'bad';} },
+      { key:'npm', label:'当期純利益率', v:d=>d.netMargin, unit:'%', dec:1, hi:{boxes:['sales'],lines:['ni']},
+        formula:d=>`当期純利益 <b>${fmt(d.netIncome)}</b> ÷ 売上高 <b>${fmt(d.sales)}</b> × 100 ＝ <b>${p1(d.netMargin)}</b>%`,
+        meaning:'売上のうち最終的に何％が利益として残るか。事業全体の総合採算性。',
+        rows:[{lv:'good',name:'良好',range:'5% 以上',note:'高採算'},{lv:'warn',name:'普通',range:'0〜5%',note:'一般的な水準'},{lv:'bad',name:'赤字',range:'0% 未満',note:'最終赤字'}],
+        judge:d=>{const v=d.netMargin; return v>=5?'good':v>=0?'warn':'bad';} },
+    ]},
+  eff:{ name:'効率性', note:'※ROE＝当期純利益率×総資本回転率×財務レバレッジ（詳細タブで確認できます）。',
+    metrics:[
+      { key:'atoturn', label:'総資産回転率', v:d=>d.atoturn, unit:'回', dec:2, hi:{boxes:['ca','fa','sales']},
+        formula:d=>`売上高 <b>${fmt(d.sales)}</b> ÷ 総資産 <b>${fmt(d.totalAssets)}</b> ＝ <b>${p2(d.atoturn)}</b> 回`,
+        meaning:'総資産が1年間に何回売上に変わったか。大きいほど資産を効率よく使えています。',
+        rows:[{lv:'good',name:'高い',range:'1.0回 以上',note:'資産を効率よく活用'},{lv:'warn',name:'普通',range:'0.5〜1.0回',note:'業種平均並み'},{lv:'bad',name:'低い',range:'0.5回 未満',note:'資産が過大の可能性'}],
+        judge:d=>{const v=d.atoturn; return v>=1?'good':v>=0.5?'warn':'bad';} },
+      { key:'faturn', label:'固定資産回転率', v:d=>d.faturn, unit:'回', dec:2, hi:{boxes:['fa','sales']},
+        formula:d=>`売上高 <b>${fmt(d.sales)}</b> ÷ 固定資産 <b>${fmt(d.fa)}</b> ＝ <b>${p2(d.faturn)}</b> 回`,
+        meaning:'固定資産（設備等）がどれだけ効率よく売上を生んだか。高いほど設備効率が良い（業種差大）。',
+        rows:[{lv:'good',name:'高い',range:'2.0回 以上',note:'設備効率が高い'},{lv:'warn',name:'普通',range:'1.0〜2.0回',note:'標準的'},{lv:'bad',name:'低い',range:'1.0回 未満',note:'設備が過大の可能性'}],
+        judge:d=>{const v=d.faturn; return v>=2?'good':v>=1?'warn':'bad';} },
+      { key:'roe', label:'ROE', v:d=>d.roe, unit:'%', dec:2, hi:{boxes:['na'],lines:['ni']}, detailOnly:true,
+        formula:d=>`当期純利益 <b>${fmt(d.netIncome)}</b> ÷ 純資産 <b>${fmt(d.na)}</b> × 100 ＝ <b>${p2(d.roe)}</b>%`,
+        meaning:'自己資本を使ってどれだけ利益を生んだか。ROE＝当期純利益率×総資本回転率×財務レバレッジ。',
+        rows:[{lv:'good',name:'良好',range:'8% 以上',note:'自己資本を効率活用'},{lv:'warn',name:'低め',range:'0〜8%',note:'改善余地あり'},{lv:'bad',name:'赤字',range:'0% 未満',note:'自己資本を毀損'}],
+        judge:d=>{const v=d.roe; return v>=8?'good':v>=0?'warn':'bad';} },
+      { key:'finlev', label:'財務レバレッジ', v:d=>d.finLeverage, unit:'倍', dec:2, hi:{boxes:['ca','fa','na']}, detailOnly:true,
+        formula:d=>`総資本 <b>${fmt(d.totalCapital)}</b> ÷ 自己資本(純資産) <b>${fmt(d.na)}</b> ＝ <b>${p2(d.finLeverage)}</b> 倍`,
+        meaning:'自己資本の何倍の総資本を使っているか（＝1÷自己資本比率）。高いほど負債活用が大きくROEを押し上げる一方、リスクも上がる。',
+        rows:[{lv:'good',name:'健全',range:'2.0倍 以下',note:'自己資本が厚い'},{lv:'warn',name:'標準',range:'2.0〜4.0倍',note:'一般的な水準'},{lv:'bad',name:'高い',range:'4.0倍 超',note:'負債依存が大きい'}],
+        judge:d=>{const v=d.finLeverage; return v<=2?'good':v<=4?'warn':'bad';} },
+      { key:'turnover', label:'総資本回転率', v:d=>d.assetTurnover, unit:'回', dec:2, hi:{boxes:['cl','fl','na','sales']}, detailOnly:true,
+        formula:d=>`売上高 <b>${fmt(d.sales)}</b> ÷ 総資本 <b>${fmt(d.totalCapital)}</b> ＝ <b>${p2(d.assetTurnover)}</b> 回`,
+        meaning:'総資本が1年間に何回売上に変わったか。',
+        rows:[{lv:'good',name:'高い',range:'1.0回 以上',note:'効率よく活用'},{lv:'warn',name:'普通',range:'0.5〜1.0回',note:'業種平均並み'},{lv:'bad',name:'低い',range:'0.5回 未満',note:'資産過大の可能性'}],
+        judge:d=>{const v=d.assetTurnover; return v>=1?'good':v>=0.5?'warn':'bad';} },
+      { key:'roa', label:'ROA（総資産利益率）', v:d=>d.roa, unit:'%', dec:2, hi:{boxes:['ca','fa'],lines:['ni']}, detailOnly:true,
+        formula:d=>`当期純利益 <b>${fmt(d.netIncome)}</b> ÷ 総資産 <b>${fmt(d.totalAssets)}</b> × 100 ＝ <b>${p2(d.roa)}</b>%`,
+        meaning:'総資産をどれだけ効率よく利益に変えたか。事業全体の資産効率。',
+        rows:[{lv:'good',name:'良好',range:'5% 以上',note:'資産効率が高い'},{lv:'warn',name:'普通',range:'2〜5%',note:'一般的な水準'},{lv:'bad',name:'低い',range:'2% 未満',note:'資産効率が低い'}],
+        judge:d=>{const v=d.roa; return v>=5?'good':v>=2?'warn':'bad';} },
+      { key:'roic', label:'ROIC', v:d=>d.roic, unit:'%', dec:2, hi:{boxes:['cl','fl','na'],lines:['op']}, ready:d=>d.ibdReady, detailOnly:true,
+        formula:d=>`税引後営業利益 <b>${fmt(d.nopat)}</b> ÷ 投下資本 <b>${fmt(d.investedCap)}</b>（有利子負債＋純資産）× 100 ＝ <b>${p2(d.roic)}</b>%`,
+        meaning:'投下資本に対する税引後営業利益の割合。資本コスト(WACC)を上回るほど価値創造。負債の内訳入力が必要です。',
+        rows:[{lv:'good',name:'良好',range:'8% 以上',note:'資本コストを上回りやすい'},{lv:'warn',name:'普通',range:'4〜8%',note:'標準的'},{lv:'bad',name:'低い',range:'4% 未満',note:'資本効率が低い'}],
+        judge:d=>{const v=d.roic; return v>=8?'good':v>=4?'warn':'bad';} },
+      { key:'invturn', label:'棚卸資産回転率', v:d=>d.invTurnover, unit:'回', dec:2, hi:{boxes:['ca','sales']}, ready:d=>d.quickReady, detailOnly:true,
+        formula:d=>`売上原価 <b>${fmt(d.cogs)}</b> ÷ 棚卸資産 <b>${fmt(d.inv)}</b> ＝ <b>${p2(d.invTurnover)}</b> 回`,
+        meaning:'在庫が一定期間に何回入れ替わったか。高いほど在庫効率が良い（業種差大）。詳細入力の棚卸資産が必要。',
+        rows:[{lv:'good',name:'高い',range:'6回 以上',note:'在庫効率が良い'},{lv:'warn',name:'普通',range:'3〜6回',note:'標準的'},{lv:'bad',name:'低い',range:'3回 未満',note:'在庫過多の可能性'}],
+        judge:d=>{const v=d.invTurnover; return v>=6?'good':v>=3?'warn':'bad';} },
+      { key:'recvdays', label:'売上債権回転期間', v:d=>d.recvDays, unit:'日', dec:1, hi:{boxes:['ca','sales']}, ready:d=>d.quickReady, detailOnly:true,
+        formula:d=>`売上債権 <b>${fmt(d.recv)}</b> ÷（売上高 <b>${fmt(d.sales)}</b> ÷ 365）＝ <b>${p1(d.recvDays)}</b> 日`,
+        meaning:'売上債権が何日分の売上に相当するか＝回収の速さ。短いほど資金繰りが良い。詳細入力の売上債権が必要。',
+        rows:[{lv:'good',name:'良好',range:'45日 以内',note:'回収が速い'},{lv:'warn',name:'普通',range:'45〜90日',note:'標準的'},{lv:'bad',name:'長い',range:'90日 超',note:'回収が遅い'}],
+        judge:d=>{const v=d.recvDays; return v<=45?'good':v<=90?'warn':'bad';} },
+    ]},
+  cost:{ name:'コスト',
+    metrics:[
+      { key:'persr', label:'人件費率', v:d=>d.personnelRatio, unit:'%', dec:1, hi:{boxes:['sales']}, ready:d=>d.personnelReady, detailOnly:true,
         formula:d=>`人件費 <b>${fmt(d.laborCost)}</b>（労務費＋販管人件費）÷ 売上高 <b>${fmt(d.sales)}</b> × 100 ＝ <b>${p1(d.personnelRatio)}</b>%`,
-        meaning:'売上に対する人件費（原価の労務費＋販管の人件費）の割合。原価/販管費の内訳入力が必要です。',
+        meaning:'売上に対する人件費の割合。原価/販管費の内訳入力が必要です。',
         rows:[{lv:'good',name:'低い',range:'15% 以下',note:'労働生産性が高い'},{lv:'warn',name:'普通',range:'15〜30%',note:'標準的'},{lv:'bad',name:'高い',range:'30% 超',note:'人件費負担が重い'}],
         judge:d=>{const v=d.personnelRatio; return v<=15?'good':v<=30?'warn':'bad';} },
-      { key:'labshare', label:'労働分配率', v:d=>d.laborShare, unit:'%', dec:1, hi:{boxes:['sales']}, ready:d=>d.personnelReady,
+      { key:'labshare', label:'労働分配率', v:d=>d.laborShare, unit:'%', dec:1, hi:{boxes:['sales']}, ready:d=>d.personnelReady, detailOnly:true,
         formula:d=>`人件費 <b>${fmt(d.laborCost)}</b> ÷ 粗利 <b>${fmt(d.grossProfit)}</b> × 100 ＝ <b>${p1(d.laborShare)}</b>%`,
-        meaning:'付加価値（本ツールでは粗利で簡易代用）のうち人件費に分配された割合。高すぎると利益を圧迫、低すぎると賃金水準が低い可能性。',
+        meaning:'付加価値（粗利で簡易代用）のうち人件費に分配された割合。高すぎると利益を圧迫。',
         rows:[{lv:'good',name:'適正',range:'50% 以下',note:'利益を確保しやすい'},{lv:'warn',name:'やや高',range:'50〜70%',note:'標準〜やや高い'},{lv:'bad',name:'高い',range:'70% 超',note:'利益を圧迫'}],
         judge:d=>{const v=d.laborShare; return v<=50?'good':v<=70?'warn':'bad';} },
     ]},
@@ -737,50 +768,65 @@ const CATS = {
     metrics:[
       { key:'current', label:'流動比率', v:d=>d.currentRatio, unit:'%', dec:1, hi:{boxes:['ca','cl']},
         formula:d=>`流動資産 <b>${fmt(d.ca)}</b> ÷ 流動負債 <b>${fmt(d.cl)}</b> × 100 ＝ <b>${p1(d.currentRatio)}</b>%`,
-        meaning:'1年以内に現金化できる資産で、1年以内に返す負債をどれだけ賄えるかを示す短期の支払能力指標。',
+        meaning:'1年以内に現金化できる資産で1年以内に返す負債をどれだけ賄えるか（短期の支払能力）。',
         rows:[{lv:'good',name:'安全',range:'200% 以上',note:'支払能力が高い'},{lv:'warn',name:'普通',range:'100〜200%',note:'最低限は確保'},{lv:'bad',name:'危険',range:'100% 未満',note:'資金ショートの恐れ'}],
         judge:d=>{const v=d.currentRatio; return v>=200?'good':v>=100?'warn':'bad';} },
-      { key:'quick', label:'当座比率', v:d=>d.quickRatio, unit:'%', dec:1, hi:{boxes:['ca','cl']}, ready:d=>d.quickReady,
-        formula:d=>`当座資産 <b>${fmt(d.quick)}</b>（現預金＋有価証券＋売上債権）÷ 流動負債 <b>${fmt(d.cl)}</b> × 100 ＝ <b>${p1(d.quickRatio)}</b>%`,
-        meaning:'在庫を除く「すぐ現金化できる資産」で流動負債をどれだけ賄えるか。流動比率より厳しい短期安全性。詳細入力が必要です。',
-        rows:[{lv:'good',name:'安全',range:'100% 以上',note:'即時の支払能力が高い'},{lv:'warn',name:'普通',range:'70〜100%',note:'許容範囲'},{lv:'bad',name:'危険',range:'70% 未満',note:'即時の支払能力が弱い'}],
-        judge:d=>{const v=d.quickRatio; return v>=100?'good':v>=70?'warn':'bad';} },
+      { key:'equity', label:'自己資本比率', v:d=>d.equityRatio, unit:'%', dec:1, hi:{boxes:['na','ca','fa']},
+        formula:d=>`純資産 <b>${fmt(d.na)}</b> ÷ 総資本〈＝資産合計〉<b>${fmt(d.totalAssets)}</b> × 100 ＝ <b>${p1(d.equityRatio)}</b>%`,
+        meaning:'資産全体のうち返済不要の自己資本が占める割合。高いほど財務体質が安定。',
+        rows:[{lv:'good',name:'安全',range:'40% 以上',note:'自己資本が厚い'},{lv:'warn',name:'普通',range:'20〜40%',note:'一般的な水準'},{lv:'bad',name:'危険',range:'20% 未満',note:'借入依存で不安定'}],
+        judge:d=>{const v=d.equityRatio; return v>=40?'good':v>=20?'warn':'bad';} },
+      { key:'debtratio', label:'負債比率', v:d=>d.debtRatio, unit:'%', dec:1, hi:{boxes:['cl','fl','na']},
+        formula:d=>`負債合計 <b>${fmt(d.cl+d.fl)}</b> ÷ 自己資本(純資産) <b>${fmt(d.na)}</b> × 100 ＝ <b>${p1(d.debtRatio)}</b>%`,
+        meaning:'自己資本に対する他人資本（負債）の割合。低いほど安全。100%以下なら負債が自己資本以下。',
+        rows:[{lv:'good',name:'良好',range:'100% 以下',note:'負債が自己資本以下'},{lv:'warn',name:'普通',range:'100〜200%',note:'標準的'},{lv:'bad',name:'過大',range:'200% 超',note:'負債依存が大きい'}],
+        judge:d=>{const v=d.debtRatio; return v<=100?'good':v<=200?'warn':'bad';} },
+      { key:'fixedratio', label:'固定比率', v:d=>d.fixedRatio, unit:'%', dec:1, hi:{boxes:['fa','na']},
+        formula:d=>`固定資産 <b>${fmt(d.fa)}</b> ÷ 自己資本(純資産) <b>${fmt(d.na)}</b> × 100 ＝ <b>${p1(d.fixedRatio)}</b>%`,
+        meaning:'固定資産を自己資本だけでどれだけ賄えているか。100%以下なら設備投資を自己資本でカバー。',
+        rows:[{lv:'good',name:'良好',range:'100% 以下',note:'自己資本で調達'},{lv:'warn',name:'許容',range:'100〜150%',note:'許容範囲'},{lv:'bad',name:'過大',range:'150% 超',note:'借入依存が大きい'}],
+        judge:d=>{const v=d.fixedRatio; return v<=100?'good':v<=150?'warn':'bad';} },
       { key:'fixedlt', label:'固定長期適合率', v:d=>d.fixedLTRatio, unit:'%', dec:1, hi:{boxes:['fa','fl','na']},
         formula:d=>`固定資産 <b>${fmt(d.fa)}</b> ÷（純資産 <b>${fmt(d.na)}</b> ＋ 固定負債 <b>${fmt(d.fl)}</b>）× 100 ＝ <b>${p1(d.fixedLTRatio)}</b>%`,
         meaning:'長期に使う固定資産を、返済不要の純資産＋長期の負債で賄えているか。100%以下なら安定財源でカバー。',
         rows:[{lv:'good',name:'良好',range:'100% 以下',note:'長期資金で調達'},{lv:'warn',name:'許容',range:'100〜110%',note:'ぎりぎり許容'},{lv:'bad',name:'過大',range:'110% 超',note:'短期資金で固定資産を賄い危険'}],
         judge:d=>{const v=d.fixedLTRatio; return v<=100?'good':v<=110?'warn':'bad';} },
-      { key:'equity', label:'純資産比率', v:d=>d.equityRatio, unit:'%', dec:1, hi:{boxes:['na','ca','fa']},
-        formula:d=>`純資産 <b>${fmt(d.na)}</b> ÷ 総資本〈＝資産合計〉<b>${fmt(d.totalAssets)}</b> × 100 ＝ <b>${p1(d.equityRatio)}</b>%`,
-        meaning:'資産全体のうち返済不要の自己資本が占める割合。高いほど財務体質が安定。',
-        rows:[{lv:'good',name:'安全',range:'40% 以上',note:'自己資本が厚い'},{lv:'warn',name:'普通',range:'20〜40%',note:'一般的な水準'},{lv:'bad',name:'危険',range:'20% 未満',note:'借入依存で不安定'}],
-        judge:d=>{const v=d.equityRatio; return v>=40?'good':v>=20?'warn':'bad';} },
-      { key:'de', label:'D/Eレシオ', v:d=>d.de, unit:'倍', dec:2, hi:{boxes:['cl','fl','na']}, ready:d=>d.ibdReady,
+      { key:'wc', label:'運転資本', v:d=>d.wc, unit:unitStr, dec:0, hi:{boxes:['ca','cl']},
+        formula:d=>`流動資産 <b>${fmt(d.ca)}</b> − 流動負債 <b>${fmt(d.cl)}</b> ＝ <b>${fmt(d.wc)}</b> ${unitStr()}`,
+        meaning:'流動資産から流動負債を引いた、事業運営に必要な手元資金の余裕。プラスが健全、マイナスは短期資金不足の恐れ。',
+        rows:[{lv:'good',name:'健全',range:'プラス',note:'短期資金に余裕'},{lv:'warn',name:'均衡',range:'ほぼ 0',note:'余裕が小さい'},{lv:'bad',name:'不足',range:'マイナス',note:'短期資金が不足'}],
+        judge:d=>{const v=d.wc; return v>0?'good':v===0?'warn':'bad';} },
+      { key:'quick', label:'当座比率', v:d=>d.quickRatio, unit:'%', dec:1, hi:{boxes:['ca','cl']}, ready:d=>d.quickReady, detailOnly:true,
+        formula:d=>`当座資産 <b>${fmt(d.quick)}</b>（現預金＋有価証券＋売上債権）÷ 流動負債 <b>${fmt(d.cl)}</b> × 100 ＝ <b>${p1(d.quickRatio)}</b>%`,
+        meaning:'在庫を除く「すぐ現金化できる資産」で流動負債をどれだけ賄えるか。詳細入力が必要です。',
+        rows:[{lv:'good',name:'安全',range:'100% 以上',note:'即時の支払能力が高い'},{lv:'warn',name:'普通',range:'70〜100%',note:'許容範囲'},{lv:'bad',name:'危険',range:'70% 未満',note:'即時の支払能力が弱い'}],
+        judge:d=>{const v=d.quickRatio; return v>=100?'good':v>=70?'warn':'bad';} },
+      { key:'de', label:'D/Eレシオ', v:d=>d.de, unit:'倍', dec:2, hi:{boxes:['cl','fl','na']}, ready:d=>d.ibdReady, detailOnly:true,
         formula:d=>`有利子負債 <b>${fmt(d.ibd)}</b> ÷ 自己資本(純資産) <b>${fmt(d.na)}</b> ＝ <b>${p2(d.de)}</b> 倍`,
-        meaning:'自己資本に対する有利子負債の大きさ。低いほど借入依存が小さく健全。負債の内訳入力が必要です。',
+        meaning:'自己資本に対する有利子負債の大きさ。低いほど健全。負債の内訳入力が必要です。',
         rows:[{lv:'good',name:'良好',range:'1.0倍 以下',note:'借入が自己資本以下'},{lv:'warn',name:'許容',range:'1.0〜2.0倍',note:'標準的'},{lv:'bad',name:'過大',range:'2.0倍 超',note:'借入依存が大きい'}],
         judge:d=>{const v=d.de; return v<=1?'good':v<=2?'warn':'bad';} },
-      { key:'ibdr', label:'有利子負債比率', v:d=>d.ibdRatio, unit:'%', dec:1, hi:{boxes:['cl','fl']}, ready:d=>d.ibdReady,
+      { key:'ibdr', label:'有利子負債比率', v:d=>d.ibdRatio, unit:'%', dec:1, hi:{boxes:['cl','fl']}, ready:d=>d.ibdReady, detailOnly:true,
         formula:d=>`有利子負債 <b>${fmt(d.ibd)}</b> ÷ 総資本 <b>${fmt(d.totalCapital)}</b> × 100 ＝ <b>${p1(d.ibdRatio)}</b>%`,
-        meaning:'総資本に占める有利子負債の割合。低いほど財務が安全。負債の内訳入力が必要です。',
+        meaning:'総資本に占める有利子負債の割合。低いほど安全。負債の内訳入力が必要です。',
         rows:[{lv:'good',name:'良好',range:'30% 以下',note:'借入が小さい'},{lv:'warn',name:'普通',range:'30〜60%',note:'標準的'},{lv:'bad',name:'過大',range:'60% 超',note:'借入が大きい'}],
         judge:d=>{const v=d.ibdRatio; return v<=30?'good':v<=60?'warn':'bad';} },
-      { key:'netde', label:'ネットD/Eレシオ', v:d=>d.netDe, unit:'倍', dec:2, hi:{boxes:['cl','fl','na']}, ready:d=>d.ibdReady,
+      { key:'netde', label:'ネットD/Eレシオ', v:d=>d.netDe, unit:'倍', dec:2, hi:{boxes:['cl','fl','na']}, ready:d=>d.ibdReady, detailOnly:true,
         formula:d=>`(有利子負債 <b>${fmt(d.ibd)}</b> − 現預金 <b>${fmt(d.cash)}</b>) ÷ 自己資本 <b>${fmt(d.na)}</b> ＝ <b>${p2(d.netDe)}</b> 倍`,
-        meaning:'手元現預金を差し引いた実質的な借入負担。マイナスなら実質無借金（ネットキャッシュ）。負債内訳と現預金入力が必要です。',
+        meaning:'手元現預金を差し引いた実質的な借入負担。マイナスなら実質無借金。負債内訳と現預金入力が必要です。',
         rows:[{lv:'good',name:'良好',range:'0.5倍 以下',note:'実質負担が小さい'},{lv:'warn',name:'許容',range:'0.5〜1.5倍',note:'標準的'},{lv:'bad',name:'過大',range:'1.5倍 超',note:'実質負担が大きい'}],
         judge:d=>{const v=d.netDe; return v<=0.5?'good':v<=1.5?'warn':'bad';} },
-      { key:'debtm', label:'借入金月商倍率', v:d=>d.debtMonths, unit:'ヶ月', dec:1, hi:{boxes:['cl','fl','sales']}, ready:d=>d.ibdReady,
+      { key:'debtm', label:'借入金月商倍率', v:d=>d.debtMonths, unit:'ヶ月', dec:1, hi:{boxes:['cl','fl','sales']}, ready:d=>d.ibdReady, detailOnly:true,
         formula:d=>`有利子負債 <b>${fmt(d.ibd)}</b> ÷（売上高 <b>${fmt(d.sales)}</b> ÷ 12）＝ <b>${p1(d.debtMonths)}</b> ヶ月`,
         meaning:'有利子負債が月商の何ヶ月分か。小さいほど返済負担が軽い。負債の内訳入力が必要です。',
         rows:[{lv:'good',name:'良好',range:'3ヶ月 以下',note:'返済負担が軽い'},{lv:'warn',name:'普通',range:'3〜6ヶ月',note:'標準的'},{lv:'bad',name:'過大',range:'6ヶ月 超',note:'返済負担が重い'}],
         judge:d=>{const v=d.debtMonths; return v<=3?'good':v<=6?'warn':'bad';} },
-      { key:'icr', detailOnly:true, label:'インタレスト・カバレッジ・レシオ', v:d=>d.icr, unit:'倍', dec:2, hi:{lines:['op']}, ready:d=>d.intexp>0,
+      { key:'icr', label:'インタレスト・カバレッジ・レシオ', v:d=>d.icr, unit:'倍', dec:2, hi:{lines:['op']}, ready:d=>d.intexp>0, detailOnly:true,
         formula:d=>`(営業利益 <b>${fmt(d.operatingProfit)}</b> ＋ 受取利息配当金 <b>${fmt(d.recint)}</b>) ÷ 支払利息 <b>${fmt(d.intexp)}</b> ＝ <b>${p2(d.icr)}</b> 倍`,
-        meaning:'事業利益（営業利益＋受取利息配当金）で支払利息を何倍賄えるか＝利払い能力。高いほど安全。営業外の「受取利息・配当金」と「支払利息」の入力が必要です。',
+        meaning:'事業利益で支払利息を何倍賄えるか＝利払い能力。営業外の受取利息配当金と支払利息の入力が必要です。',
         rows:[{lv:'good',name:'良好',range:'5倍 以上',note:'利払い余力が大きい'},{lv:'warn',name:'許容',range:'1〜5倍',note:'最低限は確保'},{lv:'bad',name:'危険',range:'1倍 未満',note:'利払いを賄えない'}],
         judge:d=>{const v=d.icr; return v>=5?'good':v>=1?'warn':'bad';} },
-      { key:'debty', detailOnly:true, label:'債務償還年数', v:d=>d.debtYears, unit:'年', dec:1, hi:{boxes:['cl','fl'],lines:['op']}, ready:d=>d.ibdReady,
+      { key:'debty', label:'債務償還年数', v:d=>d.debtYears, unit:'年', dec:1, hi:{boxes:['cl','fl'],lines:['op']}, ready:d=>d.ibdReady, detailOnly:true,
         dispVal:d=>{ if(!d.ibdReady) return '—'; if(d.ibd<=0) return '0<small>年</small>'; if(!isFinite(d.debtYears)) return '返済原資なし'; return p1(d.debtYears)+'<small>年</small>'; },
         formula:d=>`有利子負債 <b>${fmt(d.ibd)}</b> ÷ 簡易営業CF <b>${fmt(d.simpleCF)}</b>（営業利益＋減価償却費 <b>${fmt(d.dep)}</b>）＝ <b>${isFinite(d.debtYears)?p1(d.debtYears):'—'}</b> 年`,
         meaning:'今の稼ぐ力（営業利益＋減価償却）で有利子負債を何年で返せるか。短いほど安全。負債内訳と減価償却費の入力が必要です。',
@@ -788,7 +834,6 @@ const CATS = {
         judge:d=>{ if(d.ibd<=0) return 'good'; if(!isFinite(d.debtYears)) return 'bad'; const v=d.debtYears; return v<=10?'good':v<=20?'warn':'bad';} },
     ]},
 };
-
 const ALL_METRICS={}; Object.values(CATS).forEach(c=>c.metrics.forEach(m=>{ALL_METRICS[m.key]=m;}));
 const findMetric=(cat,key)=> CATS[cat].metrics.find(m=>m.key===key);
 const metricReady=(m,d)=> m.ready? m.ready(d): true;
@@ -1066,19 +1111,19 @@ function dAll(ds){
   h+=`<div id="allChecks" class="itemchecks" hidden>`+itemGroups().map(g=>`<div class="ic-col"><div class="ic-h">${g[0]}</div>`+g[1].map(it=>`<label class="ic-i"><input type="checkbox" data-aitem="${it[0]}" ${allSel.has(it[0])?'checked':''}>${it[1]}</label>`).join('')+`</div>`).join('')+`</div>`;
   $("dControls").innerHTML=h;
   drawSeries(ds,[...allSel],allMode);
-  allMetricKey=renderMetricPanel(ds,['roic','icr','debty','recvdays','invturn'],allMetricKey);
+  allMetricKey=renderMetricPanel(ds,['roe','finlev','roa','turnover','roic','icr','debty','recvdays','invturn'],allMetricKey);
 }
 function dPL(ds){
   $("dControls").innerHTML=`<div class="ctl-row"><span class="ctl-lbl">内訳の比較：</span><button class="chip ${plBreak==='cogs'?'on':''}" data-plbreak="cogs">原価の内訳</button><button class="chip ${plBreak==='sga'?'on':''}" data-plbreak="sga">販管費の内訳</button></div>`;
   drawItemTrend(ds, plBreak==='cogs'?cogsLeaves():SGA_LEAVES, plBreak==='cogs'?'売上原価の内訳':'販管費の内訳');
-  plMetricKey=renderMetricPanel(ds,['gm','opm','ordm','npm'],plMetricKey);
+  plMetricKey=renderMetricPanel(ds,['gm','opm','ordm','npm','persr','labshare'],plMetricKey);
 }
 function dBS(ds){
   const opt=[['totalAssets','総資産','#5b8def'],['ibd','有利子負債','#C4433F'],['na','純資産','#8E5AA0']];
   $("dControls").innerHTML=`<div class="ctl-row"><span class="ctl-lbl">対象：</span>`+opt.map(o=>`<button class="chip ${bsSel===o[0]?'on':''}" data-bssel="${o[0]}">${o[1]}</button>`).join('')+`</div>`;
   const o=opt.find(x=>x[0]===bsSel)||opt[0];
   drawSingleTrend(ds,o[0],o[2],o[1]);
-  bsMetricKey=renderMetricPanel(ds,['equity','ibdr','de','current','fixedlt'],bsMetricKey);
+  bsMetricKey=renderMetricPanel(ds,['equity','current','fixedlt','de','ibdr','netde','debtm','quick'],bsMetricKey);
 }
 function dCS(ds){
   if(ds.length<2){ $("dControls").innerHTML=''; $("dChart").innerHTML='<p class="ph">簡易CFには2期以上の入力が必要です。「③ 数値入力」で期を追加してください。</p>'; $("dLegend").innerHTML=''; $("dMetricDetail").innerHTML=''; $("dTable").innerHTML=''; return; }
