@@ -293,7 +293,7 @@ function drawChart(d){
   const brX=c2x1+18;                                   // 括弧
   const c3x0=c2x1+300, c3x1=c3x0+BAR_W;                // PL
   const W=c3x1+40;
-  const top=150, bottom=1160, chartH=bottom-top, H=bottom+60;
+  const top=150, bottom=1160, chartH=bottom-top, H=bottom+90;
   const Y = p => bottom - (p/100)*chartH;
   const cap=d.cap100;
   const P = v => v / cap * 100;
@@ -374,17 +374,20 @@ function drawChart(d){
   // 粗利 (bottom fill)
   s += box(c3x0,c3x1, Y(gpP), Y(0), C_GP);
   s += label3((c3x0+c3x1)/2, Y(gpP), Y(0), "粗利", fmt(d.grossProfit), p1(d.sales? d.grossProfit/d.sales*100:0)+"%", '#1a1a1a');
-  // 営業利益・当期純利益：箱を横断するマーカー線＋左余白へ引き出しラベル（重なり回避）
+  // 営業利益・当期純利益：箱を横断するマーカー線＋左余白へ引き出しラベル（項目名と数値を改行）
   const opY=Y(opP), niY=Y(niP);
   const labelX=c3x0-26;                          // ラベル右端（箱から離す）
-  const opLabelY=Math.min(opY-22, niY-72);       // 2本が近くても被らないよう上へ振る
-  const niLabelY=niY+44;
+  const LH=F_LEAD+2;                             // 行送り
+  const opLabelY=Math.min(opY-34, niY-84);       // 2本が近くても被らないよう上へ振る
+  const niLabelY=niY+40;
   s += `<line x1="${c3x0}" y1="${opY}" x2="${c3x1}" y2="${opY}" stroke="#333" stroke-width="2"/>`;
-  s += `<line x1="${labelX+8}" y1="${opLabelY-8}" x2="${c3x0}" y2="${opY}" stroke="#333" stroke-width="1"/>`;
-  s += txt(labelX, opLabelY, "営業利益 "+fmt(d.operatingProfit)+" "+p1(d.sales? d.operatingProfit/d.sales*100:0)+"%", {anchor:'end', size:F_LEAD, fill:'#333'});
+  s += `<line x1="${labelX+8}" y1="${opLabelY-6}" x2="${c3x0}" y2="${opY}" stroke="#333" stroke-width="1"/>`;
+  s += txt(labelX, opLabelY, "営業利益", {anchor:'end', size:F_LEAD, fill:'#333'});
+  s += txt(labelX, opLabelY+LH, fmt(d.operatingProfit)+" "+p1(d.sales? d.operatingProfit/d.sales*100:0)+"%", {anchor:'end', size:F_LEAD, fill:'#333'});
   s += `<line x1="${c3x0}" y1="${niY}" x2="${c3x1}" y2="${niY}" stroke="#c53030" stroke-width="2"/>`;
-  s += `<line x1="${labelX+8}" y1="${niLabelY-8}" x2="${c3x0}" y2="${niY}" stroke="#c53030" stroke-width="1"/>`;
-  s += txt(labelX, niLabelY, "当期純利益 "+fmt(d.netIncome)+" "+p1(d.sales? d.netIncome/d.sales*100:0)+"%", {anchor:'end', size:F_LEAD, fill:'#c53030'});
+  s += `<line x1="${labelX+8}" y1="${niLabelY-6}" x2="${c3x0}" y2="${niY}" stroke="#c53030" stroke-width="1"/>`;
+  s += txt(labelX, niLabelY, "当期純利益", {anchor:'end', size:F_LEAD, fill:'#c53030'});
+  s += txt(labelX, niLabelY+LH, fmt(d.netIncome)+" "+p1(d.sales? d.netIncome/d.sales*100:0)+"%", {anchor:'end', size:F_LEAD, fill:'#c53030'});
 
   s += `</svg>`;
 
