@@ -97,28 +97,59 @@
   .dupont td:first-child{background:#f1f1f1;}
   .dupont td:last-child{text-align:right;font-variant-numeric:tabular-nums;width:80px;}
 
-  /* Analysis cards */
-  .cats{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:18px;}
-  @media(max-width:620px){.cats{grid-template-columns:1fr;}}
-  .cat{border:1px solid #d7dbe0;border-radius:8px;overflow:hidden;background:#fff;}
-  .cat-head{padding:8px 12px;color:#fff;font-weight:600;font-size:13px;display:flex;justify-content:space-between;align-items:center;}
-  .cat-growth .cat-head{background:#5b8def;}
-  .cat-eff .cat-head{background:#8b5cf6;}
-  .cat-prof .cat-head{background:#e0873a;}
-  .cat-safe .cat-head{background:#2f9e6f;}
-  .cat-body{padding:10px 12px;}
-  .metric{display:flex;justify-content:space-between;align-items:baseline;padding:6px 0;border-bottom:1px dashed #e2e8f0;}
-  .metric:last-child{border-bottom:none;}
-  .metric .name{font-size:12px;}
-  .metric .name small{display:block;color:var(--muted);font-size:10px;}
-  .metric .val{font-size:16px;font-weight:700;font-variant-numeric:tabular-nums;}
-  .metric .val span{font-size:11px;font-weight:400;margin-left:2px;}
+  /* Analysis (tabbed) */
+  .analysis{margin-top:16px;}
+  .subtabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;}
+  .subtab{flex:0 0 auto;padding:8px 18px;border:1px solid #cbd5e0;background:#eef2f6;color:#475569;
+    font-size:13px;font-weight:700;border-radius:999px;cursor:pointer;transition:.15s;}
+  .subtab:hover{background:#e2e8f0;}
+  .subtab.active{color:#fff;border-color:transparent;}
+  .subtab[data-cat="growth"].active{background:#5b8def;}
+  .subtab[data-cat="eff"].active{background:#8b5cf6;}
+  .subtab[data-cat="prof"].active{background:#e0873a;}
+  .subtab[data-cat="safe"].active{background:#2f9e6f;}
+
+  .metricbtns{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;}
+  .mbtn{flex:0 0 auto;padding:8px 14px;border:1.5px solid #cbd5e0;background:#fff;color:#334155;
+    font-size:13px;font-weight:600;border-radius:8px;cursor:pointer;display:flex;gap:8px;align-items:baseline;}
+  .mbtn:hover{border-color:#94a3b8;background:#f8fafc;}
+  .mbtn.active{border-color:var(--accent);background:#eef5fc;color:var(--accent);box-shadow:0 0 0 2px rgba(43,108,176,.15);}
+  .mbtn .mbv{font-size:13px;font-weight:800;font-variant-numeric:tabular-nums;}
+  .mbtn .mbv small{font-size:10px;font-weight:600;margin-left:1px;}
+
+  .metricdetail{border:1px solid #e2e8f0;border-radius:8px;background:#fbfcfd;overflow:hidden;}
+  .md-head{display:flex;justify-content:space-between;align-items:center;gap:10px;
+    padding:12px 16px;background:#f1f5f9;border-bottom:1px solid #e2e8f0;flex-wrap:wrap;}
+  .md-title{font-size:15px;font-weight:700;}
+  .md-value{font-size:24px;font-weight:800;font-variant-numeric:tabular-nums;}
+  .md-value small{font-size:13px;font-weight:600;margin-left:2px;}
+  .md-body{padding:14px 16px;display:grid;gap:14px;}
+  @media(min-width:720px){.md-body{grid-template-columns:1fr 1fr;}}
+  .md-label{font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.08em;
+    text-transform:uppercase;margin-bottom:5px;}
+  .md-formula{font-size:14px;font-variant-numeric:tabular-nums;background:#fff;border:1px solid #e2e8f0;
+    border-radius:6px;padding:9px 12px;line-height:1.8;}
+  .md-formula b{color:var(--accent);}
+  .md-meaning{font-size:12.5px;line-height:1.75;color:#374151;}
+  .md-table{grid-column:1/-1;}
+  table.judge{border-collapse:collapse;width:100%;font-size:12.5px;}
+  table.judge th,table.judge td{border:1px solid #e2e8f0;padding:6px 10px;text-align:left;}
+  table.judge th{background:#f1f5f9;font-size:11px;color:var(--muted);font-weight:700;}
+  table.judge td.lv{width:64px;font-weight:700;text-align:center;color:#fff;}
+  table.judge td.lv.good{background:var(--good);}
+  table.judge td.lv.warn{background:var(--warn);}
+  table.judge td.lv.bad{background:var(--bad);}
+  table.judge tr.cur td{background:#fff8e6;}
+  table.judge tr.cur td.lv.good{background:var(--good);}
+  table.judge tr.cur td.lv.warn{background:var(--warn);}
+  table.judge tr.cur td.lv.bad{background:var(--bad);}
+  .cur-tag{display:inline-block;margin-left:6px;font-size:10px;color:var(--accent);font-weight:700;}
+  .md-note{grid-column:1/-1;font-size:11px;color:var(--muted);}
   .badge{display:inline-block;font-size:10px;padding:1px 7px;border-radius:10px;color:#fff;margin-left:6px;vertical-align:middle;}
   .b-good{background:var(--good);}
   .b-warn{background:var(--warn);}
   .b-bad{background:var(--bad);}
   .b-na{background:#94a3b8;}
-  .placeholder{font-size:12px;color:var(--muted);padding:8px 0;}
   footer{text-align:center;font-size:11px;color:var(--muted);padding:16px;}
 </style>
 </head>
@@ -205,23 +236,15 @@
     </section>
 
     <!-- ============ ANALYSIS ============ -->
-    <div class="cats">
-    <div class="cat cat-growth">
-      <div class="cat-head"><span>成長性</span></div>
-      <div class="cat-body" id="cat-growth"></div>
-    </div>
-    <div class="cat cat-eff">
-      <div class="cat-head"><span>効率性</span></div>
-      <div class="cat-body" id="cat-eff"></div>
-    </div>
-    <div class="cat cat-prof">
-      <div class="cat-head"><span>収益性</span></div>
-      <div class="cat-body" id="cat-prof"></div>
-    </div>
-    <div class="cat cat-safe">
-      <div class="cat-head"><span>安全性</span></div>
-      <div class="cat-body" id="cat-safe"></div>
-    </div>
+    <div class="analysis">
+      <div class="subtabs" id="subtabs">
+        <button class="subtab" data-cat="growth">成長性</button>
+        <button class="subtab" data-cat="eff">効率性</button>
+        <button class="subtab active" data-cat="prof">収益性</button>
+        <button class="subtab" data-cat="safe">安全性</button>
+      </div>
+      <div class="metricbtns" id="metricbtns"></div>
+      <div class="metricdetail" id="metricdetail"></div>
     </div>
   </div>
 
@@ -277,7 +300,7 @@ function compute(){
 }
 
 /* ---------- Chart (SVG) ---------- */
-function drawChart(d){
+function drawChart(d, hi){
   // ---- design params ----
   const BAR_W = 280;                                   // グラフ（各バー）の幅
   const F_NAME=40, F_VAL=34, F_PCT=28, F_AXIS=26, F_HEAD=44, F_LEAD=28, F_BR=40;
@@ -389,6 +412,26 @@ function drawChart(d){
   s += txt(labelX, niLabelY, "当期純利益", {anchor:'end', size:F_LEAD, fill:'#c53030'});
   s += txt(labelX, niLabelY+LH, fmt(d.netIncome)+" "+p1(d.sales? d.netIncome/d.sales*100:0)+"%", {anchor:'end', size:F_LEAD, fill:'#c53030'});
 
+  // ----- emphasis overlay (selected metric) -----
+  if(hi){
+    const B={
+      ca:[c1x0,c1x1,Y(100),Y(faP)], fa:[c1x0,c1x1,Y(faP),Y(0)],
+      cl:[c2x0,c2x1,Y(100),Y(naP+flP)], fl:[c2x0,c2x1,Y(naP+flP),Y(naP)], na:[c2x0,c2x1,Y(naP),Y(0)],
+      sales:[c3x0,c3x1,Y(salesP),Y(0)], gp:[c3x0,c3x1,Y(gpP),Y(0)]
+    };
+    const keep=new Set(hi.boxes||[]);
+    if(keep.has('sales')) keep.add('gp');            // 売上高強調時は内側の粗利も淡色化しない
+    // 非対象の箱を淡色化
+    for(const k in B){ if(!keep.has(k)){ const b=B[k];
+      s += `<rect x="${b[0]}" y="${b[2]}" width="${b[1]-b[0]}" height="${Math.max(0,b[3]-b[2])}" fill="#f4f5f7" fill-opacity="0.66"/>`; } }
+    // 対象の箱を金色枠で強調
+    (hi.boxes||[]).forEach(k=>{ const b=B[k]; if(b)
+      s += `<rect x="${b[0]}" y="${b[2]}" width="${b[1]-b[0]}" height="${Math.max(0,b[3]-b[2])}" fill="none" stroke="#e8a11a" stroke-width="10"/>`; });
+    // 対象のマーカー線（営業利益/当期純利益）を強調
+    (hi.lines||[]).forEach(k=>{ const y=(k==='op')?Y(opP):Y(niP);
+      s += `<line x1="${c3x0-40}" y1="${y}" x2="${c3x1}" y2="${y}" stroke="#e8a11a" stroke-width="8"/>`; });
+  }
+
   s += `</svg>`;
 
   // DuPont table (HTML above svg)
@@ -403,40 +446,138 @@ function drawChart(d){
   $("chart").innerHTML = table + s;
 }
 
-/* ---------- judgement helpers ---------- */
+/* ---------- analysis (tabbed metrics) ---------- */
 function badge(kind,label){ return `<span class="badge b-${kind}">${label}</span>`; }
-function judgeCurrent(v){ if(v>=200) return badge('good','優良'); if(v>=100) return badge('warn','標準'); return badge('bad','要注意'); }
-function judgeFixedLT(v){ if(v<=100) return badge('good','良好'); if(v<=110) return badge('warn','許容'); return badge('bad','過大'); }
-function judgeROE(v){ if(v>=8) return badge('good','良好'); if(v>=0) return badge('warn','低め'); return badge('bad','赤字'); }
-function judgeEquity(v){ if(v>=40) return badge('good','良好'); if(v>=20) return badge('warn','標準'); return badge('bad','低い'); }
+const opmVal = d => d.sales ? d.operatingProfit/d.sales*100 : 0;
 
-function metricRow(name,sub,valHTML){
-  return `<div class="metric"><div class="name">${name}<small>${sub}</small></div><div class="val">${valHTML}</div></div>`;
+// 指標定義：カテゴリ→指標。hi はチャート強調対象（boxes / lines）。
+const CATS = {
+  growth:{ name:'成長性', note:'※成長率は前期データが必要です（本簡易版は1期のみのため実額を参考表示）。',
+    metrics:[
+      { key:'sales', label:'売上高', v:d=>d.sales, unit:'億円', dec:0, hi:{boxes:['sales']},
+        formula:d=>`当期 売上高 ＝ <b>${fmt(d.sales)}</b> 億円`,
+        meaning:'一定期間に本業で稼いだ収入の総額。成長性は前期比（増収率）で評価しますが、前期データがないため本版では実額のみを表示します。',
+        rows:[{lv:'good',name:'増収',range:'前期比 プラス',note:'売上が伸びている'},
+              {lv:'warn',name:'横ばい',range:'前期比 0%前後',note:'ほぼ変化なし'},
+              {lv:'bad',name:'減収',range:'前期比 マイナス',note:'売上が縮小'}],
+        judge:d=>null },
+      { key:'ni', label:'当期純利益', v:d=>d.netIncome, unit:'億円', dec:0, hi:{lines:['ni']},
+        formula:d=>`当期 当期純利益 ＝ <b>${fmt(d.netIncome)}</b> 億円`,
+        meaning:'最終的に会社に残る利益。成長性は前期比（増益率）で見ますが、本版では実額のみを表示します。',
+        rows:[{lv:'good',name:'増益',range:'前期比 プラス',note:'利益が伸びている'},
+              {lv:'warn',name:'横ばい',range:'前期比 0%前後',note:'ほぼ変化なし'},
+              {lv:'bad',name:'減益',range:'前期比 マイナス',note:'利益が縮小'}],
+        judge:d=>null },
+    ]},
+  eff:{ name:'効率性',
+    metrics:[
+      { key:'turnover', label:'総資本回転率', v:d=>d.assetTurnover, unit:'回', dec:2, hi:{boxes:['cl','fl','na','sales']},
+        formula:d=>`売上高 <b>${fmt(d.sales)}</b> ÷ 総資本 <b>${fmt(d.totalCapital)}</b> ＝ <b>${p2(d.assetTurnover)}</b> 回`,
+        meaning:'投下した総資本（負債＋純資産）が1年間に何回売上に変わったかを示す効率指標。大きいほど資産を効率よく使えています。',
+        rows:[{lv:'good',name:'高い',range:'1.0回 以上',note:'資産を効率よく活用'},
+              {lv:'warn',name:'普通',range:'0.5〜1.0回',note:'業種平均並み'},
+              {lv:'bad',name:'低い',range:'0.5回 未満',note:'資産が過大・遊休の可能性'}],
+        judge:d=>{const v=d.assetTurnover; return v>=1?'good':v>=0.5?'warn':'bad';} },
+    ]},
+  prof:{ name:'収益性',
+    metrics:[
+      { key:'roe', label:'ROE', v:d=>d.roe, unit:'%', dec:2, hi:{boxes:['na'],lines:['ni']},
+        formula:d=>`当期純利益 <b>${fmt(d.netIncome)}</b> ÷ 純資産 <b>${fmt(d.na)}</b> × 100 ＝ <b>${p2(d.roe)}</b>%`,
+        meaning:'自己資本（純資産）を使ってどれだけ利益を生んだかを示す、株主目線の代表的な収益性指標。一般に8%以上が優良とされます。',
+        rows:[{lv:'good',name:'良好',range:'8% 以上',note:'自己資本を効率よく活用'},
+              {lv:'warn',name:'低め',range:'0〜8%',note:'改善の余地あり'},
+              {lv:'bad',name:'赤字',range:'0% 未満',note:'自己資本を毀損'}],
+        judge:d=>{const v=d.roe; return v>=8?'good':v>=0?'warn':'bad';} },
+      { key:'npm', label:'当期純利益率', v:d=>d.netMargin, unit:'%', dec:1, hi:{boxes:['sales'],lines:['ni']},
+        formula:d=>`当期純利益 <b>${fmt(d.netIncome)}</b> ÷ 売上高 <b>${fmt(d.sales)}</b> × 100 ＝ <b>${p1(d.netMargin)}</b>%`,
+        meaning:'売上のうち最終的に何％が利益として残るかを示す指標。税金・営業外も含めた事業全体の総合採算性を表します。',
+        rows:[{lv:'good',name:'良好',range:'5% 以上',note:'高採算'},
+              {lv:'warn',name:'普通',range:'0〜5%',note:'一般的な水準'},
+              {lv:'bad',name:'赤字',range:'0% 未満',note:'最終赤字'}],
+        judge:d=>{const v=d.netMargin; return v>=5?'good':v>=0?'warn':'bad';} },
+      { key:'opm', label:'売上高営業利益率', v:opmVal, unit:'%', dec:1, hi:{boxes:['sales'],lines:['op']},
+        formula:d=>`営業利益 <b>${fmt(d.operatingProfit)}</b> ÷ 売上高 <b>${fmt(d.sales)}</b> × 100 ＝ <b>${p1(opmVal(d))}</b>%`,
+        meaning:'本業（営業活動）でどれだけ効率的に利益を出せているかを示す指標。企業の「稼ぐ力」の中核を表します。',
+        rows:[{lv:'good',name:'良好',range:'10% 以上',note:'本業の収益力が高い'},
+              {lv:'warn',name:'普通',range:'2〜10%',note:'一般的な水準'},
+              {lv:'bad',name:'低い',range:'2% 未満',note:'本業の採算が弱い'}],
+        judge:d=>{const v=opmVal(d); return v>=10?'good':v>=2?'warn':'bad';} },
+    ]},
+  safe:{ name:'安全性',
+    metrics:[
+      { key:'current', label:'流動比率', v:d=>d.currentRatio, unit:'%', dec:1, hi:{boxes:['ca','cl']},
+        formula:d=>`流動資産 <b>${fmt(d.ca)}</b> ÷ 流動負債 <b>${fmt(d.cl)}</b> × 100 ＝ <b>${p1(d.currentRatio)}</b>%`,
+        meaning:'1年以内に現金化できる資産で、1年以内に返す負債をどれだけ賄えるかを示す短期の支払能力指標。',
+        rows:[{lv:'good',name:'安全',range:'200% 以上',note:'短期の支払能力が高い'},
+              {lv:'warn',name:'普通',range:'100〜200%',note:'最低限は確保'},
+              {lv:'bad',name:'危険',range:'100% 未満',note:'短期資金がショートする恐れ'}],
+        judge:d=>{const v=d.currentRatio; return v>=200?'good':v>=100?'warn':'bad';} },
+      { key:'fixedlt', label:'固定長期適合率', v:d=>d.fixedLTRatio, unit:'%', dec:1, hi:{boxes:['fa','fl','na']},
+        formula:d=>`固定資産 <b>${fmt(d.fa)}</b> ÷（純資産 <b>${fmt(d.na)}</b> ＋ 固定負債 <b>${fmt(d.fl)}</b>）× 100 ＝ <b>${p1(d.fixedLTRatio)}</b>%`,
+        meaning:'長期に使う固定資産を、返済不要の純資産＋長期の負債でどれだけ賄えているかを示す指標。100%以下なら安定財源でカバーできています。',
+        rows:[{lv:'good',name:'良好',range:'100% 以下',note:'長期資金で安定的に調達'},
+              {lv:'warn',name:'許容',range:'100〜110%',note:'ぎりぎり許容範囲'},
+              {lv:'bad',name:'過大',range:'110% 超',note:'短期資金で固定資産を賄い危険'}],
+        judge:d=>{const v=d.fixedLTRatio; return v<=100?'good':v<=110?'warn':'bad';} },
+      { key:'equity', label:'純資産比率', v:d=>d.equityRatio, unit:'%', dec:1, hi:{boxes:['cl','fl','na']},
+        formula:d=>`純資産 <b>${fmt(d.na)}</b> ÷ 総資本 <b>${fmt(d.totalCapital)}</b> × 100 ＝ <b>${p1(d.equityRatio)}</b>%`,
+        meaning:'総資本のうち返済不要の自己資本（純資産）が占める割合。高いほど財務体質が安定し、倒産しにくい会社といえます。',
+        rows:[{lv:'good',name:'安全',range:'40% 以上',note:'自己資本が厚い'},
+              {lv:'warn',name:'普通',range:'20〜40%',note:'一般的な水準'},
+              {lv:'bad',name:'危険',range:'20% 未満',note:'借入依存で不安定'}],
+        judge:d=>{const v=d.equityRatio; return v>=40?'good':v>=20?'warn':'bad';} },
+    ]},
+};
+
+let curCat='prof';
+let curKey='roe';
+
+function findMetric(cat,key){ return CATS[cat].metrics.find(m=>m.key===key); }
+function fmtMetric(m,d){
+  const v=m.v(d);
+  const s=(m.dec===0)?fmt(v):(m.dec===2?p2(v):p1(v));
+  return `${s}<small>${m.unit}</small>`;
+}
+function currentHi(){
+  const m=findMetric(curCat,curKey);
+  return m ? m.hi : null;
+}
+function judgeTable(rows, curLv){
+  let h=`<table class="judge"><tr><th>判定</th><th>目安（範囲）</th><th>コメント</th></tr>`;
+  rows.forEach(r=>{
+    const cur=(r.lv===curLv);
+    h+=`<tr class="${cur?'cur':''}"><td class="lv ${r.lv}">${r.name}</td><td>${r.range}</td><td>${r.note}${cur?'<span class="cur-tag">◀ 現在</span>':''}</td></tr>`;
+  });
+  return h+`</table>`;
 }
 
 function renderAnalysis(d){
-  // 成長性
-  $("cat-growth").innerHTML =
-    `<p class="placeholder">前期データが必要なため、成長率は算出できません。<br>${badge('na','3期対応時に実装')}</p>`
-    + metricRow("売上高","（当期・参考値）",`${fmt(d.sales)}<span>億</span>`)
-    + metricRow("当期純利益","（当期・参考値）",`${fmt(d.netIncome)}<span>億</span>`);
+  document.querySelectorAll('.subtab').forEach(b=> b.classList.toggle('active', b.dataset.cat===curCat));
+  const cat=CATS[curCat];
+  if(!cat.metrics.some(m=>m.key===curKey)) curKey=cat.metrics[0].key;
 
-  // 効率性
-  $("cat-eff").innerHTML =
-    metricRow("総資本回転率","売上高 ÷ 総資本",`${p2(d.assetTurnover)}<span>回</span>`)
-    + `<p class="placeholder">${badge('na','詳細指標は今後対応')} 棚卸資産回転率等は簡易版では未対応。</p>`;
+  // metric buttons
+  $("metricbtns").innerHTML = cat.metrics.map(m=>
+    `<button class="mbtn ${m.key===curKey?'active':''}" data-key="${m.key}">
+       <span>${m.label}</span><span class="mbv">${fmtMetric(m,d)}</span>
+     </button>`).join('');
 
-  // 収益性
-  $("cat-prof").innerHTML =
-    metricRow("ROE（自己資本利益率）","当期純利益 ÷ 純資産",`${p2(d.roe)}<span>%</span>${judgeROE(d.roe)}`)
-    + metricRow("当期純利益率","当期純利益 ÷ 売上高",`${p1(d.netMargin)}<span>%</span>`)
-    + metricRow("売上高営業利益率","営業利益 ÷ 売上高",`${p1(d.sales? d.operatingProfit/d.sales*100:0)}<span>%</span>`);
-
-  // 安全性
-  $("cat-safe").innerHTML =
-    metricRow("流動比率","流動資産 ÷ 流動負債",`${p1(d.currentRatio)}<span>%</span>${judgeCurrent(d.currentRatio)}`)
-    + metricRow("固定長期適合率","固定資産 ÷（純資産＋固定負債）",`${p1(d.fixedLTRatio)}<span>%</span>${judgeFixedLT(d.fixedLTRatio)}`)
-    + metricRow("純資産比率","純資産 ÷ 総資本",`${p1(d.equityRatio)}<span>%</span>${judgeEquity(d.equityRatio)}`);
+  // detail panel
+  const m=findMetric(curCat,curKey);
+  const lv=m.judge(d);
+  const b = lv ? badge(lv, (m.rows.find(r=>r.lv===lv)||{}).name||'') : badge('na','参考');
+  const noteHTML = (m.note||cat.note) ? `<div class="md-note">${m.note||''}${cat.note||''}</div>` : '';
+  $("metricdetail").innerHTML =
+    `<div class="md-head">
+       <span class="md-title">${m.label}</span>
+       <span class="md-value">${fmtMetric(m,d)} ${b}</span>
+     </div>
+     <div class="md-body">
+       <div><div class="md-label">計算式</div><div class="md-formula">${m.formula(d)}</div></div>
+       <div><div class="md-label">指標の意味</div><div class="md-meaning">${m.meaning}</div></div>
+       <div class="md-table"><div class="md-label">判定の目安</div>${judgeTable(m.rows, lv)}</div>
+       ${noteHTML}
+     </div>`;
 }
 
 /* ---------- run ---------- */
@@ -451,7 +592,7 @@ function renderBS(d){
 function run(){
   const d = compute();
   renderBS(d);
-  drawChart(d);
+  drawChart(d, currentHi());
   renderAnalysis(d);
 }
 function reset(){ IDS.forEach(id=> $(id).value = DEFAULTS[id]); run(); }
@@ -467,6 +608,19 @@ function switchTab(name){
 document.querySelectorAll(".tab").forEach(t=> t.addEventListener("click", ()=> switchTab(t.dataset.tab)));
 // 「分析する」= 再計算して図タブへ
 $("calcBtn").addEventListener("click", ()=>{ run(); switchTab("view"); });
+
+/* analysis sub-tabs & metric buttons */
+$("subtabs").addEventListener("click", e=>{
+  const b=e.target.closest(".subtab"); if(!b) return;
+  curCat=b.dataset.cat;
+  curKey=CATS[curCat].metrics[0].key;   // カテゴリ切替時は先頭の指標を選択
+  run();
+});
+$("metricbtns").addEventListener("click", e=>{
+  const b=e.target.closest(".mbtn"); if(!b) return;
+  curKey=b.dataset.key;
+  run();
+});
 
 run();
 </script>
