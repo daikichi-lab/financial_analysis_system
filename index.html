@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>決算書 財務分析（簡易版・1期）</title>
+<style>
+  :root{
+    --bg:#f4f5f7;
+    --panel:#ffffff;
+    --line:#333;
+    --ink:#1a1a1a;
+    --muted:#666;
+    --accent:#2b6cb0;
+    --good:#2f855a;
+    --warn:#b7791f;
+    --bad:#c53030;
+    --grid:#e2e8f0;
+    --fillCA:#ffffff;   /* 流動資産 */
+    --fillFA:#f0f0f0;   /* 固定資産 */
+    --fillCL:#ffffff;   /* 流動負債 */
+    --fillFL:#f0f0f0;   /* 固定負債 */
+    --fillNA:#d9d9d9;   /* 純資産 */
+    --fillRE:#bdbdbd;   /* 利益剰余金 */
+    --fillGP:#c8c8c8;   /* 粗利 */
+    --fillPL:#ffffff;   /* 売上高 */
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;font-family:"Hiragino Kaku Gothic ProN","Meiryo","Yu Gothic",system-ui,sans-serif;
+    background:var(--bg);color:var(--ink);line-height:1.5;
+  }
+  header{
+    background:#1f2937;color:#fff;padding:14px 20px;
+  }
+  header h1{margin:0;font-size:18px;font-weight:600;}
+  header p{margin:4px 0 0;font-size:12px;color:#cbd5e0;}
+  .wrap{max-width:1200px;margin:0 auto;padding:18px;}
+
+  /* Tabs */
+  .tabs{display:flex;gap:4px;border-bottom:2px solid #cbd5e0;margin-bottom:16px;}
+  .tab{
+    padding:10px 22px;border:none;background:transparent;font-size:14px;font-weight:600;
+    color:#64748b;cursor:pointer;border-radius:8px 8px 0 0;flex:0 0 auto;
+    border-bottom:3px solid transparent;margin-bottom:-2px;
+  }
+  .tab:hover{color:#334155;background:#eef2f6;}
+  .tab.active{color:var(--accent);border-bottom-color:var(--accent);background:#fff;}
+  .tabpane{display:none;}
+  .tabpane.active{display:block;}
+
+  .panel{background:var(--panel);border:1px solid #d7dbe0;border-radius:8px;padding:14px;}
+  .panel h2{margin:0 0 10px;font-size:14px;border-left:4px solid var(--accent);padding-left:8px;}
+  .panel h3{margin:14px 0 6px;font-size:12px;color:var(--muted);border-bottom:1px dashed #ccc;padding-bottom:3px;}
+
+  .field{display:flex;align-items:center;justify-content:space-between;margin:5px 0;gap:8px;}
+  .field label{font-size:12px;flex:1;}
+  .field input{
+    width:120px;text-align:right;padding:4px 6px;font-size:13px;
+    border:1px solid #bbb;border-radius:4px;font-variant-numeric:tabular-nums;
+  }
+  .field input:focus{outline:2px solid var(--accent);border-color:var(--accent);}
+  .unit{font-size:11px;color:var(--muted);width:26px;text-align:left;}
+  .btnrow{display:flex;gap:8px;margin-top:12px;}
+  button{
+    flex:1;padding:8px;border:none;border-radius:6px;font-size:13px;cursor:pointer;font-weight:600;
+  }
+  .btn-primary{background:var(--accent);color:#fff;}
+  .btn-ghost{background:#e2e8f0;color:#333;}
+  .note{font-size:11px;color:var(--muted);margin-top:8px;}
+
+  /* Chart */
+  .chart-card{overflow-x:auto;}
+  svg{display:block;width:100%;height:auto;min-width:720px;font-family:inherit;}
+
+  /* DuPont table */
+  .dupont{border-collapse:collapse;font-size:12px;margin-bottom:6px;}
+  .dupont td{border:1px solid #444;padding:3px 8px;}
+  .dupont td:first-child{background:#f1f1f1;}
+  .dupont td:last-child{text-align:right;font-variant-numeric:tabular-nums;width:80px;}
+
+  /* Analysis cards */
+  .cats{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:18px;}
+  @media(max-width:620px){.cats{grid-template-columns:1fr;}}
+  .cat{border:1px solid #d7dbe0;border-radius:8px;overflow:hidden;background:#fff;}
+  .cat-head{padding:8px 12px;color:#fff;font-weight:600;font-size:13px;display:flex;justify-content:space-between;align-items:center;}
+  .cat-growth .cat-head{background:#5b8def;}
+  .cat-eff .cat-head{background:#8b5cf6;}
+  .cat-prof .cat-head{background:#e0873a;}
+  .cat-safe .cat-head{background:#2f9e6f;}
+  .cat-body{padding:10px 12px;}
+  .metric{display:flex;justify-content:space-between;align-items:baseline;padding:6px 0;border-bottom:1px dashed #e2e8f0;}
+  .metric:last-child{border-bottom:none;}
+  .metric .name{font-size:12px;}
+  .metric .name small{display:block;color:var(--muted);font-size:10px;}
+  .metric .val{font-size:16px;font-weight:700;font-variant-numeric:tabular-nums;}
+  .metric .val span{font-size:11px;font-weight:400;margin-left:2px;}
+  .badge{display:inline-block;font-size:10px;padding:1px 7px;border-radius:10px;color:#fff;margin-left:6px;vertical-align:middle;}
+  .b-good{background:var(--good);}
+  .b-warn{background:var(--warn);}
+  .b-bad{background:var(--bad);}
+  .b-na{background:#94a3b8;}
+  .placeholder{font-size:12px;color:var(--muted);padding:8px 0;}
+  footer{text-align:center;font-size:11px;color:var(--muted);padding:16px;}
+</style>
+</head>
+<body>
+<header>
+  <h1>決算書 財務分析ツール（簡易版）</h1>
+  <p>1期分を入力 → 百分率チャートで可視化し、成長性・効率性・収益性・安全性を確認</p>
+</header>
+
+<div class="wrap">
+  <div class="tabs">
+    <button class="tab active" data-tab="input">① 数値入力</button>
+    <button class="tab" data-tab="view">② 図・分析を見る</button>
+  </div>
+
+  <!-- ============ TAB 1: INPUT ============ -->
+  <div class="tabpane active" id="tab-input">
+    <section class="panel">
+      <h2>決算書の入力</h2>
+
+      <h3>貸借対照表（BS）</h3>
+      <div class="field"><label>流動資産合計</label><input type="number" id="ca" value="5712"><span class="unit">億円</span></div>
+      <div class="field"><label>固定資産合計</label><input type="number" id="fa" value="19890"><span class="unit">億円</span></div>
+      <div class="field"><label>短期負債合計（流動負債）</label><input type="number" id="cl" value="5305"><span class="unit">億円</span></div>
+      <div class="field"><label>長期負債合計（固定負債）</label><input type="number" id="fl" value="9607"><span class="unit">億円</span></div>
+      <div class="field"><label>資本金合計</label><input type="number" id="cap" value="5181"><span class="unit">億円</span></div>
+      <div class="field"><label>利益剰余金合計</label><input type="number" id="re" value="5508"><span class="unit">億円</span></div>
+
+      <h3>損益計算書（PL）</h3>
+      <div class="field"><label>売上高</label><input type="number" id="sales" value="19742"><span class="unit">億円</span></div>
+      <div class="field"><label>売上原価</label><input type="number" id="cogs" value="15834"><span class="unit">億円</span></div>
+      <div class="field"><label>販管費</label><input type="number" id="sga" value="3300"><span class="unit">億円</span></div>
+      <div class="field"><label>営業外収益</label><input type="number" id="noi" value="100"><span class="unit">億円</span></div>
+      <div class="field"><label>営業外費用</label><input type="number" id="noe" value="200"><span class="unit">億円</span></div>
+      <div class="field"><label>特別利益</label><input type="number" id="exg" value="0"><span class="unit">億円</span></div>
+      <div class="field"><label>特別損失</label><input type="number" id="exl" value="50"><span class="unit">億円</span></div>
+      <div class="field"><label>法人税等</label><input type="number" id="tax" value="181"><span class="unit">億円</span></div>
+
+      <div class="btnrow">
+        <button class="btn-primary" id="calcBtn">分析する</button>
+        <button class="btn-ghost" id="resetBtn">初期値に戻す</button>
+      </div>
+      <p class="note">入力を変更すると自動で再計算されます。単位は任意（すべて同一単位で入力）。入力後「② 図・分析を見る」タブへ。</p>
+    </section>
+  </div>
+
+  <!-- ============ TAB 2: VIEW ============ -->
+  <div class="tabpane" id="tab-view">
+    <section class="panel chart-card">
+      <h2>百分率財務諸表チャート</h2>
+      <div id="chart"></div>
+    </section>
+
+    <!-- ============ ANALYSIS ============ -->
+    <div class="cats">
+    <div class="cat cat-growth">
+      <div class="cat-head"><span>成長性</span></div>
+      <div class="cat-body" id="cat-growth"></div>
+    </div>
+    <div class="cat cat-eff">
+      <div class="cat-head"><span>効率性</span></div>
+      <div class="cat-body" id="cat-eff"></div>
+    </div>
+    <div class="cat cat-prof">
+      <div class="cat-head"><span>収益性</span></div>
+      <div class="cat-body" id="cat-prof"></div>
+    </div>
+    <div class="cat cat-safe">
+      <div class="cat-head"><span>安全性</span></div>
+      <div class="cat-body" id="cat-safe"></div>
+    </div>
+    </div>
+  </div>
+
+  <footer>簡易版：使用指標＝流動比率／固定長期適合率／ROE／純資産比率（1期分のみ対応）</footer>
+</div>
+
+<script>
+"use strict";
+
+const IDS = ["ca","fa","cl","fl","cap","re","sales","cogs","sga","noi","noe","exg","exl","tax"];
+const DEFAULTS = {ca:5712,fa:19890,cl:5305,fl:9607,cap:5181,re:5508,
+  sales:19742,cogs:15834,sga:3300,noi:100,noe:200,exg:0,exl:50,tax:181};
+
+const $ = id => document.getElementById(id);
+const num = id => { const v = parseFloat($(id).value); return isFinite(v) ? v : 0; };
+const fmt = n => Math.round(n).toLocaleString("ja-JP");
+const pct = (n, base) => base ? (n / base * 100) : 0;
+const p1 = n => (Math.round(n * 10) / 10).toFixed(1);
+const p2 = n => (Math.round(n * 100) / 100).toFixed(2);
+
+function compute(){
+  const ca=num("ca"), fa=num("fa"), cl=num("cl"), fl=num("fl"), cap=num("cap"), re=num("re");
+  const sales=num("sales"), cogs=num("cogs"), sga=num("sga"),
+        noi=num("noi"), noe=num("noe"), exg=num("exg"), exl=num("exl"), tax=num("tax");
+
+  // --- BS ---
+  const na = cap + re;                 // 純資産
+  const totalAssets = ca + fa;         // 総資産
+  const totalCapital = cl + fl + na;   // 総資本（負債+純資産）
+  const cap100 = totalCapital || 1;    // 図のスケール基準（総資本=100%）
+
+  // --- PL ---
+  const grossProfit = sales - cogs;                    // 売上総利益（粗利）
+  const operatingProfit = grossProfit - sga;           // 営業利益
+  const ordinaryProfit = operatingProfit + noi - noe;  // 経常利益
+  const pretaxProfit = ordinaryProfit + exg - exl;     // 税引前当期純利益
+  const netIncome = pretaxProfit - tax;                // 当期純利益
+
+  // --- Ratios (4) ---
+  const currentRatio = cl ? ca / cl * 100 : 0;                 // 流動比率
+  const fixedLTRatio = (na + fl) ? fa / (na + fl) * 100 : 0;   // 固定長期適合率
+  const roe = na ? netIncome / na * 100 : 0;                   // ROE
+  const equityRatio = totalCapital ? na / totalCapital * 100 : 0; // 純資産比率
+
+  // --- DuPont ---
+  const netMargin = sales ? netIncome / sales * 100 : 0;   // 当期純利益率
+  const assetTurnover = totalCapital ? sales / totalCapital : 0; // 総資本回転率(回)
+  const finLeverage = na ? totalCapital / na : 0;          // 財務レバレッジ(倍)
+
+  return {ca,fa,cl,fl,cap,re,na,totalAssets,totalCapital,cap100,
+    sales,cogs,sga,grossProfit,operatingProfit,ordinaryProfit,pretaxProfit,netIncome,
+    currentRatio,fixedLTRatio,roe,equityRatio,netMargin,assetTurnover,finLeverage};
+}
+
+/* ---------- Chart (SVG) ---------- */
+function drawChart(d){
+  // geometry
+  const W=1000, H=1180;
+  const axisX=72, top=150, bottom=1110, chartH=bottom-top;
+  const Y = p => bottom - (p/100)*chartH;        // percent(of 総資本) -> y
+  const cap=d.cap100;
+  const P = v => v / cap * 100;                   // 金額 -> percent of 総資本
+
+  // columns
+  const aX0=96, aX1=306;      // 資産
+  const lX0=330, lX1=540;     // 負債・純資産
+  const brX=552;              // 括弧
+  const pX0=792, pX1=982;     // PL
+
+  // BS percents
+  const caP=P(d.ca), faP=P(d.fa);
+  const clP=P(d.cl), flP=P(d.fl), naP=P(d.na), reP=P(d.re);
+  const capOnlyP=P(d.cap);
+
+  // PL heights (same yen-scale as BS, 総資本=100%)
+  const salesP=P(d.sales);
+  const gpP=P(d.grossProfit);
+  const opP=P(d.operatingProfit);
+  const niP=P(d.netIncome);
+
+  const box=(x0,x1,yTop,yBot,fill,stroke='#333',sw=2,dash='')=>
+    `<rect x="${x0}" y="${yTop}" width="${x1-x0}" height="${Math.max(0,yBot-yTop)}" fill="${fill}" stroke="${stroke}" stroke-width="${sw}" ${dash?`stroke-dasharray="${dash}"`:''}/>`;
+  const txt=(x,y,s,opt={})=>
+    `<text x="${x}" y="${y}" font-size="${opt.size||15}" fill="${opt.fill||'#1a1a1a'}" text-anchor="${opt.anchor||'start'}" font-weight="${opt.weight||'normal'}">${s}</text>`;
+
+  let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="百分率財務諸表チャート">`;
+
+  // axis + gridlines
+  s += `<line x1="${axisX}" y1="${top}" x2="${axisX}" y2="${bottom}" stroke="#333" stroke-width="1.5"/>`;
+  s += txt(axisX-40, top-14, "％", {size:15});
+  for(let p=0;p<=100;p+=10){
+    const y=Y(p);
+    s += `<line x1="${axisX-6}" y1="${y}" x2="${axisX}" y2="${y}" stroke="#333"/>`;
+    s += `<line x1="${axisX}" y1="${y}" x2="${W-20}" y2="${y}" stroke="#eef1f4" stroke-width="1"/>`;
+    s += txt(axisX-12, y+4, p, {anchor:'end', size:13, fill:'#555'});
+  }
+
+  // headers
+  s += txt(20, top-14, "単位：億円", {size:12, fill:'#777'});
+  s += txt((aX0+lX1)/2, top-40, "総資本", {anchor:'middle', size:16, weight:'bold'});
+  s += txt((aX0+lX1)/2, top-18, fmt(d.totalCapital), {anchor:'middle', size:18, weight:'bold'});
+
+  // ----- assets column -----
+  // 固定資産 (bottom)
+  s += box(aX0,aX1, Y(faP), Y(0), 'var(--fillFA)');
+  s += txt((aX0+aX1)/2, Y(faP)+ (Y(0)-Y(faP))/2 -8, "固定資産", {anchor:'middle', size:15, weight:'bold'});
+  s += txt((aX0+aX1)/2, Y(faP)+ (Y(0)-Y(faP))/2 +12, fmt(d.fa), {anchor:'middle', size:14});
+  s += txt((aX0+aX1)/2, Y(faP)+ (Y(0)-Y(faP))/2 +30, p1(faP)+"%", {anchor:'middle', size:12, fill:'#555'});
+  // 流動資産 (top)
+  s += box(aX0,aX1, Y(100), Y(faP), 'var(--fillCA)');
+  s += txt((aX0+aX1)/2, Y(100)+ (Y(faP)-Y(100))/2 -8, "流動資産", {anchor:'middle', size:15, weight:'bold'});
+  s += txt((aX0+aX1)/2, Y(100)+ (Y(faP)-Y(100))/2 +12, fmt(d.ca), {anchor:'middle', size:14});
+  s += txt((aX0+aX1)/2, Y(100)+ (Y(faP)-Y(100))/2 +30, p1(caP)+"%", {anchor:'middle', size:12, fill:'#555'});
+
+  // ----- liabilities + equity column -----
+  // 純資産 (bottom)
+  s += box(lX0,lX1, Y(naP), Y(0), 'var(--fillNA)');
+  // 利益剰余金 (bottom subset)
+  s += box(lX0,lX1, Y(reP), Y(0), 'var(--fillRE)');
+  const naMid = Y(reP) - 30;
+  s += txt((lX0+lX1)/2, naMid-6, "純資産", {anchor:'middle', size:15, weight:'bold'});
+  s += txt((lX0+lX1)/2, naMid+14, fmt(d.na), {anchor:'middle', size:14});
+  s += txt((lX0+lX1)/2, naMid+32, p1(naP)+"%", {anchor:'middle', size:12, fill:'#555'});
+  s += txt((lX0+lX1)/2, Y(0)-40, "（利益剰余金）", {anchor:'middle', size:12});
+  s += txt((lX0+lX1)/2, Y(0)-22, fmt(d.re)+"  "+p1(reP)+"%", {anchor:'middle', size:12, fill:'#333'});
+  // 固定負債
+  s += box(lX0,lX1, Y(naP+flP), Y(naP), 'var(--fillFL)');
+  s += txt((lX0+lX1)/2, Y(naP+flP)+(Y(naP)-Y(naP+flP))/2-8, "固定負債", {anchor:'middle', size:15, weight:'bold'});
+  s += txt((lX0+lX1)/2, Y(naP+flP)+(Y(naP)-Y(naP+flP))/2+12, fmt(d.fl), {anchor:'middle', size:14});
+  s += txt((lX0+lX1)/2, Y(naP+flP)+(Y(naP)-Y(naP+flP))/2+30, p1(flP)+"%", {anchor:'middle', size:12, fill:'#555'});
+  // 流動負債 (top)
+  s += box(lX0,lX1, Y(100), Y(naP+flP), 'var(--fillCL)');
+  s += txt((lX0+lX1)/2, Y(100)+(Y(naP+flP)-Y(100))/2-8, "流動負債", {anchor:'middle', size:15, weight:'bold'});
+  s += txt((lX0+lX1)/2, Y(100)+(Y(naP+flP)-Y(100))/2+12, fmt(d.cl), {anchor:'middle', size:14});
+  s += txt((lX0+lX1)/2, Y(100)+(Y(naP+flP)-Y(100))/2+30, p1(clP)+"%", {anchor:'middle', size:12, fill:'#555'});
+
+  // ----- brackets 他人資本 / 自己資本 -----
+  const brace=(yA,yB,label)=>{
+    const xm=brX, xt=brX+16;
+    let g=`<path d="M ${xm} ${yA} q 8 0 8 8 L ${xm+8} ${(yA+yB)/2-8} q 0 8 8 8 q -8 0 -8 8 L ${xm+8} ${yB-8} q 0 8 -8 8" fill="none" stroke="#333" stroke-width="1.5"/>`;
+    g+=txt(xt+6,(yA+yB)/2+5,label,{size:14,weight:'bold'});
+    return g;
+  };
+  // 他人資本 = 負債 (naP..100)
+  s += brace(Y(100), Y(naP), "他人資本");
+  // 自己資本 = 純資産 (0..naP)
+  s += brace(Y(naP), Y(0), "自己資本");
+
+  // ----- turnover diagonal (総資本 top -> 売上高 top) -----
+  s += `<line x1="${lX1}" y1="${Y(100)}" x2="${pX0}" y2="${Y(salesP)}" stroke="#333" stroke-width="1" stroke-dasharray="6 4"/>`;
+
+  // ----- PL column -----
+  // 売上高 outline (full)
+  s += box(pX0,pX1, Y(salesP), Y(0), 'var(--fillPL)');
+  s += txt(pX1, Y(salesP)-24, "売上高", {anchor:'end', size:16, weight:'bold'});
+  s += txt(pX1, Y(salesP)-6, fmt(d.sales), {anchor:'end', size:16, weight:'bold'});
+  // 粗利 (bottom fill)
+  s += box(pX0,pX1, Y(gpP), Y(0), 'var(--fillGP)');
+  s += txt((pX0+pX1)/2, Y(gpP)+ (Y(0)-Y(gpP))/2 -6, "粗利", {anchor:'middle', size:14, weight:'bold'});
+  s += txt((pX0+pX1)/2, Y(gpP)+ (Y(0)-Y(gpP))/2 +12, fmt(d.grossProfit), {anchor:'middle', size:13});
+  s += txt((pX0+pX1)/2, Y(gpP)+ (Y(0)-Y(gpP))/2 +28, p1(d.sales? d.grossProfit/d.sales*100:0)+"%", {anchor:'middle', size:12, fill:'#444'});
+  // 営業利益 marker line
+  s += `<line x1="${pX0}" y1="${Y(opP)}" x2="${pX1}" y2="${Y(opP)}" stroke="#333" stroke-width="1.5"/>`;
+  s += txt(pX0-8, Y(opP)-4, "営業利益 "+fmt(d.operatingProfit)+"  "+p1(d.sales? d.operatingProfit/d.sales*100:0)+"%", {anchor:'end', size:12, fill:'#333'});
+  // 当期純利益 marker line
+  s += `<line x1="${pX0}" y1="${Y(niP)}" x2="${pX1}" y2="${Y(niP)}" stroke="#c53030" stroke-width="1.5"/>`;
+  s += txt(pX0-8, Y(niP)+16, "当期純利益 "+fmt(d.netIncome)+"  "+p1(d.sales? d.netIncome/d.sales*100:0)+"%", {anchor:'end', size:12, fill:'#c53030'});
+
+  s += `</svg>`;
+
+  // DuPont table (HTML above svg)
+  const table = `
+    <table class="dupont">
+      <tr><td>ROE</td><td>${p2(d.roe)}%</td></tr>
+      <tr><td>当期純利益率</td><td>${p1(d.netMargin)}%</td></tr>
+      <tr><td>総資本回転率</td><td>${p2(d.assetTurnover)} 回</td></tr>
+      <tr><td>財務レバレッジ</td><td>${p2(d.finLeverage)} 倍</td></tr>
+    </table>`;
+
+  $("chart").innerHTML = table + s;
+}
+
+/* ---------- judgement helpers ---------- */
+function badge(kind,label){ return `<span class="badge b-${kind}">${label}</span>`; }
+function judgeCurrent(v){ if(v>=200) return badge('good','優良'); if(v>=100) return badge('warn','標準'); return badge('bad','要注意'); }
+function judgeFixedLT(v){ if(v<=100) return badge('good','良好'); if(v<=110) return badge('warn','許容'); return badge('bad','過大'); }
+function judgeROE(v){ if(v>=8) return badge('good','良好'); if(v>=0) return badge('warn','低め'); return badge('bad','赤字'); }
+function judgeEquity(v){ if(v>=40) return badge('good','良好'); if(v>=20) return badge('warn','標準'); return badge('bad','低い'); }
+
+function metricRow(name,sub,valHTML){
+  return `<div class="metric"><div class="name">${name}<small>${sub}</small></div><div class="val">${valHTML}</div></div>`;
+}
+
+function renderAnalysis(d){
+  // 成長性
+  $("cat-growth").innerHTML =
+    `<p class="placeholder">前期データが必要なため、成長率は算出できません。<br>${badge('na','3期対応時に実装')}</p>`
+    + metricRow("売上高","（当期・参考値）",`${fmt(d.sales)}<span>億</span>`)
+    + metricRow("当期純利益","（当期・参考値）",`${fmt(d.netIncome)}<span>億</span>`);
+
+  // 効率性
+  $("cat-eff").innerHTML =
+    metricRow("総資本回転率","売上高 ÷ 総資本",`${p2(d.assetTurnover)}<span>回</span>`)
+    + `<p class="placeholder">${badge('na','詳細指標は今後対応')} 棚卸資産回転率等は簡易版では未対応。</p>`;
+
+  // 収益性
+  $("cat-prof").innerHTML =
+    metricRow("ROE（自己資本利益率）","当期純利益 ÷ 純資産",`${p2(d.roe)}<span>%</span>${judgeROE(d.roe)}`)
+    + metricRow("当期純利益率","当期純利益 ÷ 売上高",`${p1(d.netMargin)}<span>%</span>`)
+    + metricRow("売上高営業利益率","営業利益 ÷ 売上高",`${p1(d.sales? d.operatingProfit/d.sales*100:0)}<span>%</span>`);
+
+  // 安全性
+  $("cat-safe").innerHTML =
+    metricRow("流動比率","流動資産 ÷ 流動負債",`${p1(d.currentRatio)}<span>%</span>${judgeCurrent(d.currentRatio)}`)
+    + metricRow("固定長期適合率","固定資産 ÷（純資産＋固定負債）",`${p1(d.fixedLTRatio)}<span>%</span>${judgeFixedLT(d.fixedLTRatio)}`)
+    + metricRow("純資産比率","純資産 ÷ 総資本",`${p1(d.equityRatio)}<span>%</span>${judgeEquity(d.equityRatio)}`);
+}
+
+/* ---------- run ---------- */
+function run(){
+  const d = compute();
+  drawChart(d);
+  renderAnalysis(d);
+}
+function reset(){ IDS.forEach(id=> $(id).value = DEFAULTS[id]); run(); }
+
+IDS.forEach(id=> $(id).addEventListener("input", run));
+$("resetBtn").addEventListener("click", reset);
+
+/* tabs */
+function switchTab(name){
+  document.querySelectorAll(".tab").forEach(t=> t.classList.toggle("active", t.dataset.tab===name));
+  document.querySelectorAll(".tabpane").forEach(p=> p.classList.toggle("active", p.id==="tab-"+name));
+}
+document.querySelectorAll(".tab").forEach(t=> t.addEventListener("click", ()=> switchTab(t.dataset.tab)));
+// 「分析する」= 再計算して図タブへ
+$("calcBtn").addEventListener("click", ()=>{ run(); switchTab("view"); });
+
+run();
+</script>
+</body>
+</html>
