@@ -326,6 +326,7 @@ const fmt = n => Math.round(n).toLocaleString("ja-JP");
 const p1 = n => (Math.round(n*10)/10).toFixed(1);
 const p2 = n => (Math.round(n*100)/100).toFixed(2);
 const unitStr = () => { const el=$("unit"); return el ? el.value : "億円"; };
+const TLAB = v => '第'+v+'期';
 function applyUnitLabels(){
   const u=unitStr();
   document.querySelectorAll(".unit").forEach(s=> s.textContent=u);
@@ -357,7 +358,7 @@ const DEFAULTS = (()=>{ const o={}; NUM_KEYS.forEach(k=> o[k]=0); DET_KEYS.forEa
 const zeros = ()=>{ const o={}; NUM_KEYS.forEach(k=> o[k]=0); DET_KEYS.forEach(k=> o[k]=false); return o; };
 
 /* ---------- state ---------- */
-let periods = [ {year:2024, vals:Object.assign({}, DEFAULTS)} ];
+let periods = [ {year:1, vals:Object.assign({}, DEFAULTS)} ];
 let curIdx = 0, curCat='prof', curKey='roe', cmpN=3, cmpSeg='all';
 const sortPeriods = () => periods.sort((a,b)=> a.year-b.year);
 
@@ -396,6 +397,12 @@ function computeVals(v){
   const opMargin=sales? operatingProfit/sales*100:0;
   const assetTurnover=totalCapital? sales/totalCapital:0;
   const finLeverage=na? totalCapital/na:0;
+  const ordMargin=sales? ordinaryProfit/sales*100:0;
+  const roa=totalAssets? netIncome/totalAssets*100:0;
+  const taxRate=pretaxProfit>0? tax/pretaxProfit:0;
+  const nopat=operatingProfit*(1-taxRate);
+  const investedCap=ibd+na;
+  const roic=investedCap>0? nopat/investedCap*100:0;
   const de=na? ibd/na:0;
   const ibdRatio=totalCapital? ibd/totalCapital*100:0;
   const netDe=na? (ibd-cash)/na:0;
@@ -409,7 +416,7 @@ function computeVals(v){
     cap,csurp,re,ona,na,totalAssets,totalCapital,ibd,quick,
     sales,cogs,sga,noi,recint,noe,intexp,exg,exl,tax,dep,
     grossProfit,operatingProfit,ordinaryProfit,pretaxProfit,netIncome,busProfit,simpleCF,
-    currentRatio,quickRatio,fixedLTRatio,roe,equityRatio,netMargin,opMargin,assetTurnover,finLeverage,
+    currentRatio,quickRatio,fixedLTRatio,roe,equityRatio,netMargin,opMargin,assetTurnover,finLeverage,ordMargin,roa,roic,nopat,investedCap,
     de,ibdRatio,netDe,debtMonths,icr,debtYears,invTurnover,recvDays,ibdReady,quickReady,
     matcost:g('matcost'),labcost:g('labcost'),subcon:g('subcon'),depcogs:g('depcogs'),othcogs:g('othcogs'),
     beginv:g('beginv'),purch:g('purch'),endinv:g('endinv'),perscost:g('perscost'),adv:g('adv'),rent:g('rent'),depsga:g('depsga'),othsga:g('othsga'),
@@ -509,7 +516,7 @@ function updateComputedInputs(){
 /* ---------- period bar ---------- */
 function renderPeriodBar(){
   let h='';
-  periods.forEach((p,i)=>{ h+=`<button class="ptab ${i===curIdx?'active':''}" data-i="${i}">${p.year}年度</button>`; });
+  periods.forEach((p,i)=>{ h+=`<button class="ptab ${i===curIdx?'active':''}" data-i="${i}">${TLAB(p.year)}</button>`; });
   h+=`<span class="addper"><button class="btn-add" id="addBtn" ${periods.length>=MAXP?'disabled':''}>＋ 期を追加</button>`;
   if(periods.length>=MAXP) h+=`<span style="font-size:11px;color:#94a3b8;">最大5期</span>`;
   h+='</span>';
@@ -529,27 +536,27 @@ function closeModal(){ $("modal").hidden=true; modalOnOk=null; }
 function openAddModal(){
   if(periods.length>=MAXP) return;
   const last=periods[periods.length-1];
-  const suggest=(last? last.year:2024)+1;
+  const suggest=(last? last.year:0)+1;
   openModal({ title:'期を追加', okLabel:'追加',
-    bodyHTML:`<label class="modal-label">追加する年度</label><input type="number" id="modalYear" value="${suggest}" step="1"><div class="modal-err" id="modalErr"></div>`,
+    bodyHTML:`<label class="modal-label">追加する期（数字）　例：10 → 第10期</label><input type="number" id="modalYear" value="${suggest}" step="1" min="1"><div class="modal-err" id="modalErr"></div>`,
     focus:'modalYear',
     onOk:()=>{ const y=parseInt($("modalYear").value,10); const err=$("modalErr");
-      if(!Number.isFinite(y)){ err.textContent='年度を入力してください。'; return false; }
-      if(periods.some(p=>p.year===y)){ err.textContent='その年度は既に存在します。'; return false; }
+      if(!Number.isFinite(y)){ err.textContent='期（数字）を入力してください。'; return false; }
+      if(periods.some(p=>p.year===y)){ err.textContent='その期は既に存在します。'; return false; }
       periods.push({year:y, vals:Object.assign({}, periods[curIdx].vals)});
       sortPeriods(); curIdx=periods.findIndex(p=>p.year===y); buildInputForm(); run(); } });
 }
 function openResetModal(){
   const y=periods[curIdx].year;
   openModal({ title:'数値のリセット', okLabel:'リセットする', okClass:'btn-danger',
-    bodyHTML:`<div class="modal-msg"><b>${y}年度</b> の入力数値（内訳含む）をすべて <b>0</b> にします。よろしいですか？</div>`,
+    bodyHTML:`<div class="modal-msg"><b>${TLAB(y)}</b> の入力数値（内訳含む）をすべて <b>0</b> にします。よろしいですか？</div>`,
     onOk:()=>{ periods[curIdx].vals=zeros(); buildInputForm(); run(); } });
 }
 function openDeleteModal(){
   if(periods.length<=1){ openModal({title:'削除できません', okLabel:'OK', bodyHTML:`<div class="modal-msg">最後の1期は削除できません。<br>先に別の期を追加してください。</div>`, onOk:()=>{}}); return; }
   const y=periods[curIdx].year;
   openModal({ title:'期の削除', okLabel:'削除する', okClass:'btn-danger',
-    bodyHTML:`<div class="modal-msg"><b>${y}年度</b> のタブを削除します。よろしいですか？</div>`,
+    bodyHTML:`<div class="modal-msg"><b>${TLAB(y)}</b> のタブを削除します。よろしいですか？</div>`,
     onOk:()=>{ periods.splice(curIdx,1); if(curIdx>=periods.length) curIdx=periods.length-1; buildInputForm(); run(); } });
 }
 
@@ -562,12 +569,15 @@ function drawChart(ds){
   if(gmax<=0) gmax=1;
   const AX=70, TOP=70, BOT=470, chH=BOT-TOP;
   const Y=p=> BOT-(p/100)*chH, PV=v=> v/gmax*100;
-  const BW=42, BG=10, GPAD=26, groupInner=3*BW+2*BG, slot=groupInner+GPAD*2, x0=AX+24, W=x0+n*slot+20, H=560;
+  const BW=56, BG=15, GPAD=34, groupInner=3*BW+2*BG, slot=groupInner+GPAD*2, x0=AX+24, W=x0+n*slot+20, H=560;
   const hi=currentHi();
   const boxKeep=hi? new Set(hi.boxes||[]):null; if(boxKeep&&boxKeep.has('sales')) boxKeep.add('gp');
-  const box=(x,w,yT,yB,fill)=> `<rect x="${x}" y="${yT}" width="${w}" height="${Math.max(0,yB-yT)}" fill="${fill}" stroke="#333" stroke-width="1"/>`;
-  const segLabel=(x,yT,yB,val)=> (yB-yT>=22)? `<text x="${x+BW/2}" y="${(yT+yB)/2+4}" font-size="12" fill="#fff" text-anchor="middle">${fmt(val)}</text>`:'';
-  let s=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="期間比較チャート" style="display:block;width:100%;height:auto;max-width:${W}px;margin:0 auto;">`;
+  const box=(x,w,yT,yB,fill,title)=> `<rect x="${x}" y="${yT}" width="${w}" height="${Math.max(0,yB-yT)}" fill="${fill}" stroke="#333" stroke-width="1">${title?`<title>${title}</title>`:''}</rect>`;
+  const segLabel=(x,yT,yB,val)=> (yB-yT>=20)? `<text x="${x+BW/2}" y="${(yT+yB)/2+4}" font-size="13" fill="#fff" text-anchor="middle">${fmt(val)}</text>`:'';
+  const segLabel2=(x,yT,yB,nm,val)=>{ const h=yB-yT; if(h<16) return ''; const cy=(yT+yB)/2;
+    return h>=32 ? `<text x="${x+BW/2}" y="${cy-3}" font-size="11" fill="#fff" text-anchor="middle">${nm}</text><text x="${x+BW/2}" y="${cy+13}" font-size="13" fill="#fff" text-anchor="middle">${fmt(val)}</text>`
+                 : `<text x="${x+BW/2}" y="${cy+4}" font-size="12" fill="#fff" text-anchor="middle">${fmt(val)}</text>`; };
+  let s=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="期間比較チャート" style="display:block;width:100%;height:auto;margin:0 auto;">`;
   s+=`<line x1="${AX}" y1="${TOP}" x2="${AX}" y2="${BOT}" stroke="#333" stroke-width="1.5"/>`;
   s+=`<text x="${AX-30}" y="${TOP-12}" font-size="16" fill="#333">％</text>`;
   for(let p=0;p<=100;p+=20){ const y=Y(p);
@@ -577,22 +587,29 @@ function drawChart(ds){
   ds.forEach(({year,d},gi)=>{
     const gx=x0+gi*slot+GPAD, bx=[gx,gx+BW+BG,gx+2*(BW+BG)];
     const yFa=Y(PV(d.fa)), yA=Y(PV(d.fa+d.ca));
-    s+=box(bx[0],BW,yFa,Y(0),C.fa)+segLabel(bx[0],yFa,Y(0),d.fa);
-    s+=box(bx[0],BW,yA,yFa,C.ca)+segLabel(bx[0],yA,yFa,d.ca);
-    const yNa=Y(PV(d.na)), yFl=Y(PV(d.na+d.fl)), yCl=Y(PV(d.na+d.fl+d.cl)), yRe=Y(PV(d.re));
-    s+=box(bx[1],BW,yNa,Y(0),C.na)+segLabel(bx[1],yNa,Y(0),d.na);
+    const tt=(nm,val,base)=>`${nm}：${fmt(val)} ${unitStr()}${base?`（${p1(val/base*100)}%）`:''}`;
+    // 資産
+    s+=box(bx[0],BW,yFa,Y(0),C.fa,tt('固定資産',d.fa,d.totalAssets))+segLabel(bx[0],yFa,Y(0),d.fa);
+    s+=box(bx[0],BW,yA,yFa,C.ca,tt('流動資産',d.ca,d.totalAssets))+segLabel(bx[0],yA,yFa,d.ca);
+    // 負債・純資産（純資産は資本金／利益剰余金に分割・点線で区切り）
+    const yNa=Y(PV(d.na)), yFl=Y(PV(d.na+d.fl)), yCl=Y(PV(d.na+d.fl+d.cl)), yRe=Y(PV(d.re)), capEq=d.na-d.re;
+    s+=box(bx[1],BW,yNa,Y(0),C.na);
+    s+=segLabel2(bx[1],yNa,yRe,'資本金',capEq)+segLabel2(bx[1],yRe,Y(0),'利益剰余金',d.re);
     if(d.re>0&&d.na>0) s+=`<line x1="${bx[1]}" y1="${yRe}" x2="${bx[1]+BW}" y2="${yRe}" stroke="#fff" stroke-width="1.5" stroke-dasharray="6 4"/>`;
-    s+=box(bx[1],BW,yFl,yNa,C.fl)+segLabel(bx[1],yFl,yNa,d.fl);
-    s+=box(bx[1],BW,yCl,yFl,C.cl)+segLabel(bx[1],yCl,yFl,d.cl);
+    s+=`<rect x="${bx[1]}" y="${yNa}" width="${BW}" height="${Math.max(0,yRe-yNa)}" fill="transparent"><title>${tt('資本金',capEq,d.totalCapital)}</title></rect>`;
+    s+=`<rect x="${bx[1]}" y="${yRe}" width="${BW}" height="${Math.max(0,Y(0)-yRe)}" fill="transparent"><title>${tt('利益剰余金',d.re,d.totalCapital)}</title></rect>`;
+    s+=box(bx[1],BW,yFl,yNa,C.fl,tt('固定負債',d.fl,d.totalCapital))+segLabel(bx[1],yFl,yNa,d.fl);
+    s+=box(bx[1],BW,yCl,yFl,C.cl,tt('流動負債',d.cl,d.totalCapital))+segLabel(bx[1],yCl,yFl,d.cl);
+    // 売上（PL）
     const ySales=Y(PV(d.sales)), yGp=Y(PV(d.grossProfit)), yOp=Y(PV(d.operatingProfit)), yNi=Y(PV(d.netIncome));
-    s+=box(bx[2],BW,ySales,Y(0),'#ffffff');
-    s+=box(bx[2],BW,yGp,Y(0),C.gp)+segLabel(bx[2],yGp,Y(0),d.grossProfit);
-    s+=`<line x1="${bx[2]}" y1="${yOp}" x2="${bx[2]+BW}" y2="${yOp}" stroke="#333" stroke-width="1.5"/>`;
-    s+=`<line x1="${bx[2]}" y1="${yNi}" x2="${bx[2]+BW}" y2="${yNi}" stroke="#c53030" stroke-width="1.5"/>`;
+    s+=box(bx[2],BW,ySales,Y(0),'#ffffff',tt('売上高',d.sales,0));
+    s+=box(bx[2],BW,yGp,Y(0),C.gp,tt('粗利',d.grossProfit,d.sales))+segLabel(bx[2],yGp,Y(0),d.grossProfit);
+    s+=`<line x1="${bx[2]}" y1="${yOp}" x2="${bx[2]+BW}" y2="${yOp}" stroke="#333" stroke-width="1.5"><title>${tt('営業利益',d.operatingProfit,d.sales)}</title></line>`;
+    s+=`<line x1="${bx[2]}" y1="${yNi}" x2="${bx[2]+BW}" y2="${yNi}" stroke="#c53030" stroke-width="1.5"><title>${tt('当期純利益',d.netIncome,d.sales)}</title></line>`;
     s+=`<text x="${bx[0]+BW/2}" y="${yA-7}" font-size="12" fill="#333" text-anchor="middle" font-weight="bold">${fmt(d.totalAssets)}</text>`;
     s+=`<text x="${bx[1]+BW/2}" y="${yCl-7}" font-size="12" fill="#333" text-anchor="middle" font-weight="bold">${fmt(d.totalCapital)}</text>`;
     s+=`<text x="${bx[2]+BW/2}" y="${ySales-7}" font-size="12" fill="#333" text-anchor="middle" font-weight="bold">${fmt(d.sales)}</text>`;
-    s+=`<text x="${gx+groupInner/2}" y="${BOT+26}" font-size="16" fill="#1a1a1a" text-anchor="middle" font-weight="bold">${year}年度</text>`;
+    s+=`<text x="${gx+groupInner/2}" y="${BOT+26}" font-size="16" fill="#1a1a1a" text-anchor="middle" font-weight="bold">${TLAB(year)}</text>`;
     s+=`<text x="${bx[0]+BW/2}" y="${BOT+44}" font-size="11" fill="#666" text-anchor="middle">資産</text>`;
     s+=`<text x="${bx[1]+BW/2}" y="${BOT+44}" font-size="11" fill="#666" text-anchor="middle">負債・純資産</text>`;
     s+=`<text x="${bx[2]+BW/2}" y="${BOT+44}" font-size="11" fill="#666" text-anchor="middle">売上</text>`;
@@ -608,9 +625,9 @@ function drawChart(ds){
   s+=`</svg>`; $("chart").innerHTML=s;
 }
 function renderLegend(){
-  const items=[['流動資産',C.ca],['固定資産',C.fa],['流動負債',C.cl],['固定負債',C.fl],['純資産',C.na],['粗利',C.gp]];
+  const items=[['流動資産',C.ca],['固定資産',C.fa],['流動負債',C.cl],['固定負債',C.fl],['純資産（資本金・利益剰余金）',C.na],['粗利',C.gp]];
   let h=items.map(([nm,c])=>`<span class="lg"><i style="background:${c}"></i>${nm}</span>`).join('');
-  h+=`<span class="lg"><i class="lgline"></i>営業利益</span><span class="lg"><i class="lgline red"></i>当期純利益</span><span class="lg" style="color:#888">（純資産内の点線＝利益剰余金）</span>`;
+  h+=`<span class="lg"><i class="lgline"></i>営業利益</span><span class="lg"><i class="lgline red"></i>当期純利益</span><span class="lg" style="color:#888">（純資産内の点線＝資本金／利益剰余金の区切り・バーにカーソルで科目と数値）</span>`;
   $("legend").innerHTML=h;
 }
 
@@ -628,13 +645,38 @@ const CATS = {
         meaning:'最終的に会社に残る利益。成長性は前期比（増益率）で評価します。',
         rows:[{lv:'good',name:'増益',range:'前期比 プラス',note:'利益が伸びている'},{lv:'warn',name:'横ばい',range:'前期比 0%前後',note:'ほぼ変化なし'},{lv:'bad',name:'減益',range:'前期比 マイナス',note:'利益が縮小'}], judge:d=>null },
     ]},
-  eff:{ name:'効率性',
+  eff:{ name:'効率性', note:'※ROE＝当期純利益率×総資本回転率×財務レバレッジ（デュポン分解）。効率性の各指標で分解要因を確認できます。',
     metrics:[
+      { key:'roe', label:'ROE', v:d=>d.roe, unit:'%', dec:2, hi:{boxes:['na'],lines:['ni']},
+        formula:d=>`当期純利益 <b>${fmt(d.netIncome)}</b> ÷ 純資産 <b>${fmt(d.na)}</b> × 100 ＝ <b>${p2(d.roe)}</b>%`,
+        meaning:'自己資本を使ってどれだけ利益を生んだか。ROE＝当期純利益率×総資本回転率×財務レバレッジ（デュポン分解）で要因分解できます。',
+        rows:[{lv:'good',name:'良好',range:'8% 以上',note:'自己資本を効率活用'},{lv:'warn',name:'低め',range:'0〜8%',note:'改善余地あり'},{lv:'bad',name:'赤字',range:'0% 未満',note:'自己資本を毀損'}],
+        judge:d=>{const v=d.roe; return v>=8?'good':v>=0?'warn':'bad';} },
+      { key:'finlev', label:'財務レバレッジ', v:d=>d.finLeverage, unit:'倍', dec:2, hi:{boxes:['ca','fa','na']},
+        formula:d=>`総資本 <b>${fmt(d.totalCapital)}</b> ÷ 自己資本(純資産) <b>${fmt(d.na)}</b> ＝ <b>${p2(d.finLeverage)}</b> 倍`,
+        meaning:'自己資本の何倍の総資本を使っているか（＝1÷自己資本比率）。高いほど負債活用が大きくROEを押し上げる一方、リスクも上がります。',
+        rows:[{lv:'good',name:'健全',range:'2.0倍 以下',note:'自己資本が厚い'},{lv:'warn',name:'標準',range:'2.0〜4.0倍',note:'一般的な水準'},{lv:'bad',name:'高い',range:'4.0倍 超',note:'負債依存が大きい'}],
+        judge:d=>{const v=d.finLeverage; return v<=2?'good':v<=4?'warn':'bad';} },
       { key:'turnover', label:'総資本回転率', v:d=>d.assetTurnover, unit:'回', dec:2, hi:{boxes:['cl','fl','na','sales']},
         formula:d=>`売上高 <b>${fmt(d.sales)}</b> ÷ 総資本 <b>${fmt(d.totalCapital)}</b> ＝ <b>${p2(d.assetTurnover)}</b> 回`,
         meaning:'総資本が1年間に何回売上に変わったかを示す効率指標。大きいほど資産を効率よく使えています。',
         rows:[{lv:'good',name:'高い',range:'1.0回 以上',note:'効率よく活用'},{lv:'warn',name:'普通',range:'0.5〜1.0回',note:'業種平均並み'},{lv:'bad',name:'低い',range:'0.5回 未満',note:'資産過大の可能性'}],
         judge:d=>{const v=d.assetTurnover; return v>=1?'good':v>=0.5?'warn':'bad';} },
+      { key:'ordm', label:'売上高経常利益率', v:d=>d.ordMargin, unit:'%', dec:1, hi:{boxes:['sales']},
+        formula:d=>`経常利益 <b>${fmt(d.ordinaryProfit)}</b> ÷ 売上高 <b>${fmt(d.sales)}</b> × 100 ＝ <b>${p1(d.ordMargin)}</b>%`,
+        meaning:'本業＋財務活動を含む経常的な採算性。営業外（支払利息など）の影響も反映した総合的な収益力を表します。',
+        rows:[{lv:'good',name:'良好',range:'5% 以上',note:'経常的な採算が高い'},{lv:'warn',name:'普通',range:'2〜5%',note:'一般的な水準'},{lv:'bad',name:'低い',range:'2% 未満',note:'採算が弱い'}],
+        judge:d=>{const v=d.ordMargin; return v>=5?'good':v>=2?'warn':'bad';} },
+      { key:'roa', label:'ROA（総資産利益率）', v:d=>d.roa, unit:'%', dec:2, hi:{boxes:['ca','fa'],lines:['ni']},
+        formula:d=>`当期純利益 <b>${fmt(d.netIncome)}</b> ÷ 総資産 <b>${fmt(d.totalAssets)}</b> × 100 ＝ <b>${p2(d.roa)}</b>%`,
+        meaning:'総資産をどれだけ効率よく利益に変えたか。事業全体の資産効率を表します。',
+        rows:[{lv:'good',name:'良好',range:'5% 以上',note:'資産効率が高い'},{lv:'warn',name:'普通',range:'2〜5%',note:'一般的な水準'},{lv:'bad',name:'低い',range:'2% 未満',note:'資産効率が低い'}],
+        judge:d=>{const v=d.roa; return v>=5?'good':v>=2?'warn':'bad';} },
+      { key:'roic', label:'ROIC', v:d=>d.roic, unit:'%', dec:2, hi:{boxes:['cl','fl','na'],lines:['op']}, ready:d=>d.ibdReady,
+        formula:d=>`税引後営業利益 <b>${fmt(d.nopat)}</b> ÷ 投下資本 <b>${fmt(d.investedCap)}</b>（有利子負債＋純資産）× 100 ＝ <b>${p2(d.roic)}</b>%`,
+        meaning:'投下資本（有利子負債＋自己資本）に対する税引後営業利益の割合。資本コスト(WACC)を上回るほど価値を創造。負債の内訳入力が必要です。',
+        rows:[{lv:'good',name:'良好',range:'8% 以上',note:'資本コストを上回りやすい'},{lv:'warn',name:'普通',range:'4〜8%',note:'標準的'},{lv:'bad',name:'低い',range:'4% 未満',note:'資本効率が低い'}],
+        judge:d=>{const v=d.roic; return v>=8?'good':v>=4?'warn':'bad';} },
       { key:'invturn', label:'棚卸資産回転率', v:d=>d.invTurnover, unit:'回', dec:2, hi:{boxes:['ca','sales']}, ready:d=>d.quickReady,
         formula:d=>`売上原価 <b>${fmt(d.cogs)}</b> ÷ 棚卸資産 <b>${fmt(d.inv)}</b> ＝ <b>${p2(d.invTurnover)}</b> 回`,
         meaning:'在庫が一定期間に何回入れ替わったかを示す指標。高いほど在庫効率が良い（※業種差が大きい）。詳細入力の棚卸資産が必要です。',
@@ -766,7 +808,7 @@ function cmpTable(m, ds){
   const avail=ds.length, nsel=Math.min(cmpN,avail), start=avail-nsel;
   const isAmt=(typeof m.unit==='function');
   let h=`<div class="cmp-toggle">`+[1,3,5].map(nn=>`<button class="cbtn ${cmpN===nn?'active':''}" data-n="${nn}" ${nn>avail?'disabled':''}>${nn}期</button>`).join('')+`</div>`;
-  h+=`<table class="judge"><tr><th>年度</th><th>${m.label}</th><th>前期比</th><th>判定</th></tr>`;
+  h+=`<table class="judge"><tr><th>期</th><th>${m.label}</th><th>前期比</th><th>判定</th></tr>`;
   for(let i=start;i<avail;i++){
     const r=ds[i], disp=metricDisp(m,r.d);
     let delta='—';
@@ -780,7 +822,7 @@ function cmpTable(m, ds){
     }
     const lv=metricJudge(m,r.d);
     const bd = lv? badge(lv,(m.rows.find(x=>x.lv===lv)||{}).name||''):badge('na','—');
-    h+=`<tr><td>${r.year}年度</td><td class="num">${disp}</td><td class="num">${delta}</td><td>${bd}</td></tr>`;
+    h+=`<tr><td>${TLAB(r.year)}</td><td class="num">${disp}</td><td class="num">${delta}</td><td>${bd}</td></tr>`;
   }
   return h+`</table>`;
 }
@@ -789,9 +831,9 @@ function metricDetailHTML(m, ds, catNote){
   const lv=metricJudge(m,latest);
   const b = lv? badge(lv,(m.rows.find(r=>r.lv===lv)||{}).name||''):badge('na','参考');
   const noteHTML=(m.note||catNote)?`<div class="md-note">${m.note||''}${catNote||''}</div>`:'';
-  return `<div class="md-head"><span class="md-title">${m.label}<span style="font-size:11px;color:#94a3b8;font-weight:600;margin-left:8px;">最新：${latestYear}年度</span></span><span class="md-value">${metricDisp(m,latest)} ${b}</span></div>
+  return `<div class="md-head"><span class="md-title">${m.label}<span style="font-size:11px;color:#94a3b8;font-weight:600;margin-left:8px;">最新：${TLAB(latestYear)}</span></span><span class="md-value">${metricDisp(m,latest)} ${b}</span></div>
      <div class="md-body">
-       <div><div class="md-label">計算式（${latestYear}年度）</div><div class="md-formula">${m.formula(latest)}</div></div>
+       <div><div class="md-label">計算式（${TLAB(latestYear)}）</div><div class="md-formula">${m.formula(latest)}</div></div>
        <div><div class="md-label">指標の意味</div><div class="md-meaning">${m.meaning}</div></div>
        <div class="md-table"><div class="md-label">期間比較（1期／3期／5期）</div>${cmpTable(m,ds)}</div>
        <div class="md-table"><div class="md-label">判定の目安</div>${judgeTable(m.rows, lv)}</div>
@@ -841,7 +883,7 @@ function renderDetail(ds){
   if(cmpSeg==='all'||cmpSeg==='bs') groups.push({title:'貸借対照表（BS）', rows:BS_ROWS});
   if(cmpSeg==='all'||cmpSeg==='pl') groups.push({title:'損益計算書（PL）', rows:plRows()});
   let h=`<table class="cmp-detail"><thead><tr><th class="itemcol">項目</th>`;
-  ds.forEach(r=> h+=`<th>${r.year}年度</th>`);
+  ds.forEach(r=> h+=`<th>${TLAB(r.year)}</th>`);
   h+=`<th>前期比(最新)</th></tr></thead><tbody>`;
   groups.forEach(g=>{
     h+=`<tr class="grp"><td colspan="${ds.length+2}">${g.title}<span class="u">単位：${u}</span></td></tr>`;
@@ -924,16 +966,16 @@ function renderDetailControls(ds){
     h+=`<div class="ctl-row"><span class="ctl-lbl">内訳カテゴリ：</span><select id="stackCat">`+STACK_CATS.map(c=>`<option value="${c[0]}" ${c[0]===stackCat?'selected':''}>${c[1]}</option>`).join('')+`</select><button class="chip ${!stackPct?'on':''}" data-pct="0">金額</button><button class="chip ${stackPct?'on':''}" data-pct="1">100%構成比</button></div>`;
   } else if(detView==='waterfall'){
     const idx=wfIdx<0?ds.length-1:Math.min(wfIdx,ds.length-1);
-    h+=`<div class="ctl-row"><span class="ctl-lbl">対象期：</span><select id="wfPeriod">`+ds.map((r,i)=>`<option value="${i}" ${i===idx?'selected':''}>${r.year}年度</option>`).join('')+`</select></div>`;
+    h+=`<div class="ctl-row"><span class="ctl-lbl">対象期：</span><select id="wfPeriod">`+ds.map((r,i)=>`<option value="${i}" ${i===idx?'selected':''}>${TLAB(r.year)}</option>`).join('')+`</select></div>`;
     h+=`<div class="ctl-row"><span class="ctl-lbl">表示：</span><button class="chip ${wfMode==='full'?'on':''}" data-wfmode="full">全体（当期純利益まで）</button><button class="chip ${wfMode==='ordinary'?'on':''}" data-wfmode="ordinary">経常利益（原価・販管費の内訳）</button></div>`;
   } else if(detView==='bridge'){
-    h+=`<div class="ctl-row"><span class="ctl-lbl">対象利益：</span><button class="chip ${bridgeTarget==='op'?'on':''}" data-bt="op">営業利益</button><button class="chip ${bridgeTarget==='ni'?'on':''}" data-bt="ni">当期純利益</button><span class="ctl-lbl" style="margin-left:10px;">${ds.length>=2?`${ds[ds.length-2].year}年度 → ${ds[ds.length-1].year}年度`:'（2期以上必要）'}</span></div>`;
+    h+=`<div class="ctl-row"><span class="ctl-lbl">対象利益：</span><button class="chip ${bridgeTarget==='op'?'on':''}" data-bt="op">営業利益</button><button class="chip ${bridgeTarget==='ni'?'on':''}" data-bt="ni">当期純利益</button><span class="ctl-lbl" style="margin-left:10px;">${ds.length>=2?`${TLAB(ds[ds.length-2].year)} → ${TLAB(ds[ds.length-1].year)}`:'（2期以上必要）'}</span></div>`;
   } else if(detView==='cf'){
     if(ds.length<2){ h+=`<div class="ctl-row"><span class="ctl-lbl">簡易CFには2期以上の入力が必要です。</span></div>`; }
     else {
       h+=`<div class="ctl-row"><span class="ctl-lbl">表示：</span><button class="chip ${cfMode==='compare'?'on':''}" data-cfmode="compare">比較（期間）</button><button class="chip ${cfMode==='waterfall'?'on':''}" data-cfmode="waterfall">ウォーターフォール（1期）</button></div>`;
       if(cfMode==='waterfall'){ const idx=cfIdx<1?ds.length-1:Math.min(cfIdx,ds.length-1);
-        h+=`<div class="ctl-row"><span class="ctl-lbl">対象期：</span><select id="cfPeriod">`+ds.map((r,i)=> i>=1?`<option value="${i}" ${i===idx?'selected':''}>${ds[i-1].year}→${r.year}年度</option>`:'').join('')+`</select></div>`;
+        h+=`<div class="ctl-row"><span class="ctl-lbl">対象期：</span><select id="cfPeriod">`+ds.map((r,i)=> i>=1?`<option value="${i}" ${i===idx?'selected':''}>${TLAB(ds[i-1].year)}→${TLAB(r.year)}</option>`:'').join('')+`</select></div>`;
       }
     }
   }
@@ -972,7 +1014,7 @@ function drawSeriesChart(ds){
       keys.forEach((k,ki)=>{ const v=detVal(ds[gi].d,k), x=gx+(gW-bw*keys.length)/2+ki*bw, y0=Y(0), y=Y(v);
         s+=`<rect x="${x}" y="${Math.min(y,y0)}" width="${Math.max(1,bw-2)}" height="${Math.max(0,Math.abs(y-y0))}" fill="${PAL[ki%PAL.length]}"/>`; });
     }
-    s+=`<text x="${gx+gW/2}" y="${BOT+20}" font-size="13" text-anchor="middle" font-weight="bold">${yr}年度</text>`;
+    s+=`<text x="${gx+gW/2}" y="${BOT+20}" font-size="13" text-anchor="middle" font-weight="bold">${TLAB(yr)}</text>`;
   });
   if(itemMode==='line'){
     keys.forEach((k,ki)=>{ const pts=years.map((yr,gi)=>`${AX+20+gi*gW+gW/2},${Y(detVal(ds[gi].d,k))}`).join(' ');
@@ -999,7 +1041,7 @@ function drawStackChart(ds){
       s+=`<rect x="${gx}" y="${yTop}" width="${bw}" height="${Math.max(0,yBot-yTop)}" fill="${PAL[ki%PAL.length]}" stroke="#fff"/>`;
       if(yBot-yTop>=16) s+=`<text x="${gx+bw/2}" y="${(yTop+yBot)/2+4}" font-size="11" fill="#fff" text-anchor="middle">${stackPct? p1(v/tot*100)+'%' : fmt(v)}</text>`;
     });
-    s+=`<text x="${gx+bw/2}" y="${BOT+20}" font-size="13" text-anchor="middle" font-weight="bold">${yr}年度</text>`;
+    s+=`<text x="${gx+bw/2}" y="${BOT+20}" font-size="13" text-anchor="middle" font-weight="bold">${TLAB(yr)}</text>`;
     if(!stackPct) s+=`<text x="${gx+bw/2}" y="${BOT-accV/mx*(BOT-TOP)-6}" font-size="12" text-anchor="middle" font-weight="bold">${fmt(totals[gi])}</text>`;
   });
   s+=`</svg>`; $("detailChart").innerHTML=s;
@@ -1038,7 +1080,7 @@ function drawWaterfall(ds){
   } else {
     steps.push({t:'total',label:'経常利益',val:d.ordinaryProfit});
   }
-  drawSteps(steps, wfMode==='ordinary'? `${yr}年度 PLウォーターフォール（経常利益・原価/販管費内訳）` : `${yr}年度 PLウォーターフォール（全体）`);
+  drawSteps(steps, wfMode==='ordinary'? `${TLAB(yr)} PLウォーターフォール（経常利益・原価/販管費内訳）` : `${TLAB(yr)} PLウォーターフォール（全体）`);
 }
 function viewMetricKeys(){
   if(detView==='items') return ['sales','ni','npm','opm','roe'];
@@ -1060,10 +1102,10 @@ function drawBridge(ds){
   if(ds.length<2){ $("detailChart").innerHTML='<p class="ph">増減ブリッジには2期以上の入力が必要です。</p>'; $("detailLegend").innerHTML=''; return; }
   const a=ds[ds.length-2].d, c=ds[ds.length-1].d, ya=ds[ds.length-2].year, yc=ds[ds.length-1].year, D=k=>detVal(c,k)-detVal(a,k);
   let steps, title;
-  if(bridgeTarget==='op'){ title=`営業利益の増減要因（${ya}→${yc}）`;
-    steps=[{t:'total',label:`${ya} 営業利益`,val:a.operatingProfit},{t:'flow',label:'売上高',amt:+D('sales')},{t:'flow',label:'売上原価',amt:-D('cogs')},{t:'flow',label:'販管費',amt:-D('sga')},{t:'total',label:`${yc} 営業利益`,val:c.operatingProfit}];
-  } else { title=`当期純利益の増減要因（${ya}→${yc}）`;
-    steps=[{t:'total',label:`${ya} 純利益`,val:a.netIncome},{t:'flow',label:'売上高',amt:+D('sales')},{t:'flow',label:'売上原価',amt:-D('cogs')},{t:'flow',label:'販管費',amt:-D('sga')},{t:'flow',label:'営業外収益',amt:+D('noi')},{t:'flow',label:'営業外費用',amt:-D('noe')},{t:'flow',label:'特別利益',amt:+D('exg')},{t:'flow',label:'特別損失',amt:-D('exl')},{t:'flow',label:'法人税等',amt:-D('tax')},{t:'total',label:`${yc} 純利益`,val:c.netIncome}];
+  if(bridgeTarget==='op'){ title=`営業利益の増減要因（${TLAB(ya)}→${TLAB(yc)}）`;
+    steps=[{t:'total',label:`${TLAB(ya)} 営業利益`,val:a.operatingProfit},{t:'flow',label:'売上高',amt:+D('sales')},{t:'flow',label:'売上原価',amt:-D('cogs')},{t:'flow',label:'販管費',amt:-D('sga')},{t:'total',label:`${TLAB(yc)} 営業利益`,val:c.operatingProfit}];
+  } else { title=`当期純利益の増減要因（${TLAB(ya)}→${TLAB(yc)}）`;
+    steps=[{t:'total',label:`${TLAB(ya)} 純利益`,val:a.netIncome},{t:'flow',label:'売上高',amt:+D('sales')},{t:'flow',label:'売上原価',amt:-D('cogs')},{t:'flow',label:'販管費',amt:-D('sga')},{t:'flow',label:'営業外収益',amt:+D('noi')},{t:'flow',label:'営業外費用',amt:-D('noe')},{t:'flow',label:'特別利益',amt:+D('exg')},{t:'flow',label:'特別損失',amt:-D('exl')},{t:'flow',label:'法人税等',amt:-D('tax')},{t:'total',label:`${TLAB(yc)} 純利益`,val:c.netIncome}];
   }
   drawSteps(steps,title);
 }
@@ -1071,7 +1113,7 @@ function drawCF(ds){
   if(ds.length<2){ $("detailChart").innerHTML='<p class="ph">簡易CFには2期以上の入力が必要です。「③ 数値入力」で期を追加してください。</p>'; $("detailLegend").innerHTML=''; return; }
   if(cfMode==='waterfall'){
     const idx=cfIdx<1?ds.length-1:Math.min(cfIdx,ds.length-1), cf=computeCF(ds[idx-1].d, ds[idx].d);
-    drawSteps([{t:'flow',label:'営業CF',amt:cf.opCF},{t:'flow',label:'投資CF',amt:cf.invCF},{t:'flow',label:'財務CF',amt:cf.finCF},{t:'flow',label:'その他調整',amt:cf.adj},{t:'total',label:'現金増減',val:cf.actual}], `${ds[idx-1].year}→${ds[idx].year}年度 簡易キャッシュフロー`);
+    drawSteps([{t:'flow',label:'営業CF',amt:cf.opCF},{t:'flow',label:'投資CF',amt:cf.invCF},{t:'flow',label:'財務CF',amt:cf.finCF},{t:'flow',label:'その他調整',amt:cf.adj},{t:'total',label:'現金増減',val:cf.actual}], `${TLAB(ds[idx-1].year)}→${TLAB(ds[idx].year)} 簡易キャッシュフロー`);
     return;
   }
   const items=[]; for(let i=1;i<ds.length;i++) items.push({year:ds[i].year, cf:computeCF(ds[i-1].d,ds[i].d)});
@@ -1087,7 +1129,7 @@ function drawCF(ds){
     keys.forEach((k,ki)=>{ const v=items[gi].cf[k[0]], x=gx+(gW-bw*3)/2+ki*bw, y0=Y(0), y=Y(v);
       s+=`<rect x="${x}" y="${Math.min(y,y0)}" width="${Math.max(1,bw-3)}" height="${Math.max(0,Math.abs(y-y0))}" fill="${k[2]}"/>`;
       s+=`<text x="${x+(bw-3)/2}" y="${v>=0?y-4:y+12}" font-size="10" text-anchor="middle" fill="#444">${fmt(v)}</text>`; });
-    s+=`<text x="${gx+gW/2}" y="${BOT+20}" font-size="12" text-anchor="middle" font-weight="bold">${yr}年度</text>`;
+    s+=`<text x="${gx+gW/2}" y="${BOT+20}" font-size="12" text-anchor="middle" font-weight="bold">${TLAB(yr)}</text>`;
   });
   s+=`</svg>`; $("detailChart").innerHTML=s;
   $("detailLegend").innerHTML=keys.map(k=>`<span class="lg"><i style="background:${k[2]}"></i>${k[1]}</span>`).join('');
@@ -1100,7 +1142,7 @@ function renderCFPanel(ds){
   const opm = c.sales? cf.opCF/c.sales*100 : 0, sgn=v=>(v>=0?'+':'')+fmt(v);
   const tile=(t,v)=>`<div class="cf-tile"><div class="t">${t}</div><div class="v">${v}</div></div>`;
   let h=`<div class="cf-pattern"><div><span class="cf-badge">該当 ${pat?pat.no+' '+pat.name:'—'}</span></div><div class="cf-desc">${pat?pat.desc:''}</div>
-    <div class="cf-signs">営業CF <b>${sgn(cf.opCF)}</b>　／　投資CF <b>${sgn(cf.invCF)}</b>　／　財務CF <b>${sgn(cf.finCF)}</b>　（${ds[idx-1].year}→${ds[idx].year}年度・単位：${u}）</div></div>`;
+    <div class="cf-signs">営業CF <b>${sgn(cf.opCF)}</b>　／　投資CF <b>${sgn(cf.invCF)}</b>　／　財務CF <b>${sgn(cf.finCF)}</b>　（${TLAB(ds[idx-1].year)}→${TLAB(ds[idx].year)}・単位：${u}）</div></div>`;
   h+=`<div class="cf-tiles">${tile('営業CF',fmt(cf.opCF))}${tile('投資CF',fmt(cf.invCF))}${tile('財務CF',fmt(cf.finCF))}${tile('フリーCF(営業+投資)',fmt(cf.fcf))}${tile('現金増減',fmt(cf.actual))}${tile('営業CFマージン',p1(opm)+'%')}</div>`;
   h+=`<div class="cf-h">キャッシュフロー8パターン（該当を強調）</div><div class="cf-grid">`+CF_PATTERNS.map(p=>`<div class="cf-card ${pat&&p.sign===pat.sign?'cur':''}"><div class="cf-mini">${cfMini(p.sign)}</div><div class="cf-ct"><div class="nm">${p.no} ${p.name}</div><div class="ds">${p.desc}</div></div></div>`).join('')+`</div>`;
   h+=`<p class="note" style="margin-top:10px;">簡易CF（間接法・近似）：営業CF＝税引前利益＋減価償却費−法人税等−売上債権増−棚卸資産増＋仕入債務増／投資CF＝−(固定資産増＋減価償却費)／財務CF＝有利子負債増＋増資−配当（配当は利益剰余金から逆算）。現預金・売上債権・棚卸資産・仕入債務・固定資産・有利子負債などの内訳入力があるほど精度が上がります。検算差額は「その他調整」に含めています。</p>`;
