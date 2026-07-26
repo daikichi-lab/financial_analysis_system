@@ -236,14 +236,10 @@
       <div id="detailChart"></div>
       <div class="legend" id="detailLegend"></div>
 
-      <h3 style="margin-top:18px;">数値表</h3>
-      <div class="cmp-toggle" id="segToggle">
-        <button class="cbtn active" data-seg="all">すべて</button>
-        <button class="cbtn" data-seg="bs">BSのみ</button>
-        <button class="cbtn" data-seg="pl">PLのみ</button>
-      </div>
-      <div class="detail-wrap" id="detailTable"></div>
-      <p class="note">期間比較で大まかな方向性を掴み、ここで項目・内訳・利益構造（ウォーターフォール）・増減要因を深掘りできます。図の対象はプリセット／個別チェックで選べます。</p>
+      <h3 style="margin-top:18px;">この図に対応する指標</h3>
+      <div class="metricbtns" id="detMetricBtns"></div>
+      <div class="metricdetail" id="detMetricDetail"></div>
+      <p class="note">期間比較で方向性を掴み、ここで図（項目比較・内訳推移・PLウォーターフォール・増減ブリッジ）と関連指標を深掘りできます。指標は期間比較と同じ形式（計算式・意味・判定・期間比較表）で表示します。</p>
     </section>
   </div>
 
@@ -400,7 +396,7 @@ function computeVals(v){
     de,ibdRatio,netDe,debtMonths,icr,debtYears,invTurnover,recvDays,ibdReady,quickReady,
     matcost:g('matcost'),labcost:g('labcost'),subcon:g('subcon'),depcogs:g('depcogs'),othcogs:g('othcogs'),
     beginv:g('beginv'),purch:g('purch'),endinv:g('endinv'),perscost:g('perscost'),adv:g('adv'),rent:g('rent'),depsga:g('depsga'),othsga:g('othsga'),
-    laborCost,costRatio,sgaRatio,personnelRatio,laborShare,personnelReady};
+    laborCost,costRatio,sgaRatio,personnelRatio,laborShare,personnelReady,detCogs:!!v.det_cogs,detSga:!!v.det_sga};
 }
 const derived = () => periods.map(p=> ({year:p.year, d:computeVals(p.vals)}));
 
@@ -730,6 +726,7 @@ const CATS = {
     ]},
 };
 
+const ALL_METRICS={}; Object.values(CATS).forEach(c=>c.metrics.forEach(m=>{ALL_METRICS[m.key]=m;}));
 const findMetric=(cat,key)=> CATS[cat].metrics.find(m=>m.key===key);
 const metricReady=(m,d)=> m.ready? m.ready(d): true;
 function metricDisp(m,d){
@@ -770,18 +767,12 @@ function cmpTable(m, ds){
   }
   return h+`</table>`;
 }
-function renderAnalysis(ds){
-  document.querySelectorAll('#subtabs .subtab').forEach(b=> b.classList.toggle('active', b.dataset.cat===curCat));
-  const cat=CATS[curCat];
-  if(!cat.metrics.some(m=>m.key===curKey)) curKey=cat.metrics[0].key;
+function metricDetailHTML(m, ds, catNote){
   const latest=ds[ds.length-1].d, latestYear=ds[ds.length-1].year;
-  $("metricbtns").innerHTML = cat.metrics.map(m=> `<button class="mbtn ${m.key===curKey?'active':''}" data-key="${m.key}"><span>${m.label}</span><span class="mbv">${metricDisp(m,latest)}</span></button>`).join('');
-  const m=findMetric(curCat,curKey);
   const lv=metricJudge(m,latest);
   const b = lv? badge(lv,(m.rows.find(r=>r.lv===lv)||{}).name||''):badge('na','参考');
-  const noteHTML=(m.note||cat.note)?`<div class="md-note">${m.note||''}${cat.note||''}</div>`:'';
-  $("metricdetail").innerHTML =
-    `<div class="md-head"><span class="md-title">${m.label}<span style="font-size:11px;color:#94a3b8;font-weight:600;margin-left:8px;">最新：${latestYear}年度</span></span><span class="md-value">${metricDisp(m,latest)} ${b}</span></div>
+  const noteHTML=(m.note||catNote)?`<div class="md-note">${m.note||''}${catNote||''}</div>`:'';
+  return `<div class="md-head"><span class="md-title">${m.label}<span style="font-size:11px;color:#94a3b8;font-weight:600;margin-left:8px;">最新：${latestYear}年度</span></span><span class="md-value">${metricDisp(m,latest)} ${b}</span></div>
      <div class="md-body">
        <div><div class="md-label">計算式（${latestYear}年度）</div><div class="md-formula">${m.formula(latest)}</div></div>
        <div><div class="md-label">指標の意味</div><div class="md-meaning">${m.meaning}</div></div>
@@ -789,6 +780,14 @@ function renderAnalysis(ds){
        <div class="md-table"><div class="md-label">判定の目安</div>${judgeTable(m.rows, lv)}</div>
        ${noteHTML}
      </div>`;
+}
+function renderAnalysis(ds){
+  document.querySelectorAll('#subtabs .subtab').forEach(b=> b.classList.toggle('active', b.dataset.cat===curCat));
+  const cat=CATS[curCat];
+  if(!cat.metrics.some(m=>m.key===curKey)) curKey=cat.metrics[0].key;
+  const latest=ds[ds.length-1].d;
+  $("metricbtns").innerHTML = cat.metrics.map(m=> `<button class="mbtn ${m.key===curKey?'active':''}" data-key="${m.key}"><span>${m.label}</span><span class="mbv">${metricDisp(m,latest)}</span></button>`).join('');
+  $("metricdetail").innerHTML = metricDetailHTML(findMetric(curCat,curKey), ds, cat.note);
 }
 
 /* ---------- detail comparison ---------- */
@@ -842,7 +841,7 @@ function renderDetail(ds){
 }
 
 /* ---------- detail figures ---------- */
-let detView='items', itemSel=new Set(['sales','sga']), itemMode='bar', stackCat='ca', stackPct=false, wfIdx=-1, bridgeTarget='op';
+let detView='items', itemSel=new Set(['sales','sga']), itemMode='bar', stackCat='ca', stackPct=false, wfIdx=-1, wfMode='full', bridgeTarget='op', detMetricKey='';
 const PAL=['#4E79A7','#F28E2B','#59A14F','#E15759','#B07AA1','#76B7B2','#EDC948','#FF9DA7','#9C755F','#BAB0AC','#86BCB6','#D37295'];
 const detVal=(d,k)=> k==='liab'?(d.cl+d.fl):d[k];
 function itemDefs(){
@@ -885,6 +884,7 @@ function renderDetailControls(ds){
   } else if(detView==='waterfall'){
     const idx=wfIdx<0?ds.length-1:Math.min(wfIdx,ds.length-1);
     h+=`<div class="ctl-row"><span class="ctl-lbl">対象期：</span><select id="wfPeriod">`+ds.map((r,i)=>`<option value="${i}" ${i===idx?'selected':''}>${r.year}年度</option>`).join('')+`</select></div>`;
+    h+=`<div class="ctl-row"><span class="ctl-lbl">表示：</span><button class="chip ${wfMode==='full'?'on':''}" data-wfmode="full">全体（当期純利益まで）</button><button class="chip ${wfMode==='ordinary'?'on':''}" data-wfmode="ordinary">経常利益（原価・販管費の内訳）</button></div>`;
   } else if(detView==='bridge'){
     h+=`<div class="ctl-row"><span class="ctl-lbl">対象利益：</span><button class="chip ${bridgeTarget==='op'?'on':''}" data-bt="op">営業利益</button><button class="chip ${bridgeTarget==='ni'?'on':''}" data-bt="ni">当期純利益</button><span class="ctl-lbl" style="margin-left:10px;">${ds.length>=2?`${ds[ds.length-2].year}年度 → ${ds[ds.length-1].year}年度`:'（2期以上必要）'}</span></div>`;
   }
@@ -976,13 +976,34 @@ function drawSteps(steps,title){
 }
 function drawWaterfall(ds){
   const idx=wfIdx<0?ds.length-1:Math.min(wfIdx,ds.length-1), d=ds[idx].d, yr=ds[idx].year;
-  drawSteps([
-    {t:'total',label:'売上高',val:d.sales},{t:'flow',label:'売上原価',amt:-d.cogs},{t:'sub',label:'粗利',val:d.grossProfit},
-    {t:'flow',label:'販管費',amt:-d.sga},{t:'sub',label:'営業利益',val:d.operatingProfit},
-    {t:'flow',label:'営業外収益',amt:+d.noi},{t:'flow',label:'営業外費用',amt:-d.noe},{t:'sub',label:'経常利益',val:d.ordinaryProfit},
-    {t:'flow',label:'特別利益',amt:+d.exg},{t:'flow',label:'特別損失',amt:-d.exl},{t:'sub',label:'税引前',val:d.pretaxProfit},
-    {t:'flow',label:'法人税等',amt:-d.tax},{t:'total',label:'当期純利益',val:d.netIncome},
-  ], `${yr}年度 PLウォーターフォール`);
+  const steps=[{t:'total',label:'売上高',val:d.sales}];
+  if(wfMode==='ordinary' && d.detCogs && costType!=='B') cogsLeaves().forEach(([k,nm])=> steps.push({t:'flow',label:nm,amt:-detVal(d,k)}));
+  else steps.push({t:'flow',label:'売上原価',amt:-d.cogs});
+  steps.push({t:'sub',label:'粗利',val:d.grossProfit});
+  if(wfMode==='ordinary' && d.detSga) SGA_LEAVES.forEach(([k,nm])=> steps.push({t:'flow',label:nm,amt:-detVal(d,k)}));
+  else steps.push({t:'flow',label:'販管費',amt:-d.sga});
+  steps.push({t:'sub',label:'営業利益',val:d.operatingProfit},{t:'flow',label:'営業外収益',amt:+d.noi},{t:'flow',label:'営業外費用',amt:-d.noe});
+  if(wfMode==='full'){
+    steps.push({t:'sub',label:'経常利益',val:d.ordinaryProfit},{t:'flow',label:'特別利益',amt:+d.exg},{t:'flow',label:'特別損失',amt:-d.exl},{t:'sub',label:'税引前',val:d.pretaxProfit},{t:'flow',label:'法人税等',amt:-d.tax},{t:'total',label:'当期純利益',val:d.netIncome});
+  } else {
+    steps.push({t:'total',label:'経常利益',val:d.ordinaryProfit});
+  }
+  drawSteps(steps, wfMode==='ordinary'? `${yr}年度 PLウォーターフォール（経常利益・原価/販管費内訳）` : `${yr}年度 PLウォーターフォール（全体）`);
+}
+function viewMetricKeys(){
+  if(detView==='items') return ['sales','ni','npm','opm','roe'];
+  if(detView==='waterfall') return ['opm','npm','costr','sgar'];
+  if(detView==='bridge') return ['sales','ni','opm','npm'];
+  if(detView==='stack') return ({ca:['current','quick'],fa:['fixedlt'],asset:['turnover','equity'],liab:['de','ibdr','netde','debtm'],na:['equity','de'],cogs:['costr'],sga:['sgar','persr','labshare']})[stackCat]||[];
+  return [];
+}
+function renderDetailMetrics(ds){
+  const list=viewMetricKeys().map(k=>ALL_METRICS[k]).filter(Boolean);
+  if(!list.length){ $("detMetricBtns").innerHTML=''; $("detMetricDetail").innerHTML='<p class="ph">この図に対応する指標はありません。</p>'; return; }
+  if(!list.some(m=>m.key===detMetricKey)) detMetricKey=list[0].key;
+  const latest=ds[ds.length-1].d;
+  $("detMetricBtns").innerHTML=list.map(m=>`<button class="mbtn ${m.key===detMetricKey?'active':''}" data-key="${m.key}"><span>${m.label}</span><span class="mbv">${metricDisp(m,latest)}</span></button>`).join('');
+  $("detMetricDetail").innerHTML=metricDetailHTML(ALL_METRICS[detMetricKey], ds);
 }
 function drawBridge(ds){
   if(ds.length<2){ $("detailChart").innerHTML='<p class="ph">増減ブリッジには2期以上の入力が必要です。</p>'; $("detailLegend").innerHTML=''; return; }
@@ -1006,9 +1027,9 @@ function run(){
   drawChart(ds);
   renderLegend();
   renderAnalysis(ds);
-  renderDetail(ds);
   renderDetailControls(ds);
   drawDetailChart(ds);
+  renderDetailMetrics(ds);
 }
 
 /* ---------- listeners ---------- */
@@ -1054,23 +1075,24 @@ $("calcBtn").addEventListener("click", ()=>{ run(); switchTab("view"); });
 $("subtabs").addEventListener("click", e=>{ const b=e.target.closest(".subtab"); if(!b) return; curCat=b.dataset.cat; curKey=CATS[curCat].metrics[0].key; run(); });
 $("metricbtns").addEventListener("click", e=>{ const b=e.target.closest(".mbtn"); if(!b) return; curKey=b.dataset.key; run(); });
 $("metricdetail").addEventListener("click", e=>{ const b=e.target.closest(".cbtn"); if(!b||b.disabled) return; cmpN=+b.dataset.n; run(); });
-$("segToggle").addEventListener("click", e=>{ const b=e.target.closest(".cbtn"); if(!b) return; cmpSeg=b.dataset.seg; renderDetail(derived()); });
-
-$("viewToggle").addEventListener("click", e=>{ const b=e.target.closest(".cbtn"); if(!b) return; detView=b.dataset.view; run(); });
+$("viewToggle").addEventListener("click", e=>{ const b=e.target.closest(".cbtn"); if(!b) return; detView=b.dataset.view; detMetricKey=''; run(); });
 $("viewControls").addEventListener("click", e=>{
-  const b=e.target.closest("[data-preset],[data-mode],[data-pct],[data-bt],#toggleItems"); if(!b) return;
+  const b=e.target.closest("[data-preset],[data-mode],[data-pct],[data-bt],[data-wfmode],#toggleItems"); if(!b) return;
   if(b.dataset.preset!=null){ itemSel=new Set(PRESETS[+b.dataset.preset][1]); run(); }
   else if(b.dataset.mode){ itemMode=b.dataset.mode; run(); }
   else if(b.dataset.pct!=null){ stackPct=(b.dataset.pct==='1'); run(); }
+  else if(b.dataset.wfmode){ wfMode=b.dataset.wfmode; drawDetailChart(derived()); renderDetailControls(derived()); }
   else if(b.dataset.bt){ bridgeTarget=b.dataset.bt; run(); }
   else if(b.id==='toggleItems'){ const ic=$("itemChecks"); if(ic) ic.hidden=!ic.hidden; }
 });
 $("viewControls").addEventListener("change", e=>{
   const t=e.target;
-  if(t.id==='stackCat'){ stackCat=t.value; drawDetailChart(derived()); }
+  if(t.id==='stackCat'){ stackCat=t.value; detMetricKey=''; drawDetailChart(derived()); renderDetailMetrics(derived()); }
   else if(t.id==='wfPeriod'){ wfIdx=+t.value; drawDetailChart(derived()); }
-  else if(t.dataset && t.dataset.item!=null){ if(t.checked) itemSel.add(t.dataset.item); else itemSel.delete(t.dataset.item); drawDetailChart(derived()); $("detailLegend").scrollIntoView&&0; }
+  else if(t.dataset && t.dataset.item!=null){ if(t.checked) itemSel.add(t.dataset.item); else itemSel.delete(t.dataset.item); drawDetailChart(derived()); }
 });
+$("detMetricBtns").addEventListener("click", e=>{ const b=e.target.closest(".mbtn"); if(!b) return; detMetricKey=b.dataset.key; renderDetailMetrics(derived()); });
+$("detMetricDetail").addEventListener("click", e=>{ const b=e.target.closest(".cbtn"); if(!b||b.disabled) return; cmpN=+b.dataset.n; renderDetailMetrics(derived()); });
 
 buildInputForm();
 run();
