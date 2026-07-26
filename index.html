@@ -123,8 +123,7 @@
   .md-title{font-size:15px;font-weight:700;}
   .md-value{font-size:24px;font-weight:800;font-variant-numeric:tabular-nums;}
   .md-value small{font-size:13px;font-weight:600;margin-left:2px;}
-  .md-body{padding:14px 16px;display:grid;gap:14px;}
-  @media(min-width:720px){.md-body{grid-template-columns:1fr 1fr;}}
+  .md-body{padding:14px 16px;display:grid;gap:14px;}   /* 各ブロックを1カラムで縦積み（改行） */
   .md-label{font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.08em;
     text-transform:uppercase;margin-bottom:5px;}
   .md-formula{font-size:14px;font-variant-numeric:tabular-nums;background:#fff;border:1px solid #e2e8f0;
@@ -519,9 +518,9 @@ const CATS = {
               {lv:'warn',name:'許容',range:'100〜110%',note:'ぎりぎり許容範囲'},
               {lv:'bad',name:'過大',range:'110% 超',note:'短期資金で固定資産を賄い危険'}],
         judge:d=>{const v=d.fixedLTRatio; return v<=100?'good':v<=110?'warn':'bad';} },
-      { key:'equity', label:'純資産比率', v:d=>d.equityRatio, unit:'%', dec:1, hi:{boxes:['cl','fl','na']},
-        formula:d=>`純資産 <b>${fmt(d.na)}</b> ÷ 総資本 <b>${fmt(d.totalCapital)}</b> × 100 ＝ <b>${p1(d.equityRatio)}</b>%`,
-        meaning:'総資本のうち返済不要の自己資本（純資産）が占める割合。高いほど財務体質が安定し、倒産しにくい会社といえます。',
+      { key:'equity', label:'純資産比率', v:d=>d.equityRatio, unit:'%', dec:1, hi:{boxes:['na','ca','fa']},
+        formula:d=>`純資産 <b>${fmt(d.na)}</b> ÷ 総資本〈＝資産合計〉<b>${fmt(d.totalAssets)}</b> × 100 ＝ <b>${p1(d.equityRatio)}</b>%`,
+        meaning:'資産全体（＝総資本）のうち、返済不要の自己資本（純資産）が占める割合。自己資本と資産を比べる指標で、高いほど財務体質が安定し、倒産しにくい会社といえます。',
         rows:[{lv:'good',name:'安全',range:'40% 以上',note:'自己資本が厚い'},
               {lv:'warn',name:'普通',range:'20〜40%',note:'一般的な水準'},
               {lv:'bad',name:'危険',range:'20% 未満',note:'借入依存で不安定'}],
