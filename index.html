@@ -154,6 +154,22 @@
   .b-warn{background:var(--warn);}
   .b-bad{background:var(--bad);}
   .b-na{background:#94a3b8;}
+
+  /* Modal */
+  .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;z-index:100;padding:16px;}
+  .modal-overlay[hidden]{display:none;}
+  .modal{background:#fff;border-radius:10px;max-width:360px;width:100%;box-shadow:0 10px 40px rgba(0,0,0,.25);overflow:hidden;}
+  .modal-title{font-size:15px;font-weight:700;padding:14px 18px;background:#f1f5f9;border-bottom:1px solid #e2e8f0;}
+  .modal-body{padding:18px;font-size:13px;}
+  .modal-body .modal-label{display:block;font-size:12px;color:var(--muted);margin-bottom:6px;font-weight:700;}
+  .modal-body input[type=number]{width:100%;padding:8px;font-size:15px;border:1px solid #bbb;border-radius:6px;text-align:right;font-variant-numeric:tabular-nums;}
+  .modal-body input[type=number]:focus{outline:2px solid var(--accent);border-color:var(--accent);}
+  .modal-msg{line-height:1.7;}
+  .modal-err{color:var(--bad);font-size:12px;margin-top:8px;min-height:16px;}
+  .modal-actions{display:flex;gap:8px;padding:0 18px 18px;}
+  .modal-actions button{padding:9px;border-radius:6px;font-size:13px;font-weight:700;}
+  .btn-danger{background:var(--bad);color:#fff;}
+
   footer{text-align:center;font-size:11px;color:var(--muted);padding:16px;}
 </style>
 </head>
@@ -238,9 +254,10 @@
 
       <div class="btnrow">
         <button class="btn-primary" id="calcBtn">分析する</button>
-        <button class="btn-ghost" id="resetBtn">この期を初期値に戻す</button>
+        <button class="btn-ghost" id="resetBtn">この期をリセット（0）</button>
+        <button class="btn-ghost" id="delBtn">この期を削除</button>
       </div>
-      <p class="note">「＋ 期を追加」で年度を選ぶと最大5期まで比較できます（左＝古い／右＝新しい）。年度タブで編集する期を切り替え。入力を変更すると自動で再計算されます。単位はすべて同一で入力してください。</p>
+      <p class="note">「＋ 期を追加」を押すと年度入力のモーダルが開き、最大5期まで比較できます（左＝古い／右＝新しい）。年度タブで編集する期を切替。「リセット」はこの期の数値をすべて0に、「この期を削除」はタブを削除します（どちらも確認モーダルあり）。</p>
     </section>
   </div>
 
@@ -266,6 +283,18 @@
   </div>
 
   <footer>簡易版：使用指標＝流動比率／固定長期適合率／ROE／純資産比率ほか（最大5期比較対応）</footer>
+</div>
+
+<!-- ============ MODAL ============ -->
+<div class="modal-overlay" id="modal" hidden>
+  <div class="modal" role="dialog" aria-modal="true">
+    <div class="modal-title" id="modalTitle"></div>
+    <div class="modal-body" id="modalBody"></div>
+    <div class="modal-actions">
+      <button class="btn-ghost" id="modalCancel">キャンセル</button>
+      <button class="btn-primary" id="modalOk">OK</button>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -330,21 +359,84 @@ function readFormToPeriod(){
 }
 
 /* ---------- period bar ---------- */
-function yearOptions(){
-  const used=new Set(periods.map(p=>p.year));
-  let o=''; const base=2026;
-  for(let y=base-9;y<=base+1;y++){ if(!used.has(y)) o+=`<option value="${y}">${y}年度</option>`; }
-  return o;
-}
 function renderPeriodBar(){
   let h='';
   periods.forEach((p,i)=>{ h+=`<button class="ptab ${i===curIdx?'active':''}" data-i="${i}">${p.year}年度</button>`; });
-  h+='<span class="addper">';
-  if(periods.length<MAXP) h+=`<select id="addyear">${yearOptions()}</select><button class="btn-add" id="addBtn">＋ 期を追加</button>`;
-  else h+=`<span style="font-size:11px;color:#94a3b8;">最大5期</span>`;
-  if(periods.length>1) h+=`<button class="btn-del" id="delBtn">この期を削除</button>`;
+  h+=`<span class="addper"><button class="btn-add" id="addBtn" ${periods.length>=MAXP?'disabled':''}>＋ 期を追加</button>`;
+  if(periods.length>=MAXP) h+=`<span style="font-size:11px;color:#94a3b8;">最大5期</span>`;
   h+='</span>';
   $("periodbar").innerHTML=h;
+}
+
+/* ---------- modal ---------- */
+let modalOnOk=null;
+function openModal(opts){
+  $("modalTitle").textContent=opts.title||'';
+  $("modalBody").innerHTML=opts.bodyHTML||'';
+  const ok=$("modalOk");
+  ok.textContent=opts.okLabel||'OK';
+  ok.className=opts.okClass||'btn-primary';
+  ok.style.display=(opts.hideOk?'none':'');
+  modalOnOk=opts.onOk||null;
+  $("modal").hidden=false;
+  if(opts.focus){ const el=$(opts.focus); if(el){ el.focus(); if(el.select) el.select(); } }
+}
+function closeModal(){ $("modal").hidden=true; modalOnOk=null; }
+$("modalCancel").addEventListener("click", closeModal);
+$("modal").addEventListener("click", e=>{ if(e.target.id==='modal') closeModal(); });
+$("modalOk").addEventListener("click", ()=>{ if(!modalOnOk || modalOnOk()!==false) closeModal(); });
+$("modal").addEventListener("keydown", e=>{
+  if(e.key==='Enter'){ e.preventDefault(); $("modalOk").click(); }
+  else if(e.key==='Escape'){ closeModal(); }
+});
+
+function openAddModal(){
+  if(periods.length>=MAXP) return;
+  const last=periods[periods.length-1];
+  const suggest=(last? last.year : 2024)+1;
+  openModal({
+    title:'期を追加',
+    okLabel:'追加', okClass:'btn-primary',
+    bodyHTML:`<label class="modal-label">追加する年度</label>
+      <input type="number" id="modalYear" value="${suggest}" step="1">
+      <div class="modal-err" id="modalErr"></div>`,
+    focus:'modalYear',
+    onOk:()=>{
+      const y=parseInt($("modalYear").value,10);
+      const err=$("modalErr");
+      if(!Number.isFinite(y)){ err.textContent='年度を入力してください。'; return false; }
+      if(periods.some(p=>p.year===y)){ err.textContent='その年度は既に存在します。'; return false; }
+      readFormToPeriod();
+      periods.push({year:y, vals:Object.assign({}, periods[curIdx].vals)});
+      sortPeriods();
+      curIdx=periods.findIndex(p=>p.year===y);
+      loadPeriodToForm(); run();
+    }
+  });
+}
+function openResetModal(){
+  const y=periods[curIdx].year;
+  openModal({
+    title:'数値のリセット',
+    bodyHTML:`<div class="modal-msg"><b>${y}年度</b> の入力数値をすべて <b>0</b> にします。よろしいですか？</div>`,
+    okLabel:'リセットする', okClass:'btn-danger',
+    onOk:()=>{ const v=periods[curIdx].vals; IDS.forEach(id=> v[id]=0); loadPeriodToForm(); run(); }
+  });
+}
+function openDeleteModal(){
+  if(periods.length<=1){
+    openModal({ title:'削除できません',
+      bodyHTML:`<div class="modal-msg">最後の1期は削除できません。<br>先に別の期を追加してください。</div>`,
+      okLabel:'OK', hideOk:false, onOk:()=>{} });
+    return;
+  }
+  const y=periods[curIdx].year;
+  openModal({
+    title:'期の削除',
+    bodyHTML:`<div class="modal-msg"><b>${y}年度</b> のタブを削除します。よろしいですか？</div>`,
+    okLabel:'削除する', okClass:'btn-danger',
+    onOk:()=>{ periods.splice(curIdx,1); if(curIdx>=periods.length) curIdx=periods.length-1; loadPeriodToForm(); run(); }
+  });
 }
 
 /* ---------- BS totals (current period) ---------- */
@@ -634,35 +726,16 @@ function run(){
   renderLegend();
   renderAnalysis(ds);
 }
-function reset(){ periods[curIdx].vals=Object.assign({}, DEFAULTS); loadPeriodToForm(); run(); }
-
 /* ---------- listeners ---------- */
 IDS.forEach(id=> $(id).addEventListener("input", ()=>{ readFormToPeriod(); run(); }));
 $("unit").addEventListener("change", run);
-$("resetBtn").addEventListener("click", reset);
+$("resetBtn").addEventListener("click", openResetModal);
+$("delBtn").addEventListener("click", openDeleteModal);
 
 $("periodbar").addEventListener("click", e=>{
   const t=e.target;
   if(t.classList.contains("ptab")){ readFormToPeriod(); curIdx=+t.dataset.i; loadPeriodToForm(); run(); return; }
-  if(t.id==="addBtn"){
-    readFormToPeriod();
-    if(periods.length<MAXP){
-      const y=parseInt($("addyear").value,10);
-      periods.push({year:y, vals:Object.assign({}, periods[curIdx].vals)});
-      sortPeriods();
-      curIdx=periods.findIndex(p=>p.year===y);
-      loadPeriodToForm(); run();
-    }
-    return;
-  }
-  if(t.id==="delBtn"){
-    if(periods.length>1){
-      periods.splice(curIdx,1);
-      if(curIdx>=periods.length) curIdx=periods.length-1;
-      loadPeriodToForm(); run();
-    }
-    return;
-  }
+  if(t.id==="addBtn"){ readFormToPeriod(); openAddModal(); return; }
 });
 
 /* tabs */
