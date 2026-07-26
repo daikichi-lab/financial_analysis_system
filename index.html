@@ -420,7 +420,7 @@ const derived = () => periods.map(p=> ({year:p.year, d:computeVals(p.vals)}));
 /* ---------- input form (BS/PL) ---------- */
 const BS_LEFT = [
   {sec:'資産の部'},
-  {big:'ca', label:'流動資産', leaves:[['cash','現金・預金'],['sec','有価証券(短期)'],['recv','売上債権(売掛金・受取手形)'],['inv','棚卸資産'],['oca','その他流動資産']]},
+  {big:'ca', label:'流動資産', leaves:[['cash','現金・預金'],['recv','売上債権(売掛金・受取手形)'],['inv','棚卸資産'],['sec','有価証券(短期)'],['oca','その他流動資産']]},
   {big:'fa', label:'固定資産', leaves:[['tfa','有形固定資産'],['ifa','無形固定資産'],['iota','投資その他の資産']]},
   {auto:'totalAssets', label:'資産合計'},
 ];
@@ -810,7 +810,7 @@ function renderAnalysis(ds){
 /* ---------- detail comparison ---------- */
 const BS_ROWS=[
   {k:'ca',name:'流動資産',tot:true},
-  {k:'cash',name:'現金・預金',leaf:true},{k:'sec',name:'有価証券(短期)',leaf:true},{k:'recv',name:'売上債権',leaf:true},{k:'inv',name:'棚卸資産',leaf:true},{k:'oca',name:'その他流動資産',leaf:true},
+  {k:'cash',name:'現金・預金',leaf:true},{k:'recv',name:'売上債権',leaf:true},{k:'inv',name:'棚卸資産',leaf:true},{k:'sec',name:'有価証券(短期)',leaf:true},{k:'oca',name:'その他流動資産',leaf:true},
   {k:'fa',name:'固定資産',tot:true},
   {k:'tfa',name:'有形固定資産',leaf:true},{k:'ifa',name:'無形固定資産',leaf:true},{k:'iota',name:'投資その他の資産',leaf:true},
   {k:'totalAssets',name:'資産合計',grand:true},
@@ -886,7 +886,7 @@ function cfMini(sign){ const cols=[CF_C.op,CF_C.iv,CF_C.fi]; let s='<svg width="
 const PAL=['#4E79A7','#F28E2B','#59A14F','#E15759','#B07AA1','#76B7B2','#EDC948','#FF9DA7','#9C755F','#BAB0AC','#86BCB6','#D37295'];
 const detVal=(d,k)=> k==='liab'?(d.cl+d.fl):d[k];
 function itemDefs(){
-  const bs=[['totalAssets','資産合計'],['ca','流動資産'],['cash','現金・預金'],['sec','有価証券'],['recv','売上債権'],['inv','棚卸資産'],['oca','その他流動資産'],
+  const bs=[['totalAssets','資産合計'],['ca','流動資産'],['cash','現金・預金'],['recv','売上債権'],['inv','棚卸資産'],['sec','有価証券'],['oca','その他流動資産'],
     ['fa','固定資産'],['tfa','有形固定資産'],['ifa','無形固定資産'],['iota','投資その他'],
     ['liab','負債合計'],['cl','流動負債'],['payb','仕入債務'],['stloan','短期借入金'],['cpltd','1年内返済長期借入'],['ocl','その他流動負債'],
     ['fl','固定負債'],['ltloan','長期借入金'],['bond','社債'],['ofl','その他固定負債'],['ibd','有利子負債'],
@@ -902,12 +902,12 @@ function itemLabel(k){ const {bs,pl}=itemDefs(); const m=Object.fromEntries([...
 const PRESETS=[
   ['売上高と販管費',['sales','sga']],['販管費のみ',['sga']],['主要利益',['sales','grossProfit','operatingProfit','ordinaryProfit','netIncome']],
   ['PL主要',['sales','cogs','grossProfit','sga','operatingProfit','netIncome']],['BS主要',['totalAssets','ca','fa','cl','fl','na','ibd']],
-  ['流動資産の内訳',['cash','sec','recv','inv','oca']],['有利子負債',['ibd','stloan','cpltd','ltloan','bond']],
+  ['流動資産の内訳',['cash','recv','inv','sec','oca']],['有利子負債',['ibd','stloan','cpltd','ltloan','bond']],
 ];
 const STACK_CATS=[
-  ['ca','流動資産の内訳',()=>['cash','sec','recv','inv','oca']],
+  ['ca','流動資産の内訳',()=>['cash','recv','inv','sec','oca']],
   ['fa','固定資産の内訳',()=>['tfa','ifa','iota']],
-  ['asset','資産の内訳',()=>['cash','sec','recv','inv','oca','tfa','ifa','iota']],
+  ['asset','資産の内訳',()=>['cash','recv','inv','sec','oca','tfa','ifa','iota']],
   ['liab','負債の内訳',()=>['payb','stloan','cpltd','ocl','ltloan','bond','ofl']],
   ['na','純資産の内訳',()=>['cap','csurp','re','ona']],
   ['cogs','原価の内訳',()=>cogsLeaves().map(x=>x[0])],
