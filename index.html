@@ -155,6 +155,19 @@
   .b-bad{background:var(--bad);}
   .b-na{background:#94a3b8;}
 
+  /* Detail comparison table */
+  .detail-wrap{overflow-x:auto;}
+  table.cmp-detail{border-collapse:collapse;width:100%;font-size:12.5px;min-width:520px;}
+  table.cmp-detail th,table.cmp-detail td{border:1px solid #e2e8f0;padding:6px 10px;}
+  table.cmp-detail thead th{background:#1f2937;color:#fff;font-weight:700;text-align:right;font-size:11px;white-space:nowrap;}
+  table.cmp-detail thead th.itemcol{text-align:left;}
+  table.cmp-detail td.itemcol{text-align:left;white-space:nowrap;}
+  table.cmp-detail td.num{text-align:right;font-variant-numeric:tabular-nums;}
+  table.cmp-detail td.delta{color:var(--muted);}
+  table.cmp-detail tr.grp td{background:#eef2f6;font-weight:700;color:#334155;}
+  table.cmp-detail tr.grp .u{font-weight:400;font-size:11px;color:var(--muted);margin-left:8px;}
+  table.cmp-detail tr.totrow td{background:#f6f8fa;font-weight:700;}
+
   /* Modal */
   .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;z-index:100;padding:16px;}
   .modal-overlay[hidden]{display:none;}
@@ -181,8 +194,9 @@
 
 <div class="wrap">
   <div class="tabs">
-    <button class="tab active" data-tab="view">① 図・分析を見る</button>
-    <button class="tab" data-tab="input">② 数値入力</button>
+    <button class="tab active" data-tab="view">① 期間比較</button>
+    <button class="tab" data-tab="detail">② 詳細比較</button>
+    <button class="tab" data-tab="input">③ 数値入力</button>
   </div>
 
   <!-- ============ TAB: INPUT ============ -->
@@ -282,6 +296,20 @@
     </div>
   </div>
 
+  <!-- ============ TAB: DETAIL ============ -->
+  <div class="tabpane" id="tab-detail">
+    <section class="panel">
+      <h2>詳細比較（期間・項目別）</h2>
+      <div class="cmp-toggle" id="segToggle">
+        <button class="cbtn active" data-seg="all">すべて</button>
+        <button class="cbtn" data-seg="bs">BSのみ</button>
+        <button class="cbtn" data-seg="pl">PLのみ</button>
+      </div>
+      <div class="detail-wrap" id="detailTable"></div>
+      <p class="note">各項目を年度横並び（左＝古い／右＝新しい）で比較します。「前期比(最新)」は最新期の前期比です。「BSのみ」「PLのみ」で表示を絞り込めます。</p>
+    </section>
+  </div>
+
   <footer>簡易版：使用指標＝流動比率／固定長期適合率／ROE／純資産比率ほか（最大5期比較対応）</footer>
 </div>
 
@@ -323,6 +351,21 @@ let curIdx = 0;          // 編集中の期（periods は年度昇順）
 let curCat = 'prof';
 let curKey = 'roe';
 let cmpN   = 3;          // 期間比較の表示期数（1/3/5）
+let cmpSeg = 'all';      // 詳細比較の表示範囲（all/bs/pl）
+
+const BS_ROWS=[
+  {k:'ca',name:'流動資産'},{k:'fa',name:'固定資産'},{k:'totalAssets',name:'資産合計',tot:true},
+  {k:'cl',name:'流動負債'},{k:'fl',name:'固定負債'},{k:'liab',name:'負債合計',tot:true},
+  {k:'cap',name:'資本金'},{k:'re',name:'利益剰余金'},{k:'na',name:'純資産合計',tot:true},
+  {k:'totalCapital',name:'負債・純資産合計',tot:true},
+];
+const PL_ROWS=[
+  {k:'sales',name:'売上高'},{k:'cogs',name:'売上原価'},{k:'grossProfit',name:'売上総利益（粗利）',tot:true},
+  {k:'sga',name:'販管費'},{k:'operatingProfit',name:'営業利益',tot:true},
+  {k:'noi',name:'営業外収益'},{k:'noe',name:'営業外費用'},{k:'ordinaryProfit',name:'経常利益',tot:true},
+  {k:'exg',name:'特別利益'},{k:'exl',name:'特別損失'},{k:'pretaxProfit',name:'税引前当期純利益',tot:true},
+  {k:'tax',name:'法人税等'},{k:'netIncome',name:'当期純利益',tot:true},
+];
 
 const sortPeriods = () => periods.sort((a,b)=> a.year-b.year);
 
@@ -343,7 +386,7 @@ function computeVals(v){
   const assetTurnover = totalCapital ? sales/totalCapital : 0;
   const finLeverage = na ? totalCapital/na : 0;
   return {ca,fa,cl,fl,cap,re,na,totalAssets,totalCapital,
-    sales,cogs,sga,grossProfit,operatingProfit,ordinaryProfit,pretaxProfit,netIncome,
+    sales,cogs,sga,noi,noe,exg,exl,tax,grossProfit,operatingProfit,ordinaryProfit,pretaxProfit,netIncome,
     currentRatio,fixedLTRatio,roe,equityRatio,netMargin,opMargin,assetTurnover,finLeverage};
 }
 const derived = () => periods.map(p=> ({year:p.year, d:computeVals(p.vals)}));
@@ -715,6 +758,36 @@ function renderAnalysis(ds){
      </div>`;
 }
 
+/* ---------- detail comparison table ---------- */
+function renderDetail(ds){
+  document.querySelectorAll('#segToggle .cbtn').forEach(x=> x.classList.toggle('active', x.dataset.seg===cmpSeg));
+  const u=unitStr();
+  const val=(d,k)=> k==='liab' ? (d.cl+d.fl) : d[k];
+  const groups=[];
+  if(cmpSeg==='all'||cmpSeg==='bs') groups.push({title:'貸借対照表（BS）', rows:BS_ROWS});
+  if(cmpSeg==='all'||cmpSeg==='pl') groups.push({title:'損益計算書（PL）', rows:PL_ROWS});
+
+  let h=`<table class="cmp-detail"><thead><tr><th class="itemcol">項目</th>`;
+  ds.forEach(r=> h+=`<th>${r.year}年度</th>`);
+  h+=`<th>前期比(最新)</th></tr></thead><tbody>`;
+  groups.forEach(g=>{
+    h+=`<tr class="grp"><td colspan="${ds.length+2}">${g.title}<span class="u">単位：${u}</span></td></tr>`;
+    g.rows.forEach(row=>{
+      h+=`<tr class="${row.tot?'totrow':''}"><td class="itemcol">${row.name}</td>`;
+      ds.forEach(r=> h+=`<td class="num">${fmt(val(r.d,row.k))}</td>`);
+      let delta='—';
+      if(ds.length>=2){
+        const cur=val(ds[ds.length-1].d,row.k), prev=val(ds[ds.length-2].d,row.k);
+        const g2 = prev ? (cur-prev)/Math.abs(prev)*100 : 0;
+        delta=`${g2>=0?'+':''}${p1(g2)}%`;
+      }
+      h+=`<td class="num delta">${delta}</td></tr>`;
+    });
+  });
+  h+=`</tbody></table>`;
+  $("detailTable").innerHTML=h;
+}
+
 /* ---------- run ---------- */
 function run(){
   applyUnitLabels();
@@ -725,6 +798,7 @@ function run(){
   drawChart(ds);
   renderLegend();
   renderAnalysis(ds);
+  renderDetail(ds);
 }
 /* ---------- listeners ---------- */
 IDS.forEach(id=> $(id).addEventListener("input", ()=>{ readFormToPeriod(); run(); }));
@@ -758,6 +832,10 @@ $("metricbtns").addEventListener("click", e=>{
 $("metricdetail").addEventListener("click", e=>{
   const b=e.target.closest(".cbtn"); if(!b || b.disabled) return;
   cmpN=+b.dataset.n; run();
+});
+$("segToggle").addEventListener("click", e=>{
+  const b=e.target.closest(".cbtn"); if(!b) return;
+  cmpSeg=b.dataset.seg; renderDetail(derived());
 });
 
 loadPeriodToForm();
