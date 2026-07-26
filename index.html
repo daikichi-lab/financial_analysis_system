@@ -294,7 +294,7 @@ function applyUnitLabels(){
 const MAXP = 5;
 const NUM_KEYS = ['ca','cash','sec','recv','inv','oca','fa','tfa','ifa','iota',
   'cl','payb','stloan','cpltd','ocl','fl','ltloan','bond','ofl',
-  'cap','csurp','re','ona','sales','cogs','sga','noi','noe','intexp','exg','exl','tax','dep',
+  'cap','csurp','re','ona','sales','cogs','sga','noi','recint','noe','intexp','exg','exl','tax','dep',
   'matcost','labcost','subcon','depcogs','othcogs','beginv','purch','endinv',
   'perscost','adv','rent','depsga','othsga'];
 const DET_KEYS = ['det_ca','det_fa','det_cl','det_fl','det_cogs','det_sga'];
@@ -331,7 +331,7 @@ function computeVals(v){
   const na=cap+csurp+re+ona, totalAssets=ca+fa, totalCapital=cl+fl+na;
   const ibd=g('stloan')+g('cpltd')+g('ltloan')+g('bond');
   const cash=g('cash'), quick=g('cash')+g('sec')+g('recv'), inv=g('inv'), recv=g('recv');
-  const sales=g('sales'),noi=g('noi'),noe=g('noe'),intexp=g('intexp'),exg=g('exg'),exl=g('exl'),tax=g('tax');
+  const sales=g('sales'),noi=g('noi'),recint=g('recint'),noe=g('noe'),intexp=g('intexp'),exg=g('exg'),exl=g('exl'),tax=g('tax');
   let cogs;
   if(v.det_cogs){
     if(costType==='A') cogs=g('matcost')+g('labcost')+g('subcon')+g('depcogs')+g('othcogs');
@@ -343,7 +343,7 @@ function computeVals(v){
   const laborCost = (v.det_cogs&&costType!=='B'?g('labcost'):0) + (v.det_sga?g('perscost'):0);
   const personnelReady = !!(v.det_sga || (v.det_cogs&&costType!=='B'));
   const grossProfit=sales-cogs, operatingProfit=grossProfit-sga, ordinaryProfit=operatingProfit+noi-noe, pretaxProfit=ordinaryProfit+exg-exl, netIncome=pretaxProfit-tax;
-  const busProfit=operatingProfit+noi, simpleCF=operatingProfit+dep;
+  const busProfit=operatingProfit+recint, simpleCF=operatingProfit+dep;
   const costRatio=sales? cogs/sales*100:0, sgaRatio=sales? sga/sales*100:0, personnelRatio=sales? laborCost/sales*100:0, laborShare=grossProfit>0? laborCost/grossProfit*100:0;
   const ibdReady=!!(v.det_cl||v.det_fl), quickReady=!!v.det_ca;
   const currentRatio=cl? ca/cl*100:0;
@@ -366,7 +366,7 @@ function computeVals(v){
   return {ca,fa,cl,fl,cash,sec:g('sec'),recv,inv,oca:g('oca'),tfa:g('tfa'),ifa:g('ifa'),iota:g('iota'),
     payb:g('payb'),stloan:g('stloan'),cpltd:g('cpltd'),ocl:g('ocl'),ltloan:g('ltloan'),bond:g('bond'),ofl:g('ofl'),
     cap,csurp,re,ona,na,totalAssets,totalCapital,ibd,quick,
-    sales,cogs,sga,noi,noe,intexp,exg,exl,tax,dep,
+    sales,cogs,sga,noi,recint,noe,intexp,exg,exl,tax,dep,
     grossProfit,operatingProfit,ordinaryProfit,pretaxProfit,netIncome,busProfit,simpleCF,
     currentRatio,quickRatio,fixedLTRatio,roe,equityRatio,netMargin,opMargin,assetTurnover,finLeverage,
     de,ibdRatio,netDe,debtMonths,icr,debtYears,invTurnover,recvDays,ibdReady,quickReady,
@@ -404,8 +404,9 @@ const PL_STRUCT = [
   {big:'sga', label:'販管費', leaves:SGA_LEAVES},
   {auto:'operatingProfit', label:'営業利益'},
   {plain:'noi', label:'営業外収益'},
+  {plain:'recint', label:'うち受取利息・配当金', sub:true},
   {plain:'noe', label:'営業外費用'},
-  {plain:'intexp', label:'うち支払利息（ICR用）', sub:true},
+  {plain:'intexp', label:'うち支払利息', sub:true},
   {auto:'ordinaryProfit', label:'経常利益'},
   {plain:'exg', label:'特別利益'},
   {plain:'exl', label:'特別損失'},
@@ -688,8 +689,8 @@ const CATS = {
         rows:[{lv:'good',name:'良好',range:'3ヶ月 以下',note:'返済負担が軽い'},{lv:'warn',name:'普通',range:'3〜6ヶ月',note:'標準的'},{lv:'bad',name:'過大',range:'6ヶ月 超',note:'返済負担が重い'}],
         judge:d=>{const v=d.debtMonths; return v<=3?'good':v<=6?'warn':'bad';} },
       { key:'icr', label:'インタレスト・カバレッジ・レシオ', v:d=>d.icr, unit:'倍', dec:2, hi:{lines:['op']}, ready:d=>d.intexp>0,
-        formula:d=>`(営業利益 <b>${fmt(d.operatingProfit)}</b> ＋ 営業外収益 <b>${fmt(d.noi)}</b>) ÷ 支払利息 <b>${fmt(d.intexp)}</b> ＝ <b>${p2(d.icr)}</b> 倍`,
-        meaning:'事業利益で支払利息を何倍賄えるか＝利払い能力。高いほど安全。PL補助の「支払利息」入力が必要です。',
+        formula:d=>`(営業利益 <b>${fmt(d.operatingProfit)}</b> ＋ 受取利息配当金 <b>${fmt(d.recint)}</b>) ÷ 支払利息 <b>${fmt(d.intexp)}</b> ＝ <b>${p2(d.icr)}</b> 倍`,
+        meaning:'事業利益（営業利益＋受取利息配当金）で支払利息を何倍賄えるか＝利払い能力。高いほど安全。営業外の「受取利息・配当金」と「支払利息」の入力が必要です。',
         rows:[{lv:'good',name:'良好',range:'5倍 以上',note:'利払い余力が大きい'},{lv:'warn',name:'許容',range:'1〜5倍',note:'最低限は確保'},{lv:'bad',name:'危険',range:'1倍 未満',note:'利払いを賄えない'}],
         judge:d=>{const v=d.icr; return v>=5?'good':v>=1?'warn':'bad';} },
       { key:'debty', label:'債務償還年数', v:d=>d.debtYears, unit:'年', dec:1, hi:{boxes:['cl','fl'],lines:['op']}, ready:d=>d.ibdReady,
@@ -784,7 +785,7 @@ function plRows(){
   cogsLeaves().forEach(([k,nm])=> r.push({k,name:nm,leaf:true}));
   r.push({k:'grossProfit',name:'売上総利益（粗利）',tot:true},{k:'sga',name:'販管費',tot:true});
   SGA_LEAVES.forEach(([k,nm])=> r.push({k,name:nm,leaf:true}));
-  r.push({k:'operatingProfit',name:'営業利益',tot:true},{k:'noi',name:'営業外収益'},{k:'noe',name:'営業外費用'},{k:'intexp',name:'うち支払利息',leaf:true},
+  r.push({k:'operatingProfit',name:'営業利益',tot:true},{k:'noi',name:'営業外収益'},{k:'recint',name:'うち受取利息・配当金',leaf:true},{k:'noe',name:'営業外費用'},{k:'intexp',name:'うち支払利息',leaf:true},
     {k:'ordinaryProfit',name:'経常利益',tot:true},{k:'exg',name:'特別利益'},{k:'exl',name:'特別損失'},{k:'pretaxProfit',name:'税引前当期純利益',tot:true},
     {k:'tax',name:'法人税等'},{k:'netIncome',name:'当期純利益',tot:true},{k:'dep',name:'減価償却費(合計)',leaf:true});
   return r;
