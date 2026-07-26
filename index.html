@@ -283,7 +283,7 @@ function drawChart(d){
   const F_NAME=40, F_VAL=34, F_PCT=28, F_AXIS=26, F_HEAD=44, F_LEAD=28, F_BR=40;
 
   // ---- BS colors (5色) ----
-  const C_CA='#4E79A7', C_FA='#4E8A46', C_CL='#C4433F', C_FL='#CC6A1F', C_NA='#8E5AA0', C_RE='#6E4480';
+  const C_CA='#4E79A7', C_FA='#4E8A46', C_CL='#C4433F', C_FL='#CC6A1F', C_NA='#8E5AA0';
   const C_GP='#c8c8c8', C_PL='#ffffff', WT='#ffffff';
 
   // ---- geometry ----
@@ -327,7 +327,7 @@ function drawChart(d){
   }
 
   // headers
-  s += txt(16, top-18, "単位：億円", {size:F_AXIS, fill:'#777'});
+  s += txt(16, top-90, "単位：億円", {size:F_AXIS, fill:'#777'});
   s += txt((c1x0+c2x1)/2, top-56, "総資本", {anchor:'middle', size:F_HEAD, weight:'bold'});
   s += txt((c1x0+c2x1)/2, top-12, fmt(d.totalCapital), {anchor:'middle', size:F_HEAD, weight:'bold'});
 
@@ -338,9 +338,9 @@ function drawChart(d){
   s += label3((c1x0+c1x1)/2, Y(100), Y(faP), "流動資産", fmt(d.ca), p1(caP)+"%");
 
   // ----- liabilities + equity column -----
-  // 純資産 (E) with 利益剰余金 (darker) as bottom subset
+  // 純資産（利益剰余金も同色）＋ 内訳の境界を点線で表示
   s += box(c2x0,c2x1, Y(naP), Y(0), C_NA);
-  s += box(c2x0,c2x1, Y(reP), Y(0), C_RE);
+  s += `<line x1="${c2x0}" y1="${Y(reP)}" x2="${c2x1}" y2="${Y(reP)}" stroke="#ffffff" stroke-width="2" stroke-dasharray="10 6"/>`;
   s += label3((c2x0+c2x1)/2, Y(naP), Y(reP), "純資産", fmt(d.na), p1(naP)+"%");
   {
     const m=(Y(reP)+Y(0))/2;
@@ -374,12 +374,17 @@ function drawChart(d){
   // 粗利 (bottom fill)
   s += box(c3x0,c3x1, Y(gpP), Y(0), C_GP);
   s += label3((c3x0+c3x1)/2, Y(gpP), Y(0), "粗利", fmt(d.grossProfit), p1(d.sales? d.grossProfit/d.sales*100:0)+"%", '#1a1a1a');
-  // 営業利益 marker line + label (left)
-  s += `<line x1="${c3x0}" y1="${Y(opP)}" x2="${c3x1}" y2="${Y(opP)}" stroke="#333" stroke-width="2"/>`;
-  s += txt(c3x0-14, Y(opP)-10, "営業利益 "+fmt(d.operatingProfit)+" "+p1(d.sales? d.operatingProfit/d.sales*100:0)+"%", {anchor:'end', size:F_LEAD, fill:'#333'});
-  // 当期純利益 marker line + label (left, red)
-  s += `<line x1="${c3x0}" y1="${Y(niP)}" x2="${c3x1}" y2="${Y(niP)}" stroke="#c53030" stroke-width="2"/>`;
-  s += txt(c3x0-14, Y(niP)+34, "当期純利益 "+fmt(d.netIncome)+" "+p1(d.sales? d.netIncome/d.sales*100:0)+"%", {anchor:'end', size:F_LEAD, fill:'#c53030'});
+  // 営業利益・当期純利益：箱を横断するマーカー線＋左余白へ引き出しラベル（重なり回避）
+  const opY=Y(opP), niY=Y(niP);
+  const labelX=c3x0-26;                          // ラベル右端（箱から離す）
+  const opLabelY=Math.min(opY-22, niY-72);       // 2本が近くても被らないよう上へ振る
+  const niLabelY=niY+44;
+  s += `<line x1="${c3x0}" y1="${opY}" x2="${c3x1}" y2="${opY}" stroke="#333" stroke-width="2"/>`;
+  s += `<line x1="${labelX+8}" y1="${opLabelY-8}" x2="${c3x0}" y2="${opY}" stroke="#333" stroke-width="1"/>`;
+  s += txt(labelX, opLabelY, "営業利益 "+fmt(d.operatingProfit)+" "+p1(d.sales? d.operatingProfit/d.sales*100:0)+"%", {anchor:'end', size:F_LEAD, fill:'#333'});
+  s += `<line x1="${c3x0}" y1="${niY}" x2="${c3x1}" y2="${niY}" stroke="#c53030" stroke-width="2"/>`;
+  s += `<line x1="${labelX+8}" y1="${niLabelY-8}" x2="${c3x0}" y2="${niY}" stroke="#c53030" stroke-width="1"/>`;
+  s += txt(labelX, niLabelY, "当期純利益 "+fmt(d.netIncome)+" "+p1(d.sales? d.netIncome/d.sales*100:0)+"%", {anchor:'end', size:F_LEAD, fill:'#c53030'});
 
   s += `</svg>`;
 
