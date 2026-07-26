@@ -423,9 +423,15 @@ function drawChart(d, hi){
     // 非対象の箱を淡色化
     for(const k in B){ if(!keep.has(k)){ const b=B[k];
       s += `<rect x="${b[0]}" y="${b[2]}" width="${b[1]-b[0]}" height="${Math.max(0,b[3]-b[2])}" fill="#f4f5f7" fill-opacity="0.66"/>`; } }
-    // 対象の箱を金色枠で強調
-    (hi.boxes||[]).forEach(k=>{ const b=B[k]; if(b)
-      s += `<rect x="${b[0]}" y="${b[2]}" width="${b[1]-b[0]}" height="${Math.max(0,b[3]-b[2])}" fill="none" stroke="#e8a11a" stroke-width="10"/>`; });
+    // 対象の箱を金色枠で強調（同一列で隣接する箱は1枠に統合して一体感を出す）
+    const groups={};
+    (hi.boxes||[]).forEach(k=>{ const b=B[k]; if(!b) return;
+      const col=b[0];                                   // x0 で列を判別
+      if(!groups[col]) groups[col]=[b[0],b[1],b[2],b[3]];
+      else { const g=groups[col]; g[2]=Math.min(g[2],b[2]); g[3]=Math.max(g[3],b[3]); }
+    });
+    Object.keys(groups).forEach(col=>{ const g=groups[col];
+      s += `<rect x="${g[0]}" y="${g[2]}" width="${g[1]-g[0]}" height="${Math.max(0,g[3]-g[2])}" fill="none" stroke="#e8a11a" stroke-width="10"/>`; });
     // 対象のマーカー線（営業利益/当期純利益）を強調
     (hi.lines||[]).forEach(k=>{ const y=(k==='op')?Y(opP):Y(niP);
       s += `<line x1="${c3x0-40}" y1="${y}" x2="${c3x1}" y2="${y}" stroke="#e8a11a" stroke-width="8"/>`; });
