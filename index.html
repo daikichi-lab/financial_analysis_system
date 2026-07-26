@@ -6,34 +6,18 @@
 <title>決算書 財務分析（簡易版・最大5期）</title>
 <style>
   :root{
-    --bg:#f4f5f7;
-    --panel:#ffffff;
-    --line:#333;
-    --ink:#1a1a1a;
-    --muted:#666;
-    --accent:#2b6cb0;
-    --good:#2f855a;
-    --warn:#b7791f;
-    --bad:#c53030;
-    --grid:#e2e8f0;
+    --bg:#f4f5f7;--panel:#ffffff;--line:#333;--ink:#1a1a1a;--muted:#666;
+    --accent:#2b6cb0;--good:#2f855a;--warn:#b7791f;--bad:#c53030;--grid:#e2e8f0;
   }
   *{box-sizing:border-box;}
-  body{
-    margin:0;font-family:"Hiragino Kaku Gothic ProN","Meiryo","Yu Gothic",system-ui,sans-serif;
-    background:var(--bg);color:var(--ink);line-height:1.5;
-  }
+  body{margin:0;font-family:"Hiragino Kaku Gothic ProN","Meiryo","Yu Gothic",system-ui,sans-serif;background:var(--bg);color:var(--ink);line-height:1.5;}
   header{background:#1f2937;color:#fff;padding:14px 20px;}
   header h1{margin:0;font-size:18px;font-weight:600;}
   header p{margin:4px 0 0;font-size:12px;color:#cbd5e0;}
   .wrap{max-width:1200px;margin:0 auto;padding:18px;}
 
-  /* Tabs */
   .tabs{display:flex;gap:4px;border-bottom:2px solid #cbd5e0;margin-bottom:16px;}
-  .tab{
-    padding:10px 22px;border:none;background:transparent;font-size:14px;font-weight:600;
-    color:#64748b;cursor:pointer;border-radius:8px 8px 0 0;flex:0 0 auto;
-    border-bottom:3px solid transparent;margin-bottom:-2px;
-  }
+  .tab{padding:10px 22px;border:none;background:transparent;font-size:14px;font-weight:600;color:#64748b;cursor:pointer;border-radius:8px 8px 0 0;flex:0 0 auto;border-bottom:3px solid transparent;margin-bottom:-2px;}
   .tab:hover{color:#334155;background:#eef2f6;}
   .tab.active{color:var(--accent);border-bottom-color:var(--accent);background:#fff;}
   .tabpane{display:none;}
@@ -45,12 +29,6 @@
 
   .field{display:flex;align-items:center;justify-content:space-between;margin:5px 0;gap:8px;}
   .field label{font-size:12px;flex:1;}
-  .field input{
-    width:120px;text-align:right;padding:4px 6px;font-size:13px;
-    border:1px solid #bbb;border-radius:4px;font-variant-numeric:tabular-nums;
-  }
-  .field input:focus{outline:2px solid var(--accent);border-color:var(--accent);}
-  .unit{font-size:11px;color:var(--muted);min-width:44px;text-align:left;}
   .field select{width:130px;padding:4px 6px;font-size:13px;border:1px solid #bbb;border-radius:4px;background:#fff;}
   .field select:focus{outline:2px solid var(--accent);border-color:var(--accent);}
   .btnrow{display:flex;gap:8px;margin-top:12px;}
@@ -58,36 +36,43 @@
   .btn-primary{background:var(--accent);color:#fff;}
   .btn-ghost{background:#e2e8f0;color:#333;}
   .note{font-size:11px;color:var(--muted);margin-top:8px;}
+  .unit{font-size:11px;color:var(--muted);min-width:44px;text-align:left;}
 
-  /* Company tab + period bar */
+  /* company + period bar */
   .companytabs{display:flex;gap:6px;margin-bottom:10px;}
   .periodbar{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:12px;padding:8px;background:#f1f5f9;border:1px solid #e2e8f0;border-radius:8px;}
   .ptab{flex:0 0 auto;padding:6px 14px;border:1px solid #cbd5e0;background:#fff;color:#334155;font-size:12px;font-weight:700;border-radius:6px;cursor:pointer;}
   .ptab.active{background:var(--accent);color:#fff;border-color:transparent;}
   .addper{display:inline-flex;gap:4px;align-items:center;margin-left:auto;}
-  .addper select{padding:5px 6px;font-size:12px;border:1px solid #bbb;border-radius:4px;background:#fff;}
   .btn-add{flex:0 0 auto;padding:6px 12px;font-size:12px;font-weight:700;border-radius:6px;background:var(--good);color:#fff;border:none;cursor:pointer;}
   .btn-add:disabled{opacity:.4;cursor:not-allowed;}
-  .btn-del{flex:0 0 auto;padding:6px 12px;font-size:12px;font-weight:700;border-radius:6px;background:#e2e8f0;color:#444;border:none;cursor:pointer;}
 
-  /* BS balance-sheet input (T-account) */
+  /* ledger input form */
   .bs-title{background:#8a8f96;color:#fff;text-align:center;font-weight:700;padding:6px;border-radius:4px 4px 0 0;position:relative;font-size:13px;}
   .bs-unit{position:absolute;right:10px;top:7px;font-size:10px;font-weight:400;}
-  .bs-sheet{border-collapse:collapse;width:100%;font-size:12px;table-layout:fixed;}
-  .bs-sheet td{border:1px solid #cfd4da;padding:4px 6px;height:30px;}
-  .bs-sheet .nm{background:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-  .bs-sheet .amt{text-align:right;font-variant-numeric:tabular-nums;}
-  .bs-sheet .amt input{width:100%;border:1px solid #bcc3cc;border-radius:3px;text-align:right;padding:3px 4px;font-size:12px;font-variant-numeric:tabular-nums;}
-  .bs-sheet .amt input:focus{outline:2px solid var(--accent);border-color:var(--accent);}
-  .bs-sheet .tot{background:#eef1f4;font-weight:700;}
-  .bs-sheet .sec-asset{background:#5b6670;color:#fff;font-weight:700;text-align:center;}
-  .bs-sheet .sec-liab{background:#2f6fb0;color:#fff;font-weight:700;text-align:center;}
-  .bs-sheet .sec-na{background:#2f9e6f;color:#fff;font-weight:700;text-align:center;}
-  .bs-sheet .grand td{background:#dfe4ea;font-weight:700;}
-  .bs-sheet .blankcell{background:#f6f7f9;text-align:center;vertical-align:middle;}
+  .ledger{border:1px solid #e2e8f0;border-radius:6px;overflow:hidden;}
+  .frow{display:flex;align-items:center;gap:8px;padding:5px 10px;border-bottom:1px solid #eef1f4;}
+  .frow:last-child{border-bottom:none;}
+  .frow label{flex:1;font-size:12.5px;}
+  .frow input{width:130px;text-align:right;padding:4px 6px;font-size:13px;border:1px solid #bbb;border-radius:4px;font-variant-numeric:tabular-nums;}
+  .frow input:focus{outline:2px solid var(--accent);border-color:var(--accent);}
+  .frow input[readonly]{background:#f1f5f9;color:#334155;border-color:#e2e8f0;font-weight:700;}
+  .frow .autoval{width:130px;text-align:right;font-size:13px;font-weight:700;font-variant-numeric:tabular-nums;color:#334155;}
+  .frow.fbig{background:#fafbfc;}
+  .frow.fbig label{font-weight:700;}
+  .frow.fauto{background:#eef1f4;}
+  .frow.fauto label{font-weight:700;}
+  .frow.fleaf label{padding-left:18px;font-size:12px;color:#475569;}
+  .frow.fsub label{padding-left:18px;color:#64748b;font-size:12px;}
+  .fsec{background:#5b6670;color:#fff;font-weight:700;font-size:12px;padding:5px 10px;}
+  .fsec.liab{background:#2f6fb0;}
+  .fsec.na{background:#2f9e6f;}
+  .det-toggle{flex:0 0 auto;font-size:11px;padding:3px 8px;border:1px solid #cbd5e0;background:#fff;color:#475569;border-radius:5px;cursor:pointer;font-weight:600;}
+  .det-toggle:hover{background:#eef2f6;}
+  .det-toggle.on{background:var(--accent);color:#fff;border-color:transparent;}
 
-  /* Chart (period comparison) */
-  .chart-card{overflow:hidden;}          /* 横スクロールを出さない */
+  /* chart */
+  .chart-card{overflow:hidden;}
   svg{font-family:inherit;}
   #chart{width:100%;}
   #chart svg{display:block;width:100%;height:auto;margin:0 auto;}
@@ -97,11 +82,10 @@
   .legend .lg i.lgline{width:16px;height:0;border:none;border-top:2px solid #333;}
   .legend .lg i.lgline.red{border-top-color:#c53030;}
 
-  /* Analysis (tabbed) */
+  /* analysis */
   .analysis{margin-top:16px;}
   .subtabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;}
-  .subtab{flex:0 0 auto;padding:8px 18px;border:1px solid #cbd5e0;background:#eef2f6;color:#475569;
-    font-size:13px;font-weight:700;border-radius:999px;cursor:pointer;transition:.15s;}
+  .subtab{flex:0 0 auto;padding:8px 18px;border:1px solid #cbd5e0;background:#eef2f6;color:#475569;font-size:13px;font-weight:700;border-radius:999px;cursor:pointer;transition:.15s;}
   .subtab:hover{background:#e2e8f0;}
   .subtab.active{color:#fff;border-color:transparent;}
   .subtab[data-cat="growth"].active{background:#5b8def;}
@@ -109,18 +93,14 @@
   .subtab[data-cat="prof"].active{background:#e0873a;}
   .subtab[data-cat="safe"].active{background:#2f9e6f;}
   .companytabs .subtab.active{background:var(--accent);}
-
   .metricbtns{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;}
-  .mbtn{flex:0 0 auto;padding:8px 14px;border:1.5px solid #cbd5e0;background:#fff;color:#334155;
-    font-size:13px;font-weight:600;border-radius:8px;cursor:pointer;display:flex;gap:8px;align-items:baseline;}
+  .mbtn{flex:0 0 auto;padding:8px 14px;border:1.5px solid #cbd5e0;background:#fff;color:#334155;font-size:13px;font-weight:600;border-radius:8px;cursor:pointer;display:flex;gap:8px;align-items:baseline;}
   .mbtn:hover{border-color:#94a3b8;background:#f8fafc;}
   .mbtn.active{border-color:var(--accent);background:#eef5fc;color:var(--accent);box-shadow:0 0 0 2px rgba(43,108,176,.15);}
   .mbtn .mbv{font-size:13px;font-weight:800;font-variant-numeric:tabular-nums;}
   .mbtn .mbv small{font-size:10px;font-weight:600;margin-left:1px;}
-
   .metricdetail{border:1px solid #e2e8f0;border-radius:8px;background:#fbfcfd;overflow:hidden;}
-  .md-head{display:flex;justify-content:space-between;align-items:center;gap:10px;
-    padding:12px 16px;background:#f1f5f9;border-bottom:1px solid #e2e8f0;flex-wrap:wrap;}
+  .md-head{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:12px 16px;background:#f1f5f9;border-bottom:1px solid #e2e8f0;flex-wrap:wrap;}
   .md-title{font-size:15px;font-weight:700;}
   .md-value{font-size:24px;font-weight:800;font-variant-numeric:tabular-nums;}
   .md-value small{font-size:13px;font-weight:600;margin-left:2px;}
@@ -130,7 +110,7 @@
   .md-formula b{color:var(--accent);}
   .md-meaning{font-size:12.5px;line-height:1.75;color:#374151;}
   .md-table{grid-column:1/-1;}
-  .cmp-toggle{display:flex;gap:6px;margin-bottom:8px;}
+  .cmp-toggle{display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap;}
   .cbtn{flex:0 0 auto;padding:5px 14px;font-size:12px;font-weight:700;border:1px solid #cbd5e0;background:#fff;color:#475569;border-radius:999px;cursor:pointer;}
   .cbtn.active{background:var(--accent);color:#fff;border-color:transparent;}
   .cbtn:disabled{opacity:.4;cursor:not-allowed;}
@@ -150,14 +130,11 @@
   .cur-tag{display:inline-block;margin-left:6px;font-size:10px;color:var(--accent);font-weight:700;}
   .md-note{grid-column:1/-1;font-size:11px;color:var(--muted);}
   .badge{display:inline-block;font-size:10px;padding:1px 7px;border-radius:10px;color:#fff;margin-left:6px;vertical-align:middle;}
-  .b-good{background:var(--good);}
-  .b-warn{background:var(--warn);}
-  .b-bad{background:var(--bad);}
-  .b-na{background:#94a3b8;}
+  .b-good{background:var(--good);}.b-warn{background:var(--warn);}.b-bad{background:var(--bad);}.b-na{background:#94a3b8;}
 
-  /* Detail comparison table */
+  /* detail comparison table */
   .detail-wrap{overflow-x:auto;}
-  table.cmp-detail{border-collapse:collapse;width:100%;font-size:12.5px;min-width:520px;}
+  table.cmp-detail{border-collapse:collapse;width:100%;font-size:12.5px;min-width:540px;}
   table.cmp-detail th,table.cmp-detail td{border:1px solid #e2e8f0;padding:6px 10px;}
   table.cmp-detail thead th{background:#1f2937;color:#fff;font-weight:700;text-align:right;font-size:11px;white-space:nowrap;}
   table.cmp-detail thead th.itemcol{text-align:left;}
@@ -167,8 +144,11 @@
   table.cmp-detail tr.grp td{background:#eef2f6;font-weight:700;color:#334155;}
   table.cmp-detail tr.grp .u{font-weight:400;font-size:11px;color:var(--muted);margin-left:8px;}
   table.cmp-detail tr.totrow td{background:#f6f8fa;font-weight:700;}
+  table.cmp-detail tr.grand td{background:#dfe4ea;font-weight:700;}
+  table.cmp-detail td.leaf{color:#475569;padding-left:22px;}
+  table.cmp-detail tr.ibd td{background:#fdf1e7;color:#b45309;font-weight:700;}
 
-  /* Modal */
+  /* modal */
   .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;z-index:100;padding:16px;}
   .modal-overlay[hidden]{display:none;}
   .modal{background:#fff;border-radius:10px;max-width:360px;width:100%;box-shadow:0 10px 40px rgba(0,0,0,.25);overflow:hidden;}
@@ -189,7 +169,7 @@
 <body>
 <header>
   <h1>決算書 財務分析ツール（簡易版）</h1>
-  <p>最大5期を入力 → 百分率チャートで期間比較し、成長性・効率性・収益性・安全性を確認</p>
+  <p>最大5期を入力（中分類の詳細入力可）→ 期間比較・詳細比較・指標分析</p>
 </header>
 
 <div class="wrap">
@@ -199,82 +179,6 @@
     <button class="tab" data-tab="input">③ 数値入力</button>
   </div>
 
-  <!-- ============ TAB: INPUT ============ -->
-  <div class="tabpane" id="tab-input">
-    <section class="panel">
-      <h2>決算書の入力</h2>
-
-      <div class="companytabs"><button class="subtab active">自社</button></div>
-      <div class="periodbar" id="periodbar"></div>
-
-      <div class="field"><label>金額の単位</label>
-        <select id="unit">
-          <option value="10億円">10億円</option>
-          <option value="億円" selected>億円</option>
-          <option value="100万円">100万円</option>
-          <option value="万円">万円</option>
-        </select>
-      </div>
-
-      <h3>貸借対照表（BS）</h3>
-      <div class="bs-title">貸借対照表<span class="bs-unit">単位：億円</span></div>
-      <table class="bs-sheet">
-        <colgroup>
-          <col style="width:29%"><col style="width:21%"><col style="width:29%"><col style="width:21%">
-        </colgroup>
-        <tr>
-          <td colspan="2" class="sec-asset">資産の部</td>
-          <td colspan="2" class="sec-liab">負債の部</td>
-        </tr>
-        <tr>
-          <td class="nm">流動資産</td><td class="amt"><input type="number" id="ca" value="5712"></td>
-          <td class="nm">流動負債（短期）</td><td class="amt"><input type="number" id="cl" value="5305"></td>
-        </tr>
-        <tr>
-          <td class="nm">固定資産</td><td class="amt"><input type="number" id="fa" value="19890"></td>
-          <td class="nm">固定負債（長期）</td><td class="amt"><input type="number" id="fl" value="9607"></td>
-        </tr>
-        <tr>
-          <td class="blankcell" colspan="2" rowspan="5"></td>
-          <td class="nm tot">負債合計</td><td class="amt tot" id="totLiab">0</td>
-        </tr>
-        <tr>
-          <td colspan="2" class="sec-na">純資産の部</td>
-        </tr>
-        <tr>
-          <td class="nm">資本金</td><td class="amt"><input type="number" id="cap" value="5181"></td>
-        </tr>
-        <tr>
-          <td class="nm">利益剰余金</td><td class="amt"><input type="number" id="re" value="5508"></td>
-        </tr>
-        <tr>
-          <td class="nm tot">純資産合計</td><td class="amt tot" id="totNA">0</td>
-        </tr>
-        <tr class="grand">
-          <td class="nm tot">資産合計</td><td class="amt tot" id="totAssets">0</td>
-          <td class="nm tot">負債・純資産合計</td><td class="amt tot" id="totLNA">0</td>
-        </tr>
-      </table>
-
-      <h3>損益計算書（PL）</h3>
-      <div class="field"><label>売上高</label><input type="number" id="sales" value="19742"><span class="unit">億円</span></div>
-      <div class="field"><label>売上原価</label><input type="number" id="cogs" value="15834"><span class="unit">億円</span></div>
-      <div class="field"><label>販管費</label><input type="number" id="sga" value="3300"><span class="unit">億円</span></div>
-      <div class="field"><label>営業外収益</label><input type="number" id="noi" value="100"><span class="unit">億円</span></div>
-      <div class="field"><label>営業外費用</label><input type="number" id="noe" value="200"><span class="unit">億円</span></div>
-      <div class="field"><label>特別利益</label><input type="number" id="exg" value="0"><span class="unit">億円</span></div>
-      <div class="field"><label>特別損失</label><input type="number" id="exl" value="50"><span class="unit">億円</span></div>
-      <div class="field"><label>法人税等</label><input type="number" id="tax" value="181"><span class="unit">億円</span></div>
-
-      <div class="btnrow">
-        <button class="btn-primary" id="calcBtn">分析する</button>
-        <button class="btn-ghost" id="resetBtn">この期をリセット（0）</button>
-        <button class="btn-ghost" id="delBtn">この期を削除</button>
-      </div>
-      <p class="note">「＋ 期を追加」を押すと年度入力のモーダルが開き、最大5期まで比較できます（左＝古い／右＝新しい）。年度タブで編集する期を切替。「リセット」はこの期の数値をすべて0に、「この期を削除」はタブを削除します（どちらも確認モーダルあり）。</p>
-    </section>
-  </div>
-
   <!-- ============ TAB: VIEW ============ -->
   <div class="tabpane active" id="tab-view">
     <section class="panel chart-card">
@@ -282,8 +186,6 @@
       <div id="chart"></div>
       <div class="legend" id="legend"></div>
     </section>
-
-    <!-- ============ ANALYSIS ============ -->
     <div class="analysis">
       <div class="subtabs" id="subtabs">
         <button class="subtab" data-cat="growth">成長性</button>
@@ -306,11 +208,42 @@
         <button class="cbtn" data-seg="pl">PLのみ</button>
       </div>
       <div class="detail-wrap" id="detailTable"></div>
-      <p class="note">各項目を年度横並び（左＝古い／右＝新しい）で比較します。「前期比(最新)」は最新期の前期比です。「BSのみ」「PLのみ」で表示を絞り込めます。</p>
+      <p class="note">各項目を年度横並び（左＝古い／右＝新しい）で比較します。内訳（中分類）も表示します。「前期比(最新)」は最新期の前期比です。「BSのみ」「PLのみ」で絞り込めます。</p>
     </section>
   </div>
 
-  <footer>簡易版：使用指標＝流動比率／固定長期適合率／ROE／純資産比率ほか（最大5期比較対応）</footer>
+  <!-- ============ TAB: INPUT ============ -->
+  <div class="tabpane" id="tab-input">
+    <section class="panel">
+      <h2>決算書の入力</h2>
+      <div class="companytabs"><button class="subtab active">自社</button></div>
+      <div class="periodbar" id="periodbar"></div>
+      <div class="field"><label>金額の単位</label>
+        <select id="unit">
+          <option value="10億円">10億円</option>
+          <option value="億円" selected>億円</option>
+          <option value="100万円">100万円</option>
+          <option value="万円">万円</option>
+        </select>
+      </div>
+
+      <h3>貸借対照表（BS）</h3>
+      <div class="bs-title">貸借対照表<span class="bs-unit">単位：億円</span></div>
+      <div id="bsForm" class="ledger"></div>
+
+      <h3>損益計算書（PL）</h3>
+      <div id="plForm" class="ledger"></div>
+
+      <div class="btnrow">
+        <button class="btn-primary" id="calcBtn">分析する</button>
+        <button class="btn-ghost" id="resetBtn">この期をリセット（0）</button>
+        <button class="btn-ghost" id="delBtn">この期を削除</button>
+      </div>
+      <p class="note">各大項目の「▸ 内訳」で中分類の詳細入力ができます（入力時は大項目＝自動合計）。有利子負債は自動計算です。「＋ 期を追加」で最大5期まで比較できます。</p>
+    </section>
+  </div>
+
+  <footer>簡易版：収益性・効率性・安全性（有利子負債・ICR・債務償還年数ほか）・成長性を最大5期で比較</footer>
 </div>
 
 <!-- ============ MODAL ============ -->
@@ -328,16 +261,11 @@
 <script>
 "use strict";
 
-/* ---------- constants & helpers ---------- */
-const IDS = ["ca","fa","cl","fl","cap","re","sales","cogs","sga","noi","noe","exg","exl","tax"];
-const DEFAULTS = {ca:5712,fa:19890,cl:5305,fl:9607,cap:5181,re:5508,
-  sales:19742,cogs:15834,sga:3300,noi:100,noe:200,exg:0,exl:50,tax:181};
-const MAXP = 5;
-
+/* ---------- helpers ---------- */
 const $ = id => document.getElementById(id);
 const fmt = n => Math.round(n).toLocaleString("ja-JP");
-const p1 = n => (Math.round(n * 10) / 10).toFixed(1);
-const p2 = n => (Math.round(n * 100) / 100).toFixed(2);
+const p1 = n => (Math.round(n*10)/10).toFixed(1);
+const p2 = n => (Math.round(n*100)/100).toFixed(2);
 const unitStr = () => { const el=$("unit"); return el ? el.value : "億円"; };
 function applyUnitLabels(){
   const u=unitStr();
@@ -345,60 +273,141 @@ function applyUnitLabels(){
   const bu=document.querySelector(".bs-unit"); if(bu) bu.textContent="単位："+u;
 }
 
-/* ---------- periods state ---------- */
+const MAXP = 5;
+const NUM_KEYS = ['ca','cash','sec','recv','inv','oca','fa','tfa','ifa','iota',
+  'cl','payb','stloan','cpltd','ocl','fl','ltloan','bond','ofl',
+  'cap','csurp','re','ona','sales','cogs','sga','noi','noe','intexp','exg','exl','tax','dep'];
+const DET_KEYS = ['det_ca','det_fa','det_cl','det_fl'];
+const LEAF_MAP = {ca:['cash','sec','recv','inv','oca'], fa:['tfa','ifa','iota'], cl:['payb','stloan','cpltd','ocl'], fl:['ltloan','bond','ofl']};
+const OTHER_LEAF = {ca:'oca', fa:'iota', cl:'ocl', fl:'ofl'};
+
+const DEFAULTS = (()=>{ const o={}; NUM_KEYS.forEach(k=> o[k]=0); DET_KEYS.forEach(k=> o[k]=false);
+  Object.assign(o,{ca:5712,fa:19890,cl:5305,fl:9607,cap:5181,re:5508,sales:19742,cogs:15834,sga:3300,noi:100,noe:200,exg:0,exl:50,tax:181});
+  return o; })();
+const zeros = ()=>{ const o={}; NUM_KEYS.forEach(k=> o[k]=0); DET_KEYS.forEach(k=> o[k]=false); return o; };
+
+/* ---------- state ---------- */
 let periods = [ {year:2024, vals:Object.assign({}, DEFAULTS)} ];
-let curIdx = 0;          // 編集中の期（periods は年度昇順）
-let curCat = 'prof';
-let curKey = 'roe';
-let cmpN   = 3;          // 期間比較の表示期数（1/3/5）
-let cmpSeg = 'all';      // 詳細比較の表示範囲（all/bs/pl）
-
-const BS_ROWS=[
-  {k:'ca',name:'流動資産'},{k:'fa',name:'固定資産'},{k:'totalAssets',name:'資産合計',tot:true},
-  {k:'cl',name:'流動負債'},{k:'fl',name:'固定負債'},{k:'liab',name:'負債合計',tot:true},
-  {k:'cap',name:'資本金'},{k:'re',name:'利益剰余金'},{k:'na',name:'純資産合計',tot:true},
-  {k:'totalCapital',name:'負債・純資産合計',tot:true},
-];
-const PL_ROWS=[
-  {k:'sales',name:'売上高'},{k:'cogs',name:'売上原価'},{k:'grossProfit',name:'売上総利益（粗利）',tot:true},
-  {k:'sga',name:'販管費'},{k:'operatingProfit',name:'営業利益',tot:true},
-  {k:'noi',name:'営業外収益'},{k:'noe',name:'営業外費用'},{k:'ordinaryProfit',name:'経常利益',tot:true},
-  {k:'exg',name:'特別利益'},{k:'exl',name:'特別損失'},{k:'pretaxProfit',name:'税引前当期純利益',tot:true},
-  {k:'tax',name:'法人税等'},{k:'netIncome',name:'当期純利益',tot:true},
-];
-
+let curIdx = 0, curCat='prof', curKey='roe', cmpN=3, cmpSeg='all';
 const sortPeriods = () => periods.sort((a,b)=> a.year-b.year);
 
+/* ---------- compute ---------- */
 function computeVals(v){
-  const ca=+v.ca||0, fa=+v.fa||0, cl=+v.cl||0, fl=+v.fl||0, cap=+v.cap||0, re=+v.re||0;
-  const sales=+v.sales||0, cogs=+v.cogs||0, sga=+v.sga||0,
-        noi=+v.noi||0, noe=+v.noe||0, exg=+v.exg||0, exl=+v.exl||0, tax=+v.tax||0;
-  const na=cap+re, totalAssets=ca+fa, totalCapital=cl+fl+na;
-  const grossProfit=sales-cogs, operatingProfit=grossProfit-sga,
-        ordinaryProfit=operatingProfit+noi-noe, pretaxProfit=ordinaryProfit+exg-exl,
-        netIncome=pretaxProfit-tax;
-  const currentRatio = cl ? ca/cl*100 : 0;
-  const fixedLTRatio = (na+fl) ? fa/(na+fl)*100 : 0;
-  const roe = na ? netIncome/na*100 : 0;
-  const equityRatio = totalCapital ? na/totalCapital*100 : 0;
-  const netMargin = sales ? netIncome/sales*100 : 0;
-  const opMargin  = sales ? operatingProfit/sales*100 : 0;
-  const assetTurnover = totalCapital ? sales/totalCapital : 0;
-  const finLeverage = na ? totalCapital/na : 0;
-  return {ca,fa,cl,fl,cap,re,na,totalAssets,totalCapital,
-    sales,cogs,sga,noi,noe,exg,exl,tax,grossProfit,operatingProfit,ordinaryProfit,pretaxProfit,netIncome,
-    currentRatio,fixedLTRatio,roe,equityRatio,netMargin,opMargin,assetTurnover,finLeverage};
+  const g=k=> +v[k]||0;
+  const ca = v.det_ca ? g('cash')+g('sec')+g('recv')+g('inv')+g('oca') : g('ca');
+  const fa = v.det_fa ? g('tfa')+g('ifa')+g('iota') : g('fa');
+  const cl = v.det_cl ? g('payb')+g('stloan')+g('cpltd')+g('ocl') : g('cl');
+  const fl = v.det_fl ? g('ltloan')+g('bond')+g('ofl') : g('fl');
+  const cap=g('cap'), csurp=g('csurp'), re=g('re'), ona=g('ona');
+  const na=cap+csurp+re+ona, totalAssets=ca+fa, totalCapital=cl+fl+na;
+  const ibd=g('stloan')+g('cpltd')+g('ltloan')+g('bond');
+  const cash=g('cash'), quick=g('cash')+g('sec')+g('recv'), inv=g('inv'), recv=g('recv');
+  const sales=g('sales'),cogs=g('cogs'),sga=g('sga'),noi=g('noi'),noe=g('noe'),intexp=g('intexp'),exg=g('exg'),exl=g('exl'),tax=g('tax'),dep=g('dep');
+  const grossProfit=sales-cogs, operatingProfit=grossProfit-sga, ordinaryProfit=operatingProfit+noi-noe, pretaxProfit=ordinaryProfit+exg-exl, netIncome=pretaxProfit-tax;
+  const busProfit=operatingProfit+noi, simpleCF=operatingProfit+dep;
+  const ibdReady=!!(v.det_cl||v.det_fl), quickReady=!!v.det_ca;
+  const currentRatio=cl? ca/cl*100:0;
+  const quickRatio=cl? quick/cl*100:0;
+  const fixedLTRatio=(na+fl)? fa/(na+fl)*100:0;
+  const roe=na? netIncome/na*100:0;
+  const equityRatio=totalCapital? na/totalCapital*100:0;
+  const netMargin=sales? netIncome/sales*100:0;
+  const opMargin=sales? operatingProfit/sales*100:0;
+  const assetTurnover=totalCapital? sales/totalCapital:0;
+  const finLeverage=na? totalCapital/na:0;
+  const de=na? ibd/na:0;
+  const ibdRatio=totalCapital? ibd/totalCapital*100:0;
+  const netDe=na? (ibd-cash)/na:0;
+  const debtMonths=sales? ibd/(sales/12):0;
+  const icr=intexp>0? busProfit/intexp:0;
+  const debtYears=(ibd<=0)?0:(simpleCF>0? ibd/simpleCF:Infinity);
+  const invTurnover=inv>0? cogs/inv:0;
+  const recvDays=sales>0? recv/(sales/365):0;
+  return {ca,fa,cl,fl,cash,sec:g('sec'),recv,inv,oca:g('oca'),tfa:g('tfa'),ifa:g('ifa'),iota:g('iota'),
+    payb:g('payb'),stloan:g('stloan'),cpltd:g('cpltd'),ocl:g('ocl'),ltloan:g('ltloan'),bond:g('bond'),ofl:g('ofl'),
+    cap,csurp,re,ona,na,totalAssets,totalCapital,ibd,quick,
+    sales,cogs,sga,noi,noe,intexp,exg,exl,tax,dep,
+    grossProfit,operatingProfit,ordinaryProfit,pretaxProfit,netIncome,busProfit,simpleCF,
+    currentRatio,quickRatio,fixedLTRatio,roe,equityRatio,netMargin,opMargin,assetTurnover,finLeverage,
+    de,ibdRatio,netDe,debtMonths,icr,debtYears,invTurnover,recvDays,ibdReady,quickReady};
 }
 const derived = () => periods.map(p=> ({year:p.year, d:computeVals(p.vals)}));
 
-/* ---------- input form <-> period ---------- */
-function loadPeriodToForm(){
-  const v=periods[curIdx].vals;
-  IDS.forEach(id=>{ const el=$(id); if(el) el.value = (v[id]!=null? v[id] : 0); });
+/* ---------- input form (BS/PL) ---------- */
+const BS_STRUCT = [
+  {sec:'資産の部'},
+  {big:'ca', label:'流動資産', leaves:[['cash','現金・預金'],['sec','有価証券(短期)'],['recv','売上債権(売掛金・受取手形)'],['inv','棚卸資産'],['oca','その他流動資産']]},
+  {big:'fa', label:'固定資産', leaves:[['tfa','有形固定資産'],['ifa','無形固定資産'],['iota','投資その他の資産']]},
+  {auto:'totalAssets', label:'資産合計'},
+  {sec:'負債の部', cls:'liab'},
+  {big:'cl', label:'流動負債', leaves:[['payb','仕入債務(買掛金・支払手形)'],['stloan','短期借入金 ★'],['cpltd','1年内返済長期借入金 ★'],['ocl','その他流動負債']]},
+  {big:'fl', label:'固定負債', leaves:[['ltloan','長期借入金 ★'],['bond','社債 ★'],['ofl','その他固定負債']]},
+  {auto:'liab', label:'負債合計'},
+  {auto:'ibd', label:'（うち有利子負債 ★）', sub:true},
+  {sec:'純資産の部', cls:'na'},
+  {plain:'cap', label:'資本金'},
+  {plain:'csurp', label:'資本剰余金'},
+  {plain:'re', label:'利益剰余金'},
+  {plain:'ona', label:'その他純資産'},
+  {auto:'na', label:'純資産合計'},
+  {auto:'totalCapital', label:'負債・純資産合計'},
+];
+const PL_STRUCT = [
+  {plain:'sales', label:'売上高'},
+  {plain:'cogs', label:'売上原価'},
+  {auto:'grossProfit', label:'売上総利益（粗利）'},
+  {plain:'sga', label:'販管費'},
+  {auto:'operatingProfit', label:'営業利益'},
+  {plain:'noi', label:'営業外収益'},
+  {plain:'noe', label:'営業外費用'},
+  {plain:'intexp', label:'うち支払利息（ICR用）', sub:true},
+  {auto:'ordinaryProfit', label:'経常利益'},
+  {plain:'exg', label:'特別利益'},
+  {plain:'exl', label:'特別損失'},
+  {auto:'pretaxProfit', label:'税引前当期純利益'},
+  {plain:'tax', label:'法人税等'},
+  {auto:'netIncome', label:'当期純利益'},
+  {plain:'dep', label:'減価償却費（債務償還年数用）', sub:true},
+];
+function buildInputForm(){
+  const v=periods[curIdx].vals, u=unitStr();
+  const g=k=> (v[k]!=null? v[k]:0);
+  const numRow=(key,label,cls='')=> `<div class="frow ${cls}"><label>${label}</label><input type="number" id="in_${key}" value="${g(key)}"><span class="unit">${u}</span></div>`;
+  const autoRow=(key,label,cls='')=> `<div class="frow fauto ${cls}"><label>${label}</label><span class="autoval" id="in_${key}">0</span><span class="unit">${u}</span></div>`;
+  function bigRow(item){
+    const det=!!v['det_'+item.big];
+    let h=`<div class="frow fbig"><label>${item.label}</label>`;
+    if(det) h+=`<input type="number" id="in_${item.big}" value="0" readonly>`;
+    else h+=`<input type="number" id="in_${item.big}" value="${g(item.big)}">`;
+    h+=`<span class="unit">${u}</span><button class="det-toggle ${det?'on':''}" data-big="${item.big}">${det?'▾ 内訳':'▸ 内訳'}</button></div>`;
+    if(det) h+=item.leaves.map(([k,lb])=> numRow(k,lb,'fleaf')).join('');
+    return h;
+  }
+  function render(struct){
+    return struct.map(item=>{
+      if(item.sec) return `<div class="fsec ${item.cls||''}">${item.sec}</div>`;
+      if(item.big) return bigRow(item);
+      if(item.auto) return autoRow(item.auto, item.label, item.sub?'fsub':'');
+      if(item.plain) return numRow(item.plain, item.label, item.sub?'fsub':'');
+      return '';
+    }).join('');
+  }
+  $("bsForm").innerHTML = render(BS_STRUCT);
+  $("plForm").innerHTML = render(PL_STRUCT);
+  updateComputedInputs();
 }
-function readFormToPeriod(){
-  const v=periods[curIdx].vals;
-  IDS.forEach(id=>{ const el=$(id); if(el) v[id]=parseFloat(el.value)||0; });
+function updateComputedInputs(){
+  const v=periods[curIdx].vals, d=computeVals(v);
+  const setNum=(id,val)=>{ const el=$('in_'+id); if(el&&el.tagName==='INPUT') el.value=Math.round(val); };
+  const setTxt=(id,val)=>{ const el=$('in_'+id); if(el&&el.tagName!=='INPUT') el.textContent=fmt(val); };
+  if(v.det_ca) setNum('ca',d.ca);
+  if(v.det_fa) setNum('fa',d.fa);
+  if(v.det_cl) setNum('cl',d.cl);
+  if(v.det_fl) setNum('fl',d.fl);
+  setTxt('totalAssets',d.totalAssets); setTxt('liab',d.cl+d.fl); setTxt('ibd',d.ibd);
+  setTxt('na',d.na); setTxt('totalCapital',d.totalCapital);
+  setTxt('grossProfit',d.grossProfit); setTxt('operatingProfit',d.operatingProfit);
+  setTxt('ordinaryProfit',d.ordinaryProfit); setTxt('pretaxProfit',d.pretaxProfit); setTxt('netIncome',d.netIncome);
 }
 
 /* ---------- period bar ---------- */
@@ -413,248 +422,150 @@ function renderPeriodBar(){
 
 /* ---------- modal ---------- */
 let modalOnOk=null;
-function openModal(opts){
-  $("modalTitle").textContent=opts.title||'';
-  $("modalBody").innerHTML=opts.bodyHTML||'';
-  const ok=$("modalOk");
-  ok.textContent=opts.okLabel||'OK';
-  ok.className=opts.okClass||'btn-primary';
-  ok.style.display=(opts.hideOk?'none':'');
-  modalOnOk=opts.onOk||null;
-  $("modal").hidden=false;
-  if(opts.focus){ const el=$(opts.focus); if(el){ el.focus(); if(el.select) el.select(); } }
+function openModal(o){
+  $("modalTitle").textContent=o.title||'';
+  $("modalBody").innerHTML=o.bodyHTML||'';
+  const ok=$("modalOk"); ok.textContent=o.okLabel||'OK'; ok.className=o.okClass||'btn-primary';
+  modalOnOk=o.onOk||null; $("modal").hidden=false;
+  if(o.focus){ const el=$(o.focus); if(el){ el.focus(); if(el.select) el.select(); } }
 }
 function closeModal(){ $("modal").hidden=true; modalOnOk=null; }
-$("modalCancel").addEventListener("click", closeModal);
-$("modal").addEventListener("click", e=>{ if(e.target.id==='modal') closeModal(); });
-$("modalOk").addEventListener("click", ()=>{ if(!modalOnOk || modalOnOk()!==false) closeModal(); });
-$("modal").addEventListener("keydown", e=>{
-  if(e.key==='Enter'){ e.preventDefault(); $("modalOk").click(); }
-  else if(e.key==='Escape'){ closeModal(); }
-});
-
 function openAddModal(){
   if(periods.length>=MAXP) return;
   const last=periods[periods.length-1];
-  const suggest=(last? last.year : 2024)+1;
-  openModal({
-    title:'期を追加',
-    okLabel:'追加', okClass:'btn-primary',
-    bodyHTML:`<label class="modal-label">追加する年度</label>
-      <input type="number" id="modalYear" value="${suggest}" step="1">
-      <div class="modal-err" id="modalErr"></div>`,
+  const suggest=(last? last.year:2024)+1;
+  openModal({ title:'期を追加', okLabel:'追加',
+    bodyHTML:`<label class="modal-label">追加する年度</label><input type="number" id="modalYear" value="${suggest}" step="1"><div class="modal-err" id="modalErr"></div>`,
     focus:'modalYear',
-    onOk:()=>{
-      const y=parseInt($("modalYear").value,10);
-      const err=$("modalErr");
+    onOk:()=>{ const y=parseInt($("modalYear").value,10); const err=$("modalErr");
       if(!Number.isFinite(y)){ err.textContent='年度を入力してください。'; return false; }
       if(periods.some(p=>p.year===y)){ err.textContent='その年度は既に存在します。'; return false; }
-      readFormToPeriod();
       periods.push({year:y, vals:Object.assign({}, periods[curIdx].vals)});
-      sortPeriods();
-      curIdx=periods.findIndex(p=>p.year===y);
-      loadPeriodToForm(); run();
-    }
-  });
+      sortPeriods(); curIdx=periods.findIndex(p=>p.year===y); buildInputForm(); run(); } });
 }
 function openResetModal(){
   const y=periods[curIdx].year;
-  openModal({
-    title:'数値のリセット',
-    bodyHTML:`<div class="modal-msg"><b>${y}年度</b> の入力数値をすべて <b>0</b> にします。よろしいですか？</div>`,
-    okLabel:'リセットする', okClass:'btn-danger',
-    onOk:()=>{ const v=periods[curIdx].vals; IDS.forEach(id=> v[id]=0); loadPeriodToForm(); run(); }
-  });
+  openModal({ title:'数値のリセット', okLabel:'リセットする', okClass:'btn-danger',
+    bodyHTML:`<div class="modal-msg"><b>${y}年度</b> の入力数値（内訳含む）をすべて <b>0</b> にします。よろしいですか？</div>`,
+    onOk:()=>{ periods[curIdx].vals=zeros(); buildInputForm(); run(); } });
 }
 function openDeleteModal(){
-  if(periods.length<=1){
-    openModal({ title:'削除できません',
-      bodyHTML:`<div class="modal-msg">最後の1期は削除できません。<br>先に別の期を追加してください。</div>`,
-      okLabel:'OK', hideOk:false, onOk:()=>{} });
-    return;
-  }
+  if(periods.length<=1){ openModal({title:'削除できません', okLabel:'OK', bodyHTML:`<div class="modal-msg">最後の1期は削除できません。<br>先に別の期を追加してください。</div>`, onOk:()=>{}}); return; }
   const y=periods[curIdx].year;
-  openModal({
-    title:'期の削除',
+  openModal({ title:'期の削除', okLabel:'削除する', okClass:'btn-danger',
     bodyHTML:`<div class="modal-msg"><b>${y}年度</b> のタブを削除します。よろしいですか？</div>`,
-    okLabel:'削除する', okClass:'btn-danger',
-    onOk:()=>{ periods.splice(curIdx,1); if(curIdx>=periods.length) curIdx=periods.length-1; loadPeriodToForm(); run(); }
-  });
+    onOk:()=>{ periods.splice(curIdx,1); if(curIdx>=periods.length) curIdx=periods.length-1; buildInputForm(); run(); } });
 }
 
-/* ---------- BS totals (current period) ---------- */
-function renderBS(d){
-  const set=(id,v)=>{const el=$(id); if(el) el.textContent=fmt(v);};
-  set("totLiab", d.cl + d.fl);
-  set("totNA", d.na);
-  set("totAssets", d.totalAssets);
-  set("totLNA", d.totalCapital);
-}
-
-/* ---------- chart (period comparison) ---------- */
+/* ---------- chart ---------- */
 const C = {ca:'#4E79A7', fa:'#4E8A46', cl:'#C4433F', fl:'#CC6A1F', na:'#8E5AA0', gp:'#c8c8c8'};
-const GOLD = '#e8a11a';
-
+const GOLD='#e8a11a';
 function drawChart(ds){
   const n=ds.length;
-  let gmax=0;
-  ds.forEach(({d})=>{ gmax=Math.max(gmax, d.totalCapital, d.totalAssets, d.sales); });
+  let gmax=0; ds.forEach(({d})=>{ gmax=Math.max(gmax,d.totalCapital,d.totalAssets,d.sales); });
   if(gmax<=0) gmax=1;
-
   const AX=70, TOP=70, BOT=470, chH=BOT-TOP;
-  const Y  = p => BOT - (p/100)*chH;     // p = % of gmax
-  const PV = v => v/gmax*100;            // value -> % of gmax
-  const BW=42, BG=10, GPAD=26;
-  const groupInner = 3*BW+2*BG;
-  const slot = groupInner + GPAD*2;
-  const x0 = AX+24;
-  const W = x0 + n*slot + 20;
-  const H = 560;
-
-  const hi = currentHi();
-  const boxKeep = hi ? new Set(hi.boxes||[]) : null;
-  if(boxKeep && boxKeep.has('sales')) boxKeep.add('gp');
-
-  const box=(x,w,yT,yB,fill,sw=1)=>
-    `<rect x="${x}" y="${yT}" width="${w}" height="${Math.max(0,yB-yT)}" fill="${fill}" stroke="#333" stroke-width="${sw}"/>`;
-  const segLabel=(x,yT,yB,val)=> (yB-yT>=22)
-    ? `<text x="${x+BW/2}" y="${(yT+yB)/2+4}" font-size="12" fill="#fff" text-anchor="middle">${fmt(val)}</text>` : '';
-
-  let s=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="期間比較 百分率財務諸表チャート" `
-      + `style="display:block;width:100%;height:auto;max-width:${W}px;margin:0 auto;">`;
-
-  // axis + grid
+  const Y=p=> BOT-(p/100)*chH, PV=v=> v/gmax*100;
+  const BW=42, BG=10, GPAD=26, groupInner=3*BW+2*BG, slot=groupInner+GPAD*2, x0=AX+24, W=x0+n*slot+20, H=560;
+  const hi=currentHi();
+  const boxKeep=hi? new Set(hi.boxes||[]):null; if(boxKeep&&boxKeep.has('sales')) boxKeep.add('gp');
+  const box=(x,w,yT,yB,fill)=> `<rect x="${x}" y="${yT}" width="${w}" height="${Math.max(0,yB-yT)}" fill="${fill}" stroke="#333" stroke-width="1"/>`;
+  const segLabel=(x,yT,yB,val)=> (yB-yT>=22)? `<text x="${x+BW/2}" y="${(yT+yB)/2+4}" font-size="12" fill="#fff" text-anchor="middle">${fmt(val)}</text>`:'';
+  let s=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="期間比較チャート" style="display:block;width:100%;height:auto;max-width:${W}px;margin:0 auto;">`;
   s+=`<line x1="${AX}" y1="${TOP}" x2="${AX}" y2="${BOT}" stroke="#333" stroke-width="1.5"/>`;
   s+=`<text x="${AX-30}" y="${TOP-12}" font-size="16" fill="#333">％</text>`;
-  for(let p=0;p<=100;p+=20){
-    const y=Y(p);
-    s+=`<line x1="${AX}" y1="${y}" x2="${W-16}" y2="${y}" stroke="#eef1f4"/>`;
-    s+=`<line x1="${AX-6}" y1="${y}" x2="${AX}" y2="${y}" stroke="#333"/>`;
-    s+=`<text x="${AX-10}" y="${y+5}" font-size="15" fill="#555" text-anchor="end">${p}</text>`;
-  }
+  for(let p=0;p<=100;p+=20){ const y=Y(p);
+    s+=`<line x1="${AX}" y1="${y}" x2="${W-16}" y2="${y}" stroke="#eef1f4"/><line x1="${AX-6}" y1="${y}" x2="${AX}" y2="${y}" stroke="#333"/><text x="${AX-10}" y="${y+5}" font-size="15" fill="#555" text-anchor="end">${p}</text>`; }
   s+=`<text x="6" y="${TOP-12}" font-size="14" fill="#777">単位：${unitStr()}</text>`;
   s+=`<text x="${AX+18}" y="26" font-size="14" fill="#555">最大値 ${fmt(gmax)} ${unitStr()} を 100% として表示（左＝古い ／ 右＝新しい）</text>`;
-
   ds.forEach(({year,d},gi)=>{
-    const gx = x0 + gi*slot + GPAD;
-    const bx = [gx, gx+BW+BG, gx+2*(BW+BG)];   // 資産 / 負債純資産 / 売上
-
-    // 資産 bar (fa bottom, ca top)
+    const gx=x0+gi*slot+GPAD, bx=[gx,gx+BW+BG,gx+2*(BW+BG)];
     const yFa=Y(PV(d.fa)), yA=Y(PV(d.fa+d.ca));
     s+=box(bx[0],BW,yFa,Y(0),C.fa)+segLabel(bx[0],yFa,Y(0),d.fa);
     s+=box(bx[0],BW,yA,yFa,C.ca)+segLabel(bx[0],yA,yFa,d.ca);
-
-    // 負債・純資産 bar (na bottom, fl, cl top)
     const yNa=Y(PV(d.na)), yFl=Y(PV(d.na+d.fl)), yCl=Y(PV(d.na+d.fl+d.cl)), yRe=Y(PV(d.re));
     s+=box(bx[1],BW,yNa,Y(0),C.na)+segLabel(bx[1],yNa,Y(0),d.na);
-    if(d.re>0 && d.na>0) s+=`<line x1="${bx[1]}" y1="${yRe}" x2="${bx[1]+BW}" y2="${yRe}" stroke="#fff" stroke-width="1.5" stroke-dasharray="6 4"/>`;
+    if(d.re>0&&d.na>0) s+=`<line x1="${bx[1]}" y1="${yRe}" x2="${bx[1]+BW}" y2="${yRe}" stroke="#fff" stroke-width="1.5" stroke-dasharray="6 4"/>`;
     s+=box(bx[1],BW,yFl,yNa,C.fl)+segLabel(bx[1],yFl,yNa,d.fl);
     s+=box(bx[1],BW,yCl,yFl,C.cl)+segLabel(bx[1],yCl,yFl,d.cl);
-
-    // 売上 bar (outline + 粗利 grey + 営業利益/当期純利益 lines)
     const ySales=Y(PV(d.sales)), yGp=Y(PV(d.grossProfit)), yOp=Y(PV(d.operatingProfit)), yNi=Y(PV(d.netIncome));
     s+=box(bx[2],BW,ySales,Y(0),'#ffffff');
     s+=box(bx[2],BW,yGp,Y(0),C.gp)+segLabel(bx[2],yGp,Y(0),d.grossProfit);
     s+=`<line x1="${bx[2]}" y1="${yOp}" x2="${bx[2]+BW}" y2="${yOp}" stroke="#333" stroke-width="1.5"/>`;
     s+=`<line x1="${bx[2]}" y1="${yNi}" x2="${bx[2]+BW}" y2="${yNi}" stroke="#c53030" stroke-width="1.5"/>`;
-
-    // totals above bars
     s+=`<text x="${bx[0]+BW/2}" y="${yA-7}" font-size="12" fill="#333" text-anchor="middle" font-weight="bold">${fmt(d.totalAssets)}</text>`;
     s+=`<text x="${bx[1]+BW/2}" y="${yCl-7}" font-size="12" fill="#333" text-anchor="middle" font-weight="bold">${fmt(d.totalCapital)}</text>`;
     s+=`<text x="${bx[2]+BW/2}" y="${ySales-7}" font-size="12" fill="#333" text-anchor="middle" font-weight="bold">${fmt(d.sales)}</text>`;
-
-    // year + bar captions
     s+=`<text x="${gx+groupInner/2}" y="${BOT+26}" font-size="16" fill="#1a1a1a" text-anchor="middle" font-weight="bold">${year}年度</text>`;
     s+=`<text x="${bx[0]+BW/2}" y="${BOT+44}" font-size="11" fill="#666" text-anchor="middle">資産</text>`;
     s+=`<text x="${bx[1]+BW/2}" y="${BOT+44}" font-size="11" fill="#666" text-anchor="middle">負債・純資産</text>`;
     s+=`<text x="${bx[2]+BW/2}" y="${BOT+44}" font-size="11" fill="#666" text-anchor="middle">売上</text>`;
-
-    // emphasis overlay for this period
     if(hi){
-      const B={
-        ca:[bx[0],yA,yFa], fa:[bx[0],yFa,Y(0)],
-        cl:[bx[1],yCl,yFl], fl:[bx[1],yFl,yNa], na:[bx[1],yNa,Y(0)],
-        sales:[bx[2],ySales,Y(0)], gp:[bx[2],yGp,Y(0)]
-      };
-      for(const k in B){ if(!boxKeep.has(k)){ const b=B[k];
-        s+=`<rect x="${b[0]}" y="${b[1]}" width="${BW}" height="${Math.max(0,b[2]-b[1])}" fill="#f4f5f7" fill-opacity="0.66"/>`; } }
+      const B={ca:[bx[0],yA,yFa],fa:[bx[0],yFa,Y(0)],cl:[bx[1],yCl,yFl],fl:[bx[1],yFl,yNa],na:[bx[1],yNa,Y(0)],sales:[bx[2],ySales,Y(0)],gp:[bx[2],yGp,Y(0)]};
+      for(const k in B){ if(!boxKeep.has(k)){ const b=B[k]; s+=`<rect x="${b[0]}" y="${b[1]}" width="${BW}" height="${Math.max(0,b[2]-b[1])}" fill="#f4f5f7" fill-opacity="0.66"/>`; } }
       const groups={};
-      (hi.boxes||[]).forEach(k=>{ const b=B[k]; if(!b) return; const col=b[0];
-        if(!groups[col]) groups[col]=[b[0],b[1],b[2]];
-        else { const g=groups[col]; g[1]=Math.min(g[1],b[1]); g[2]=Math.max(g[2],b[2]); } });
-      Object.keys(groups).forEach(col=>{ const g=groups[col];
-        s+=`<rect x="${g[0]}" y="${g[1]}" width="${BW}" height="${Math.max(0,g[2]-g[1])}" fill="none" stroke="${GOLD}" stroke-width="4"/>`; });
-      (hi.lines||[]).forEach(k=>{ const y=(k==='op')?yOp:yNi;
-        s+=`<line x1="${bx[2]}" y1="${y}" x2="${bx[2]+BW}" y2="${y}" stroke="${GOLD}" stroke-width="4"/>`; });
+      (hi.boxes||[]).forEach(k=>{ const b=B[k]; if(!b) return; const col=b[0]; if(!groups[col]) groups[col]=[b[0],b[1],b[2]]; else{ const g=groups[col]; g[1]=Math.min(g[1],b[1]); g[2]=Math.max(g[2],b[2]); } });
+      Object.keys(groups).forEach(col=>{ const g=groups[col]; s+=`<rect x="${g[0]}" y="${g[1]}" width="${BW}" height="${Math.max(0,g[2]-g[1])}" fill="none" stroke="${GOLD}" stroke-width="4"/>`; });
+      (hi.lines||[]).forEach(k=>{ const y=(k==='op')?yOp:yNi; s+=`<line x1="${bx[2]}" y1="${y}" x2="${bx[2]+BW}" y2="${y}" stroke="${GOLD}" stroke-width="4"/>`; });
     }
   });
-
-  s+=`</svg>`;
-  $("chart").innerHTML=s;
+  s+=`</svg>`; $("chart").innerHTML=s;
 }
-
 function renderLegend(){
   const items=[['流動資産',C.ca],['固定資産',C.fa],['流動負債',C.cl],['固定負債',C.fl],['純資産',C.na],['粗利',C.gp]];
   let h=items.map(([nm,c])=>`<span class="lg"><i style="background:${c}"></i>${nm}</span>`).join('');
-  h+=`<span class="lg"><i class="lgline"></i>営業利益</span><span class="lg"><i class="lgline red"></i>当期純利益</span>`;
-  h+=`<span class="lg" style="color:#888">（純資産内の点線＝利益剰余金）</span>`;
+  h+=`<span class="lg"><i class="lgline"></i>営業利益</span><span class="lg"><i class="lgline red"></i>当期純利益</span><span class="lg" style="color:#888">（純資産内の点線＝利益剰余金）</span>`;
   $("legend").innerHTML=h;
 }
 
 /* ---------- metrics ---------- */
 function badge(kind,label){ return `<span class="badge b-${kind}">${label}</span>`; }
-const opmVal = d => d.opMargin;
-
 const CATS = {
   growth:{ name:'成長性', note:'※複数期を入力すると期間比較表に前期比（増収率・増益率）が表示されます。',
     metrics:[
       { key:'sales', label:'売上高', v:d=>d.sales, unit:unitStr, dec:0, hi:{boxes:['sales']},
         formula:d=>`当期 売上高 ＝ <b>${fmt(d.sales)}</b> ${unitStr()}`,
-        meaning:'一定期間に本業で稼いだ収入の総額。成長性は前期比（増収率）で評価します。複数期を入力すると下の比較表に前期比が表示されます。',
-        rows:[{lv:'good',name:'増収',range:'前期比 プラス',note:'売上が伸びている'},
-              {lv:'warn',name:'横ばい',range:'前期比 0%前後',note:'ほぼ変化なし'},
-              {lv:'bad',name:'減収',range:'前期比 マイナス',note:'売上が縮小'}],
-        judge:d=>null },
+        meaning:'本業で稼いだ収入の総額。成長性は前期比（増収率）で評価します。複数期入力で下の比較表に前期比が出ます。',
+        rows:[{lv:'good',name:'増収',range:'前期比 プラス',note:'売上が伸びている'},{lv:'warn',name:'横ばい',range:'前期比 0%前後',note:'ほぼ変化なし'},{lv:'bad',name:'減収',range:'前期比 マイナス',note:'売上が縮小'}], judge:d=>null },
       { key:'ni', label:'当期純利益', v:d=>d.netIncome, unit:unitStr, dec:0, hi:{lines:['ni']},
         formula:d=>`当期 当期純利益 ＝ <b>${fmt(d.netIncome)}</b> ${unitStr()}`,
-        meaning:'最終的に会社に残る利益。成長性は前期比（増益率）で評価します。複数期を入力すると下の比較表に前期比が表示されます。',
-        rows:[{lv:'good',name:'増益',range:'前期比 プラス',note:'利益が伸びている'},
-              {lv:'warn',name:'横ばい',range:'前期比 0%前後',note:'ほぼ変化なし'},
-              {lv:'bad',name:'減益',range:'前期比 マイナス',note:'利益が縮小'}],
-        judge:d=>null },
+        meaning:'最終的に会社に残る利益。成長性は前期比（増益率）で評価します。',
+        rows:[{lv:'good',name:'増益',range:'前期比 プラス',note:'利益が伸びている'},{lv:'warn',name:'横ばい',range:'前期比 0%前後',note:'ほぼ変化なし'},{lv:'bad',name:'減益',range:'前期比 マイナス',note:'利益が縮小'}], judge:d=>null },
     ]},
   eff:{ name:'効率性',
     metrics:[
       { key:'turnover', label:'総資本回転率', v:d=>d.assetTurnover, unit:'回', dec:2, hi:{boxes:['cl','fl','na','sales']},
         formula:d=>`売上高 <b>${fmt(d.sales)}</b> ÷ 総資本 <b>${fmt(d.totalCapital)}</b> ＝ <b>${p2(d.assetTurnover)}</b> 回`,
-        meaning:'投下した総資本（負債＋純資産）が1年間に何回売上に変わったかを示す効率指標。大きいほど資産を効率よく使えています。',
-        rows:[{lv:'good',name:'高い',range:'1.0回 以上',note:'資産を効率よく活用'},
-              {lv:'warn',name:'普通',range:'0.5〜1.0回',note:'業種平均並み'},
-              {lv:'bad',name:'低い',range:'0.5回 未満',note:'資産が過大・遊休の可能性'}],
+        meaning:'総資本が1年間に何回売上に変わったかを示す効率指標。大きいほど資産を効率よく使えています。',
+        rows:[{lv:'good',name:'高い',range:'1.0回 以上',note:'効率よく活用'},{lv:'warn',name:'普通',range:'0.5〜1.0回',note:'業種平均並み'},{lv:'bad',name:'低い',range:'0.5回 未満',note:'資産過大の可能性'}],
         judge:d=>{const v=d.assetTurnover; return v>=1?'good':v>=0.5?'warn':'bad';} },
+      { key:'invturn', label:'棚卸資産回転率', v:d=>d.invTurnover, unit:'回', dec:2, hi:{boxes:['ca','sales']}, ready:d=>d.quickReady,
+        formula:d=>`売上原価 <b>${fmt(d.cogs)}</b> ÷ 棚卸資産 <b>${fmt(d.inv)}</b> ＝ <b>${p2(d.invTurnover)}</b> 回`,
+        meaning:'在庫が一定期間に何回入れ替わったかを示す指標。高いほど在庫効率が良い（※業種差が大きい）。詳細入力の棚卸資産が必要です。',
+        rows:[{lv:'good',name:'高い',range:'6回 以上',note:'在庫効率が良い'},{lv:'warn',name:'普通',range:'3〜6回',note:'標準的'},{lv:'bad',name:'低い',range:'3回 未満',note:'在庫過多の可能性'}],
+        judge:d=>{const v=d.invTurnover; return v>=6?'good':v>=3?'warn':'bad';} },
+      { key:'recvdays', label:'売上債権回転期間', v:d=>d.recvDays, unit:'日', dec:1, hi:{boxes:['ca','sales']}, ready:d=>d.quickReady,
+        formula:d=>`売上債権 <b>${fmt(d.recv)}</b> ÷（売上高 <b>${fmt(d.sales)}</b> ÷ 365）＝ <b>${p1(d.recvDays)}</b> 日`,
+        meaning:'売上債権が何日分の売上に相当するか＝回収の速さ。短いほど資金繰りが良い。詳細入力の売上債権が必要です。',
+        rows:[{lv:'good',name:'良好',range:'45日 以内',note:'回収が速い'},{lv:'warn',name:'普通',range:'45〜90日',note:'標準的'},{lv:'bad',name:'長い',range:'90日 超',note:'回収が遅い'}],
+        judge:d=>{const v=d.recvDays; return v<=45?'good':v<=90?'warn':'bad';} },
     ]},
   prof:{ name:'収益性',
     metrics:[
       { key:'roe', label:'ROE', v:d=>d.roe, unit:'%', dec:2, hi:{boxes:['na'],lines:['ni']},
         formula:d=>`当期純利益 <b>${fmt(d.netIncome)}</b> ÷ 純資産 <b>${fmt(d.na)}</b> × 100 ＝ <b>${p2(d.roe)}</b>%`,
-        meaning:'自己資本（純資産）を使ってどれだけ利益を生んだかを示す、株主目線の代表的な収益性指標。一般に8%以上が優良とされます。',
-        rows:[{lv:'good',name:'良好',range:'8% 以上',note:'自己資本を効率よく活用'},
-              {lv:'warn',name:'低め',range:'0〜8%',note:'改善の余地あり'},
-              {lv:'bad',name:'赤字',range:'0% 未満',note:'自己資本を毀損'}],
+        meaning:'自己資本を使ってどれだけ利益を生んだかを示す株主目線の指標。一般に8%以上が優良。',
+        rows:[{lv:'good',name:'良好',range:'8% 以上',note:'自己資本を効率活用'},{lv:'warn',name:'低め',range:'0〜8%',note:'改善余地あり'},{lv:'bad',name:'赤字',range:'0% 未満',note:'自己資本を毀損'}],
         judge:d=>{const v=d.roe; return v>=8?'good':v>=0?'warn':'bad';} },
       { key:'npm', label:'当期純利益率', v:d=>d.netMargin, unit:'%', dec:1, hi:{boxes:['sales'],lines:['ni']},
         formula:d=>`当期純利益 <b>${fmt(d.netIncome)}</b> ÷ 売上高 <b>${fmt(d.sales)}</b> × 100 ＝ <b>${p1(d.netMargin)}</b>%`,
-        meaning:'売上のうち最終的に何％が利益として残るかを示す指標。税金・営業外も含めた事業全体の総合採算性を表します。',
-        rows:[{lv:'good',name:'良好',range:'5% 以上',note:'高採算'},
-              {lv:'warn',name:'普通',range:'0〜5%',note:'一般的な水準'},
-              {lv:'bad',name:'赤字',range:'0% 未満',note:'最終赤字'}],
+        meaning:'売上のうち最終的に何％が利益として残るか。事業全体の総合採算性を表します。',
+        rows:[{lv:'good',name:'良好',range:'5% 以上',note:'高採算'},{lv:'warn',name:'普通',range:'0〜5%',note:'一般的な水準'},{lv:'bad',name:'赤字',range:'0% 未満',note:'最終赤字'}],
         judge:d=>{const v=d.netMargin; return v>=5?'good':v>=0?'warn':'bad';} },
-      { key:'opm', label:'売上高営業利益率', v:opmVal, unit:'%', dec:1, hi:{boxes:['sales'],lines:['op']},
+      { key:'opm', label:'売上高営業利益率', v:d=>d.opMargin, unit:'%', dec:1, hi:{boxes:['sales'],lines:['op']},
         formula:d=>`営業利益 <b>${fmt(d.operatingProfit)}</b> ÷ 売上高 <b>${fmt(d.sales)}</b> × 100 ＝ <b>${p1(d.opMargin)}</b>%`,
-        meaning:'本業（営業活動）でどれだけ効率的に利益を出せているかを示す指標。企業の「稼ぐ力」の中核を表します。',
-        rows:[{lv:'good',name:'良好',range:'10% 以上',note:'本業の収益力が高い'},
-              {lv:'warn',name:'普通',range:'2〜10%',note:'一般的な水準'},
-              {lv:'bad',name:'低い',range:'2% 未満',note:'本業の採算が弱い'}],
+        meaning:'本業でどれだけ効率的に利益を出せているか。企業の稼ぐ力の中核。',
+        rows:[{lv:'good',name:'良好',range:'10% 以上',note:'本業の収益力が高い'},{lv:'warn',name:'普通',range:'2〜10%',note:'一般的な水準'},{lv:'bad',name:'低い',range:'2% 未満',note:'本業の採算が弱い'}],
         judge:d=>{const v=d.opMargin; return v>=10?'good':v>=2?'warn':'bad';} },
     ]},
   safe:{ name:'安全性',
@@ -662,93 +573,109 @@ const CATS = {
       { key:'current', label:'流動比率', v:d=>d.currentRatio, unit:'%', dec:1, hi:{boxes:['ca','cl']},
         formula:d=>`流動資産 <b>${fmt(d.ca)}</b> ÷ 流動負債 <b>${fmt(d.cl)}</b> × 100 ＝ <b>${p1(d.currentRatio)}</b>%`,
         meaning:'1年以内に現金化できる資産で、1年以内に返す負債をどれだけ賄えるかを示す短期の支払能力指標。',
-        rows:[{lv:'good',name:'安全',range:'200% 以上',note:'短期の支払能力が高い'},
-              {lv:'warn',name:'普通',range:'100〜200%',note:'最低限は確保'},
-              {lv:'bad',name:'危険',range:'100% 未満',note:'短期資金がショートする恐れ'}],
+        rows:[{lv:'good',name:'安全',range:'200% 以上',note:'支払能力が高い'},{lv:'warn',name:'普通',range:'100〜200%',note:'最低限は確保'},{lv:'bad',name:'危険',range:'100% 未満',note:'資金ショートの恐れ'}],
         judge:d=>{const v=d.currentRatio; return v>=200?'good':v>=100?'warn':'bad';} },
+      { key:'quick', label:'当座比率', v:d=>d.quickRatio, unit:'%', dec:1, hi:{boxes:['ca','cl']}, ready:d=>d.quickReady,
+        formula:d=>`当座資産 <b>${fmt(d.quick)}</b>（現預金＋有価証券＋売上債権）÷ 流動負債 <b>${fmt(d.cl)}</b> × 100 ＝ <b>${p1(d.quickRatio)}</b>%`,
+        meaning:'在庫を除く「すぐ現金化できる資産」で流動負債をどれだけ賄えるか。流動比率より厳しい短期安全性。詳細入力が必要です。',
+        rows:[{lv:'good',name:'安全',range:'100% 以上',note:'即時の支払能力が高い'},{lv:'warn',name:'普通',range:'70〜100%',note:'許容範囲'},{lv:'bad',name:'危険',range:'70% 未満',note:'即時の支払能力が弱い'}],
+        judge:d=>{const v=d.quickRatio; return v>=100?'good':v>=70?'warn':'bad';} },
       { key:'fixedlt', label:'固定長期適合率', v:d=>d.fixedLTRatio, unit:'%', dec:1, hi:{boxes:['fa','fl','na']},
         formula:d=>`固定資産 <b>${fmt(d.fa)}</b> ÷（純資産 <b>${fmt(d.na)}</b> ＋ 固定負債 <b>${fmt(d.fl)}</b>）× 100 ＝ <b>${p1(d.fixedLTRatio)}</b>%`,
-        meaning:'長期に使う固定資産を、返済不要の純資産＋長期の負債でどれだけ賄えているかを示す指標。100%以下なら安定財源でカバーできています。',
-        rows:[{lv:'good',name:'良好',range:'100% 以下',note:'長期資金で安定的に調達'},
-              {lv:'warn',name:'許容',range:'100〜110%',note:'ぎりぎり許容範囲'},
-              {lv:'bad',name:'過大',range:'110% 超',note:'短期資金で固定資産を賄い危険'}],
+        meaning:'長期に使う固定資産を、返済不要の純資産＋長期の負債で賄えているか。100%以下なら安定財源でカバー。',
+        rows:[{lv:'good',name:'良好',range:'100% 以下',note:'長期資金で調達'},{lv:'warn',name:'許容',range:'100〜110%',note:'ぎりぎり許容'},{lv:'bad',name:'過大',range:'110% 超',note:'短期資金で固定資産を賄い危険'}],
         judge:d=>{const v=d.fixedLTRatio; return v<=100?'good':v<=110?'warn':'bad';} },
       { key:'equity', label:'純資産比率', v:d=>d.equityRatio, unit:'%', dec:1, hi:{boxes:['na','ca','fa']},
         formula:d=>`純資産 <b>${fmt(d.na)}</b> ÷ 総資本〈＝資産合計〉<b>${fmt(d.totalAssets)}</b> × 100 ＝ <b>${p1(d.equityRatio)}</b>%`,
-        meaning:'資産全体（＝総資本）のうち、返済不要の自己資本（純資産）が占める割合。自己資本と資産を比べる指標で、高いほど財務体質が安定し、倒産しにくい会社といえます。',
-        rows:[{lv:'good',name:'安全',range:'40% 以上',note:'自己資本が厚い'},
-              {lv:'warn',name:'普通',range:'20〜40%',note:'一般的な水準'},
-              {lv:'bad',name:'危険',range:'20% 未満',note:'借入依存で不安定'}],
+        meaning:'資産全体のうち返済不要の自己資本が占める割合。高いほど財務体質が安定。',
+        rows:[{lv:'good',name:'安全',range:'40% 以上',note:'自己資本が厚い'},{lv:'warn',name:'普通',range:'20〜40%',note:'一般的な水準'},{lv:'bad',name:'危険',range:'20% 未満',note:'借入依存で不安定'}],
         judge:d=>{const v=d.equityRatio; return v>=40?'good':v>=20?'warn':'bad';} },
+      { key:'de', label:'D/Eレシオ', v:d=>d.de, unit:'倍', dec:2, hi:{boxes:['cl','fl','na']}, ready:d=>d.ibdReady,
+        formula:d=>`有利子負債 <b>${fmt(d.ibd)}</b> ÷ 自己資本(純資産) <b>${fmt(d.na)}</b> ＝ <b>${p2(d.de)}</b> 倍`,
+        meaning:'自己資本に対する有利子負債の大きさ。低いほど借入依存が小さく健全。負債の内訳入力が必要です。',
+        rows:[{lv:'good',name:'良好',range:'1.0倍 以下',note:'借入が自己資本以下'},{lv:'warn',name:'許容',range:'1.0〜2.0倍',note:'標準的'},{lv:'bad',name:'過大',range:'2.0倍 超',note:'借入依存が大きい'}],
+        judge:d=>{const v=d.de; return v<=1?'good':v<=2?'warn':'bad';} },
+      { key:'ibdr', label:'有利子負債比率', v:d=>d.ibdRatio, unit:'%', dec:1, hi:{boxes:['cl','fl']}, ready:d=>d.ibdReady,
+        formula:d=>`有利子負債 <b>${fmt(d.ibd)}</b> ÷ 総資本 <b>${fmt(d.totalCapital)}</b> × 100 ＝ <b>${p1(d.ibdRatio)}</b>%`,
+        meaning:'総資本に占める有利子負債の割合。低いほど財務が安全。負債の内訳入力が必要です。',
+        rows:[{lv:'good',name:'良好',range:'30% 以下',note:'借入が小さい'},{lv:'warn',name:'普通',range:'30〜60%',note:'標準的'},{lv:'bad',name:'過大',range:'60% 超',note:'借入が大きい'}],
+        judge:d=>{const v=d.ibdRatio; return v<=30?'good':v<=60?'warn':'bad';} },
+      { key:'netde', label:'ネットD/Eレシオ', v:d=>d.netDe, unit:'倍', dec:2, hi:{boxes:['cl','fl','na']}, ready:d=>d.ibdReady,
+        formula:d=>`(有利子負債 <b>${fmt(d.ibd)}</b> − 現預金 <b>${fmt(d.cash)}</b>) ÷ 自己資本 <b>${fmt(d.na)}</b> ＝ <b>${p2(d.netDe)}</b> 倍`,
+        meaning:'手元現預金を差し引いた実質的な借入負担。マイナスなら実質無借金（ネットキャッシュ）。負債内訳と現預金入力が必要です。',
+        rows:[{lv:'good',name:'良好',range:'0.5倍 以下',note:'実質負担が小さい'},{lv:'warn',name:'許容',range:'0.5〜1.5倍',note:'標準的'},{lv:'bad',name:'過大',range:'1.5倍 超',note:'実質負担が大きい'}],
+        judge:d=>{const v=d.netDe; return v<=0.5?'good':v<=1.5?'warn':'bad';} },
+      { key:'debtm', label:'借入金月商倍率', v:d=>d.debtMonths, unit:'ヶ月', dec:1, hi:{boxes:['cl','fl','sales']}, ready:d=>d.ibdReady,
+        formula:d=>`有利子負債 <b>${fmt(d.ibd)}</b> ÷（売上高 <b>${fmt(d.sales)}</b> ÷ 12）＝ <b>${p1(d.debtMonths)}</b> ヶ月`,
+        meaning:'有利子負債が月商の何ヶ月分か。小さいほど返済負担が軽い。負債の内訳入力が必要です。',
+        rows:[{lv:'good',name:'良好',range:'3ヶ月 以下',note:'返済負担が軽い'},{lv:'warn',name:'普通',range:'3〜6ヶ月',note:'標準的'},{lv:'bad',name:'過大',range:'6ヶ月 超',note:'返済負担が重い'}],
+        judge:d=>{const v=d.debtMonths; return v<=3?'good':v<=6?'warn':'bad';} },
+      { key:'icr', label:'インタレスト・カバレッジ・レシオ', v:d=>d.icr, unit:'倍', dec:2, hi:{lines:['op']}, ready:d=>d.intexp>0,
+        formula:d=>`(営業利益 <b>${fmt(d.operatingProfit)}</b> ＋ 営業外収益 <b>${fmt(d.noi)}</b>) ÷ 支払利息 <b>${fmt(d.intexp)}</b> ＝ <b>${p2(d.icr)}</b> 倍`,
+        meaning:'事業利益で支払利息を何倍賄えるか＝利払い能力。高いほど安全。PL補助の「支払利息」入力が必要です。',
+        rows:[{lv:'good',name:'良好',range:'5倍 以上',note:'利払い余力が大きい'},{lv:'warn',name:'許容',range:'1〜5倍',note:'最低限は確保'},{lv:'bad',name:'危険',range:'1倍 未満',note:'利払いを賄えない'}],
+        judge:d=>{const v=d.icr; return v>=5?'good':v>=1?'warn':'bad';} },
+      { key:'debty', label:'債務償還年数', v:d=>d.debtYears, unit:'年', dec:1, hi:{boxes:['cl','fl'],lines:['op']}, ready:d=>d.ibdReady,
+        dispVal:d=>{ if(!d.ibdReady) return '—'; if(d.ibd<=0) return '0<small>年</small>'; if(!isFinite(d.debtYears)) return '返済原資なし'; return p1(d.debtYears)+'<small>年</small>'; },
+        formula:d=>`有利子負債 <b>${fmt(d.ibd)}</b> ÷ 簡易営業CF <b>${fmt(d.simpleCF)}</b>（営業利益＋減価償却費 <b>${fmt(d.dep)}</b>）＝ <b>${isFinite(d.debtYears)?p1(d.debtYears):'—'}</b> 年`,
+        meaning:'今の稼ぐ力（営業利益＋減価償却）で有利子負債を何年で返せるか。短いほど安全。負債内訳と減価償却費の入力が必要です。',
+        rows:[{lv:'good',name:'良好',range:'10年 以内',note:'返済力が高い'},{lv:'warn',name:'許容',range:'10〜20年',note:'標準的'},{lv:'bad',name:'過大',range:'20年 超',note:'返済に長期間'}],
+        judge:d=>{ if(d.ibd<=0) return 'good'; if(!isFinite(d.debtYears)) return 'bad'; const v=d.debtYears; return v<=10?'good':v<=20?'warn':'bad';} },
     ]},
 };
 
 const findMetric=(cat,key)=> CATS[cat].metrics.find(m=>m.key===key);
-function fmtMetric(m,d){
-  const v=m.v(d);
-  const s=(m.dec===0)?fmt(v):(m.dec===2?p2(v):p1(v));
+const metricReady=(m,d)=> m.ready? m.ready(d): true;
+function metricDisp(m,d){
+  if(!metricReady(m,d)) return '—';
+  if(m.dispVal) return m.dispVal(d);
+  const v=m.v(d); const s=(m.dec===0)?fmt(v):(m.dec===2?p2(v):p1(v));
   const u=(typeof m.unit==='function')?m.unit():m.unit;
   return `${s}<small>${u}</small>`;
 }
+const metricJudge=(m,d)=> metricReady(m,d)? m.judge(d): null;
 function currentHi(){ const m=findMetric(curCat,curKey); return m ? m.hi : null; }
 
 function judgeTable(rows, curLv){
   let h=`<table class="judge"><tr><th>判定</th><th>目安（範囲）</th><th>コメント</th></tr>`;
-  rows.forEach(r=>{
-    const cur=(r.lv===curLv);
-    h+=`<tr class="${cur?'cur':''}"><td class="lv ${r.lv}">${r.name}</td><td>${r.range}</td><td>${r.note}${cur?'<span class="cur-tag">◀ 現在</span>':''}</td></tr>`;
-  });
+  rows.forEach(r=>{ const cur=(r.lv===curLv);
+    h+=`<tr class="${cur?'cur':''}"><td class="lv ${r.lv}">${r.name}</td><td>${r.range}</td><td>${r.note}${cur?'<span class="cur-tag">◀ 現在</span>':''}</td></tr>`; });
   return h+`</table>`;
 }
-
 function cmpTable(m, ds){
-  const avail=ds.length;
-  const nsel=Math.min(cmpN, avail);
-  const start=avail-nsel;
+  const avail=ds.length, nsel=Math.min(cmpN,avail), start=avail-nsel;
   const isAmt=(typeof m.unit==='function');
-  let toggle=`<div class="cmp-toggle">`+
-    [1,3,5].map(nn=>`<button class="cbtn ${cmpN===nn?'active':''}" data-n="${nn}" ${nn>avail?'disabled':''}>${nn}期</button>`).join('')+
-    `</div>`;
-  let h=toggle+`<table class="judge"><tr><th>年度</th><th>${m.label}</th><th>前期比</th><th>判定</th></tr>`;
+  let h=`<div class="cmp-toggle">`+[1,3,5].map(nn=>`<button class="cbtn ${cmpN===nn?'active':''}" data-n="${nn}" ${nn>avail?'disabled':''}>${nn}期</button>`).join('')+`</div>`;
+  h+=`<table class="judge"><tr><th>年度</th><th>${m.label}</th><th>前期比</th><th>判定</th></tr>`;
   for(let i=start;i<avail;i++){
-    const r=ds[i], v=m.v(r.d);
-    const disp=(m.dec===0)?fmt(v):(m.dec===2?p2(v):p1(v));
-    const u=(typeof m.unit==='function')?m.unit():m.unit;
+    const r=ds[i], disp=metricDisp(m,r.d);
     let delta='—';
-    if(i>0){ const pv=m.v(ds[i-1].d);
-      if(isAmt){ const g=pv? (v-pv)/Math.abs(pv)*100:0; delta=`${g>=0?'+':''}${p1(g)}%`; }
-      else if(m.unit==='%'){ const dd=v-pv; delta=`${dd>=0?'+':''}${p1(dd)}pt`; }
-      else { const dd=v-pv; delta=`${dd>=0?'+':''}${p2(dd)}${m.unit}`; }
+    if(i>0 && metricReady(m,r.d) && metricReady(m,ds[i-1].d)){
+      const v=m.v(r.d), pv=m.v(ds[i-1].d);
+      if(isFinite(v)&&isFinite(pv)){
+        if(isAmt){ const g=pv? (v-pv)/Math.abs(pv)*100:0; delta=`${g>=0?'+':''}${p1(g)}%`; }
+        else if(m.unit==='%'){ const dd=v-pv; delta=`${dd>=0?'+':''}${p1(dd)}pt`; }
+        else { const dd=v-pv; delta=`${dd>=0?'+':''}${p2(dd)}${m.unit}`; }
+      }
     }
-    const lv=m.judge(r.d);
-    const bd = lv ? badge(lv,(m.rows.find(x=>x.lv===lv)||{}).name||'') : badge('na','—');
-    h+=`<tr><td>${r.year}年度</td><td class="num">${disp}<small>${u}</small></td><td class="num">${delta}</td><td>${bd}</td></tr>`;
+    const lv=metricJudge(m,r.d);
+    const bd = lv? badge(lv,(m.rows.find(x=>x.lv===lv)||{}).name||''):badge('na','—');
+    h+=`<tr><td>${r.year}年度</td><td class="num">${disp}</td><td class="num">${delta}</td><td>${bd}</td></tr>`;
   }
   return h+`</table>`;
 }
-
 function renderAnalysis(ds){
   document.querySelectorAll('#subtabs .subtab').forEach(b=> b.classList.toggle('active', b.dataset.cat===curCat));
   const cat=CATS[curCat];
   if(!cat.metrics.some(m=>m.key===curKey)) curKey=cat.metrics[0].key;
-  const latest=ds[ds.length-1].d;
-  const latestYear=ds[ds.length-1].year;
-
-  $("metricbtns").innerHTML = cat.metrics.map(m=>
-    `<button class="mbtn ${m.key===curKey?'active':''}" data-key="${m.key}">
-       <span>${m.label}</span><span class="mbv">${fmtMetric(m,latest)}</span>
-     </button>`).join('');
-
+  const latest=ds[ds.length-1].d, latestYear=ds[ds.length-1].year;
+  $("metricbtns").innerHTML = cat.metrics.map(m=> `<button class="mbtn ${m.key===curKey?'active':''}" data-key="${m.key}"><span>${m.label}</span><span class="mbv">${metricDisp(m,latest)}</span></button>`).join('');
   const m=findMetric(curCat,curKey);
-  const lv=m.judge(latest);
-  const b = lv ? badge(lv,(m.rows.find(r=>r.lv===lv)||{}).name||'') : badge('na','参考');
-  const noteHTML = (m.note||cat.note) ? `<div class="md-note">${m.note||''}${cat.note||''}</div>` : '';
-
+  const lv=metricJudge(m,latest);
+  const b = lv? badge(lv,(m.rows.find(r=>r.lv===lv)||{}).name||''):badge('na','参考');
+  const noteHTML=(m.note||cat.note)?`<div class="md-note">${m.note||''}${cat.note||''}</div>`:'';
   $("metricdetail").innerHTML =
-    `<div class="md-head">
-       <span class="md-title">${m.label}<span style="font-size:11px;color:#94a3b8;font-weight:600;margin-left:8px;">最新：${latestYear}年度</span></span>
-       <span class="md-value">${fmtMetric(m,latest)} ${b}</span>
-     </div>
+    `<div class="md-head"><span class="md-title">${m.label}<span style="font-size:11px;color:#94a3b8;font-weight:600;margin-left:8px;">最新：${latestYear}年度</span></span><span class="md-value">${metricDisp(m,latest)} ${b}</span></div>
      <div class="md-body">
        <div><div class="md-label">計算式（${latestYear}年度）</div><div class="md-formula">${m.formula(latest)}</div></div>
        <div><div class="md-label">指標の意味</div><div class="md-meaning">${m.meaning}</div></div>
@@ -758,34 +685,53 @@ function renderAnalysis(ds){
      </div>`;
 }
 
-/* ---------- detail comparison table ---------- */
+/* ---------- detail comparison ---------- */
+const BS_ROWS=[
+  {k:'ca',name:'流動資産',tot:true},
+  {k:'cash',name:'現金・預金',leaf:true},{k:'sec',name:'有価証券(短期)',leaf:true},{k:'recv',name:'売上債権',leaf:true},{k:'inv',name:'棚卸資産',leaf:true},{k:'oca',name:'その他流動資産',leaf:true},
+  {k:'fa',name:'固定資産',tot:true},
+  {k:'tfa',name:'有形固定資産',leaf:true},{k:'ifa',name:'無形固定資産',leaf:true},{k:'iota',name:'投資その他の資産',leaf:true},
+  {k:'totalAssets',name:'資産合計',grand:true},
+  {k:'cl',name:'流動負債',tot:true},
+  {k:'payb',name:'仕入債務',leaf:true},{k:'stloan',name:'短期借入金',leaf:true},{k:'cpltd',name:'1年内返済長期借入金',leaf:true},{k:'ocl',name:'その他流動負債',leaf:true},
+  {k:'fl',name:'固定負債',tot:true},
+  {k:'ltloan',name:'長期借入金',leaf:true},{k:'bond',name:'社債',leaf:true},{k:'ofl',name:'その他固定負債',leaf:true},
+  {k:'liab',name:'負債合計',tot:true},
+  {k:'ibd',name:'（うち有利子負債）',ibd:true},
+  {k:'cap',name:'資本金',leaf:true},{k:'csurp',name:'資本剰余金',leaf:true},{k:'re',name:'利益剰余金',leaf:true},{k:'ona',name:'その他純資産',leaf:true},
+  {k:'na',name:'純資産合計',tot:true},
+  {k:'totalCapital',name:'負債・純資産合計',grand:true},
+];
+const PL_ROWS=[
+  {k:'sales',name:'売上高'},{k:'cogs',name:'売上原価'},{k:'grossProfit',name:'売上総利益（粗利）',tot:true},
+  {k:'sga',name:'販管費'},{k:'operatingProfit',name:'営業利益',tot:true},
+  {k:'noi',name:'営業外収益'},{k:'noe',name:'営業外費用'},{k:'intexp',name:'うち支払利息',leaf:true},
+  {k:'ordinaryProfit',name:'経常利益',tot:true},
+  {k:'exg',name:'特別利益'},{k:'exl',name:'特別損失'},{k:'pretaxProfit',name:'税引前当期純利益',tot:true},
+  {k:'tax',name:'法人税等'},{k:'netIncome',name:'当期純利益',tot:true},
+  {k:'dep',name:'減価償却費',leaf:true},
+];
 function renderDetail(ds){
   document.querySelectorAll('#segToggle .cbtn').forEach(x=> x.classList.toggle('active', x.dataset.seg===cmpSeg));
-  const u=unitStr();
-  const val=(d,k)=> k==='liab' ? (d.cl+d.fl) : d[k];
+  const u=unitStr(), val=(d,k)=> k==='liab'?(d.cl+d.fl):d[k];
   const groups=[];
   if(cmpSeg==='all'||cmpSeg==='bs') groups.push({title:'貸借対照表（BS）', rows:BS_ROWS});
   if(cmpSeg==='all'||cmpSeg==='pl') groups.push({title:'損益計算書（PL）', rows:PL_ROWS});
-
   let h=`<table class="cmp-detail"><thead><tr><th class="itemcol">項目</th>`;
   ds.forEach(r=> h+=`<th>${r.year}年度</th>`);
   h+=`<th>前期比(最新)</th></tr></thead><tbody>`;
   groups.forEach(g=>{
     h+=`<tr class="grp"><td colspan="${ds.length+2}">${g.title}<span class="u">単位：${u}</span></td></tr>`;
     g.rows.forEach(row=>{
-      h+=`<tr class="${row.tot?'totrow':''}"><td class="itemcol">${row.name}</td>`;
+      const cls=row.grand?'grand':row.tot?'totrow':row.ibd?'ibd':'';
+      h+=`<tr class="${cls}"><td class="itemcol ${row.leaf?'leaf':''}">${row.name}</td>`;
       ds.forEach(r=> h+=`<td class="num">${fmt(val(r.d,row.k))}</td>`);
       let delta='—';
-      if(ds.length>=2){
-        const cur=val(ds[ds.length-1].d,row.k), prev=val(ds[ds.length-2].d,row.k);
-        const g2 = prev ? (cur-prev)/Math.abs(prev)*100 : 0;
-        delta=`${g2>=0?'+':''}${p1(g2)}%`;
-      }
+      if(ds.length>=2){ const cur=val(ds[ds.length-1].d,row.k), prev=val(ds[ds.length-2].d,row.k); const g2=prev?(cur-prev)/Math.abs(prev)*100:0; delta=`${g2>=0?'+':''}${p1(g2)}%`; }
       h+=`<td class="num delta">${delta}</td></tr>`;
     });
   });
-  h+=`</tbody></table>`;
-  $("detailTable").innerHTML=h;
+  $("detailTable").innerHTML=h+`</tbody></table>`;
 }
 
 /* ---------- run ---------- */
@@ -793,52 +739,55 @@ function run(){
   applyUnitLabels();
   sortPeriods();
   renderPeriodBar();
+  updateComputedInputs();
   const ds=derived();
-  renderBS(ds[curIdx].d);
   drawChart(ds);
   renderLegend();
   renderAnalysis(ds);
   renderDetail(ds);
 }
+
 /* ---------- listeners ---------- */
-IDS.forEach(id=> $(id).addEventListener("input", ()=>{ readFormToPeriod(); run(); }));
+function onFormInput(e){
+  const t=e.target; if(t.tagName!=='INPUT'||!t.id.startsWith('in_')||t.readOnly) return;
+  const key=t.id.slice(3);
+  periods[curIdx].vals[key]=parseFloat(t.value)||0;
+  run();
+}
+$("bsForm").addEventListener("input", onFormInput);
+$("plForm").addEventListener("input", onFormInput);
+$("bsForm").addEventListener("click", e=>{
+  const b=e.target.closest(".det-toggle"); if(!b) return;
+  const big=b.dataset.big, v=periods[curIdx].vals, key='det_'+big;
+  v[key]=!v[key];
+  if(v[key]){ const anyLeaf=LEAF_MAP[big].some(k=> (+v[k]||0)!==0); if(!anyLeaf){ v[OTHER_LEAF[big]]=+v[big]||0; } }
+  buildInputForm(); run();
+});
 $("unit").addEventListener("change", run);
 $("resetBtn").addEventListener("click", openResetModal);
 $("delBtn").addEventListener("click", openDeleteModal);
-
 $("periodbar").addEventListener("click", e=>{
   const t=e.target;
-  if(t.classList.contains("ptab")){ readFormToPeriod(); curIdx=+t.dataset.i; loadPeriodToForm(); run(); return; }
-  if(t.id==="addBtn"){ readFormToPeriod(); openAddModal(); return; }
+  if(t.classList.contains("ptab")){ curIdx=+t.dataset.i; buildInputForm(); run(); return; }
+  if(t.id==="addBtn"){ openAddModal(); return; }
 });
+$("modalCancel").addEventListener("click", closeModal);
+$("modal").addEventListener("click", e=>{ if(e.target.id==='modal') closeModal(); });
+$("modalOk").addEventListener("click", ()=>{ if(!modalOnOk || modalOnOk()!==false) closeModal(); });
+$("modal").addEventListener("keydown", e=>{ if(e.key==='Enter'){ e.preventDefault(); $("modalOk").click(); } else if(e.key==='Escape'){ closeModal(); } });
 
-/* tabs */
 function switchTab(name){
   document.querySelectorAll(".tab").forEach(t=> t.classList.toggle("active", t.dataset.tab===name));
   document.querySelectorAll(".tabpane").forEach(p=> p.classList.toggle("active", p.id==="tab-"+name));
 }
 document.querySelectorAll(".tab").forEach(t=> t.addEventListener("click", ()=> switchTab(t.dataset.tab)));
 $("calcBtn").addEventListener("click", ()=>{ run(); switchTab("view"); });
+$("subtabs").addEventListener("click", e=>{ const b=e.target.closest(".subtab"); if(!b) return; curCat=b.dataset.cat; curKey=CATS[curCat].metrics[0].key; run(); });
+$("metricbtns").addEventListener("click", e=>{ const b=e.target.closest(".mbtn"); if(!b) return; curKey=b.dataset.key; run(); });
+$("metricdetail").addEventListener("click", e=>{ const b=e.target.closest(".cbtn"); if(!b||b.disabled) return; cmpN=+b.dataset.n; run(); });
+$("segToggle").addEventListener("click", e=>{ const b=e.target.closest(".cbtn"); if(!b) return; cmpSeg=b.dataset.seg; renderDetail(derived()); });
 
-/* analysis sub-tabs & metric buttons & comparison toggle */
-$("subtabs").addEventListener("click", e=>{
-  const b=e.target.closest(".subtab"); if(!b) return;
-  curCat=b.dataset.cat; curKey=CATS[curCat].metrics[0].key; run();
-});
-$("metricbtns").addEventListener("click", e=>{
-  const b=e.target.closest(".mbtn"); if(!b) return;
-  curKey=b.dataset.key; run();
-});
-$("metricdetail").addEventListener("click", e=>{
-  const b=e.target.closest(".cbtn"); if(!b || b.disabled) return;
-  cmpN=+b.dataset.n; run();
-});
-$("segToggle").addEventListener("click", e=>{
-  const b=e.target.closest(".cbtn"); if(!b) return;
-  cmpSeg=b.dataset.seg; renderDetail(derived());
-});
-
-loadPeriodToForm();
+buildInputForm();
 run();
 </script>
 </body>
