@@ -60,7 +60,9 @@
     border:1px solid #bbb;border-radius:4px;font-variant-numeric:tabular-nums;
   }
   .field input:focus{outline:2px solid var(--accent);border-color:var(--accent);}
-  .unit{font-size:11px;color:var(--muted);width:26px;text-align:left;}
+  .unit{font-size:11px;color:var(--muted);min-width:44px;text-align:left;}
+  .field select{width:130px;padding:4px 6px;font-size:13px;border:1px solid #bbb;border-radius:4px;background:#fff;}
+  .field select:focus{outline:2px solid var(--accent);border-color:var(--accent);}
   .btnrow{display:flex;gap:8px;margin-top:12px;}
   button{
     flex:1;padding:8px;border:none;border-radius:6px;font-size:13px;cursor:pointer;font-weight:600;
@@ -169,6 +171,15 @@
     <section class="panel">
       <h2>決算書の入力</h2>
 
+      <div class="field"><label>金額の単位</label>
+        <select id="unit">
+          <option value="10億円">10億円</option>
+          <option value="億円" selected>億円</option>
+          <option value="100万円">100万円</option>
+          <option value="万円">万円</option>
+        </select>
+      </div>
+
       <h3>貸借対照表（BS）</h3>
       <div class="bs-title">貸借対照表<span class="bs-unit">単位：億円</span></div>
       <table class="bs-sheet">
@@ -188,7 +199,7 @@
           <td class="nm">固定負債（長期）</td><td class="amt"><input type="number" id="fl" value="9607"></td>
         </tr>
         <tr>
-          <td class="blankcell" colspan="2" rowspan="5"><span class="vlabel">会社が持っている財産</span></td>
+          <td class="blankcell" colspan="2" rowspan="5"></td>
           <td class="nm tot">負債合計</td><td class="amt tot" id="totLiab">0</td>
         </tr>
         <tr>
@@ -263,6 +274,12 @@ const fmt = n => Math.round(n).toLocaleString("ja-JP");
 const pct = (n, base) => base ? (n / base * 100) : 0;
 const p1 = n => (Math.round(n * 10) / 10).toFixed(1);
 const p2 = n => (Math.round(n * 100) / 100).toFixed(2);
+const unitStr = () => { const el=$("unit"); return el ? el.value : "億円"; };
+function applyUnitLabels(){
+  const u=unitStr();
+  document.querySelectorAll(".unit").forEach(s=> s.textContent=u);
+  const bu=document.querySelector(".bs-unit"); if(bu) bu.textContent="単位："+u;
+}
 
 function compute(){
   const ca=num("ca"), fa=num("fa"), cl=num("cl"), fl=num("fl"), cap=num("cap"), re=num("re");
@@ -349,7 +366,7 @@ function drawChart(d, hi){
   }
 
   // headers
-  s += txt(16, top-90, "単位：億円", {size:F_AXIS, fill:'#777'});
+  s += txt(16, top-90, "単位："+unitStr(), {size:F_AXIS, fill:'#777'});
   s += txt((c1x0+c2x1)/2, top-56, "総資本", {anchor:'middle', size:F_HEAD, weight:'bold'});
   s += txt((c1x0+c2x1)/2, top-12, fmt(d.totalCapital), {anchor:'middle', size:F_HEAD, weight:'bold'});
 
@@ -459,15 +476,15 @@ const opmVal = d => d.sales ? d.operatingProfit/d.sales*100 : 0;
 const CATS = {
   growth:{ name:'成長性', note:'※成長率は前期データが必要です（本簡易版は1期のみのため実額を参考表示）。',
     metrics:[
-      { key:'sales', label:'売上高', v:d=>d.sales, unit:'億円', dec:0, hi:{boxes:['sales']},
-        formula:d=>`当期 売上高 ＝ <b>${fmt(d.sales)}</b> 億円`,
+      { key:'sales', label:'売上高', v:d=>d.sales, unit:unitStr, dec:0, hi:{boxes:['sales']},
+        formula:d=>`当期 売上高 ＝ <b>${fmt(d.sales)}</b> ${unitStr()}`,
         meaning:'一定期間に本業で稼いだ収入の総額。成長性は前期比（増収率）で評価しますが、前期データがないため本版では実額のみを表示します。',
         rows:[{lv:'good',name:'増収',range:'前期比 プラス',note:'売上が伸びている'},
               {lv:'warn',name:'横ばい',range:'前期比 0%前後',note:'ほぼ変化なし'},
               {lv:'bad',name:'減収',range:'前期比 マイナス',note:'売上が縮小'}],
         judge:d=>null },
-      { key:'ni', label:'当期純利益', v:d=>d.netIncome, unit:'億円', dec:0, hi:{lines:['ni']},
-        formula:d=>`当期 当期純利益 ＝ <b>${fmt(d.netIncome)}</b> 億円`,
+      { key:'ni', label:'当期純利益', v:d=>d.netIncome, unit:unitStr, dec:0, hi:{lines:['ni']},
+        formula:d=>`当期 当期純利益 ＝ <b>${fmt(d.netIncome)}</b> ${unitStr()}`,
         meaning:'最終的に会社に残る利益。成長性は前期比（増益率）で見ますが、本版では実額のみを表示します。',
         rows:[{lv:'good',name:'増益',range:'前期比 プラス',note:'利益が伸びている'},
               {lv:'warn',name:'横ばい',range:'前期比 0%前後',note:'ほぼ変化なし'},
@@ -541,7 +558,8 @@ function findMetric(cat,key){ return CATS[cat].metrics.find(m=>m.key===key); }
 function fmtMetric(m,d){
   const v=m.v(d);
   const s=(m.dec===0)?fmt(v):(m.dec===2?p2(v):p1(v));
-  return `${s}<small>${m.unit}</small>`;
+  const u=(typeof m.unit==='function')?m.unit():m.unit;
+  return `${s}<small>${u}</small>`;
 }
 function currentHi(){
   const m=findMetric(curCat,curKey);
@@ -596,6 +614,7 @@ function renderBS(d){
 
 function run(){
   const d = compute();
+  applyUnitLabels();
   renderBS(d);
   drawChart(d, currentHi());
   renderAnalysis(d);
@@ -603,6 +622,7 @@ function run(){
 function reset(){ IDS.forEach(id=> $(id).value = DEFAULTS[id]); run(); }
 
 IDS.forEach(id=> $(id).addEventListener("input", run));
+$("unit").addEventListener("change", run);
 $("resetBtn").addEventListener("click", reset);
 
 /* tabs */
