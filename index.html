@@ -170,6 +170,8 @@
   .ph{color:#94a3b8;font-size:13px;padding:24px;text-align:center;}
   #dChart{overflow-x:auto;width:100%;}
   #dChart svg{display:block;width:100%;height:auto;margin:0 auto;}
+  .fig50{height:50vh;width:100%;}
+  .fig50 svg{height:100%;}
   .cf-pattern{border:1px solid #e2e8f0;border-radius:8px;padding:14px 16px;background:#fff;margin-bottom:12px;}
   .cf-badge{display:inline-block;background:var(--accent);color:#fff;font-weight:800;font-size:14px;padding:4px 14px;border-radius:999px;}
   .cf-desc{font-size:12.5px;color:#374151;margin-top:8px;line-height:1.7;}
@@ -587,12 +589,12 @@ const C = {ca:'#4E79A7', fa:'#4E8A46', cl:'#C4433F', fl:'#CC6A1F', na:'#8E5AA0',
 const GOLD='#e8a11a';
 function comboSVG(ds, hi, showPL){
   showPL = showPL!==false;
-  const n=ds.length, NB=showPL?3:2;
+  const n=ds.length;
   let gmax=0; ds.forEach(({d})=>{ gmax=Math.max(gmax,d.totalCapital,d.totalAssets, showPL?d.sales:0); });
   if(gmax<=0) gmax=1;
   const AX=70, TOP=70, BOT=470, chH=BOT-TOP;
   const Y=p=> BOT-(p/100)*chH, PV=v=> v/gmax*100;
-  const BW=56, BG=15, GPAD=34, groupInner=NB*BW+(NB-1)*BG, slot=groupInner+GPAD*2, x0=AX+24, W=x0+n*slot+20, H=560;
+  const BW=56, PLGAP=30, GPAD=34, groupInner=(showPL?3*BW+PLGAP:2*BW), slot=groupInner+GPAD*2, x0=AX+24, W=x0+n*slot+20, H=560;
   const boxKeep=hi? new Set(hi.boxes||[]):null; if(boxKeep&&boxKeep.has('sales')) boxKeep.add('gp');
   const box=(x,w,yT,yB,fill,title)=> `<rect x="${x}" y="${yT}" width="${w}" height="${Math.max(0,yB-yT)}" fill="${fill}" stroke="#333" stroke-width="1">${title?`<title>${title}</title>`:''}</rect>`;
   const segLabel=(x,yT,yB,val)=> (yB-yT>=20)? `<text x="${x+BW/2}" y="${(yT+yB)/2+4}" font-size="13" fill="#fff" text-anchor="middle">${fmt(val)}</text>`:'';
@@ -607,7 +609,7 @@ function comboSVG(ds, hi, showPL){
   s+=`<text x="6" y="${TOP-12}" font-size="14" fill="#777">単位：${unitStr()}</text>`;
   s+=`<text x="${AX+18}" y="26" font-size="14" fill="#555">最大値 ${fmt(gmax)} ${unitStr()} を 100% として表示（左＝古い ／ 右＝新しい）</text>`;
   ds.forEach(({year,d},gi)=>{
-    const gx=x0+gi*slot+GPAD, bx=[gx,gx+BW+BG,gx+2*(BW+BG)];
+    const gx=x0+gi*slot+GPAD, bx=[gx,gx+BW,gx+2*BW+PLGAP];
     const yFa=Y(PV(d.fa)), yA=Y(PV(d.fa+d.ca));
     const tt=(nm,val,base)=>`${nm}：${fmt(val)} ${unitStr()}${base?`（${p1(val/base*100)}%）`:''}`;
     // 資産
@@ -1169,7 +1171,7 @@ const BS_LEGEND=`<span class="lg"><i style="background:${C.ca}"></i>流動資産
 function dAll(ds){
   const m=ALL_METRICS[allMetricKey];
   $("dControls").innerHTML=`<p class="note" style="margin:2px 0 6px;">BS・PLを最大値100%で図解（①期間比較と同じ図）。負債の点線枠＝有利子負債。下段は有利子負債を 短期(＋)／長期(−) で表示。指標ボタンで該当箇所を強調します。</p>`;
-  $("dChart").innerHTML = comboSVG(ds, m?m.hi:null, true) + drawIBDDiverge(ds);
+  $("dChart").innerHTML = `<div class="fig50">`+comboSVG(ds, m?m.hi:null, true)+`</div>` + drawIBDDiverge(ds);
   $("dLegend").innerHTML = BS_LEGEND+`<span class="lg"><i style="background:${C.gp}"></i>粗利</span>`;
   allMetricKey=renderMetricPanel(ds,['roe','finlev','roa','turnover','roic','icr','debty','recvdays','invturn'],allMetricKey);
 }
@@ -1193,7 +1195,7 @@ function dBS(ds){
   $("dControls").innerHTML=`<div class="ctl-row"><span class="ctl-lbl">対象：</span>`+opt.map(o=>`<button class="chip ${bsSel===o[0]?'on':''}" data-bssel="${o[0]}">${o[1]}</button>`).join('')+`</div>`;
   if(bsSel==='all'){
     const m=ALL_METRICS[bsMetricKey];
-    $("dChart").innerHTML=comboSVG(ds, m?m.hi:null, false);
+    $("dChart").innerHTML=`<div class="fig50">`+comboSVG(ds, m?m.hi:null, false)+`</div>`;
     $("dLegend").innerHTML=BS_LEGEND;
   } else {
     const meta={totalAssets:['総資産','#5b8def'],ibd:['有利子負債','#C4433F'],na:['純資産','#8E5AA0']}[bsSel];
