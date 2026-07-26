@@ -70,6 +70,11 @@
   .det-toggle{flex:0 0 auto;font-size:11px;padding:3px 8px;border:1px solid #cbd5e0;background:#fff;color:#475569;border-radius:5px;cursor:pointer;font-weight:600;}
   .det-toggle:hover{background:#eef2f6;}
   .det-toggle.on{background:var(--accent);color:#fff;border-color:transparent;}
+  .bs-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;align-items:start;}
+  @media(max-width:700px){.bs-grid{grid-template-columns:1fr;}}
+  .bs-balance{margin-top:8px;padding:8px 12px;border-radius:6px;font-size:13px;font-weight:700;text-align:center;}
+  .bs-balance.ok{background:#e6f4ea;color:var(--good);border:1px solid #a7d7b8;}
+  .bs-balance.ng{background:#fde8e8;color:var(--bad);border:1px solid #f0b4b4;}
 
   /* chart */
   .chart-card{overflow:hidden;}
@@ -228,6 +233,16 @@
           <option value="万円">万円</option>
         </select>
       </div>
+
+      <h3>貸借対照表（BS）</h3>
+      <div class="bs-title">貸借対照表<span class="bs-unit">単位：億円</span></div>
+      <div class="bs-grid">
+        <div id="bsLeft" class="ledger"></div>
+        <div id="bsRight" class="ledger"></div>
+      </div>
+      <div class="bs-balance" id="bsBalance"></div>
+
+      <h3>損益計算書（PL）</h3>
       <div class="field"><label>売上原価の型（業種）</label>
         <select id="costType">
           <option value="A" selected>製造業（材料費・労務費・外注費…）</option>
@@ -235,12 +250,6 @@
           <option value="C">サービス業（労務費・外注費…）</option>
         </select>
       </div>
-
-      <h3>貸借対照表（BS）</h3>
-      <div class="bs-title">貸借対照表<span class="bs-unit">単位：億円</span></div>
-      <div id="bsForm" class="ledger"></div>
-
-      <h3>損益計算書（PL）</h3>
       <div id="plForm" class="ledger"></div>
 
       <div class="btnrow">
@@ -302,7 +311,7 @@ const leavesOf = big => big==='cogs' ? cogsLeaves().map(x=>x[0]) : LEAF_MAP[big]
 const otherOf  = big => big==='cogs' ? (costType==='B'?'purch':'othcogs') : OTHER_LEAF[big];
 
 const DEFAULTS = (()=>{ const o={}; NUM_KEYS.forEach(k=> o[k]=0); DET_KEYS.forEach(k=> o[k]=false);
-  Object.assign(o,{ca:5712,fa:19890,cl:5305,fl:9607,cap:5181,re:5508,sales:19742,cogs:15834,sga:3300,noi:100,noe:200,exg:0,exl:50,tax:181});
+  Object.assign(o,{ca:5712,fa:19890,cl:5305,fl:9607,cap:5181,re:5509,sales:19742,cogs:15834,sga:3300,noi:100,noe:200,exg:0,exl:50,tax:181});
   return o; })();
 const zeros = ()=>{ const o={}; NUM_KEYS.forEach(k=> o[k]=0); DET_KEYS.forEach(k=> o[k]=false); return o; };
 
@@ -368,11 +377,13 @@ function computeVals(v){
 const derived = () => periods.map(p=> ({year:p.year, d:computeVals(p.vals)}));
 
 /* ---------- input form (BS/PL) ---------- */
-const BS_STRUCT = [
+const BS_LEFT = [
   {sec:'資産の部'},
   {big:'ca', label:'流動資産', leaves:[['cash','現金・預金'],['sec','有価証券(短期)'],['recv','売上債権(売掛金・受取手形)'],['inv','棚卸資産'],['oca','その他流動資産']]},
   {big:'fa', label:'固定資産', leaves:[['tfa','有形固定資産'],['ifa','無形固定資産'],['iota','投資その他の資産']]},
   {auto:'totalAssets', label:'資産合計'},
+];
+const BS_RIGHT = [
   {sec:'負債の部', cls:'liab'},
   {big:'cl', label:'流動負債', leaves:[['payb','仕入債務(買掛金・支払手形)'],['stloan','短期借入金 ★'],['cpltd','1年内返済長期借入金 ★'],['ocl','その他流動負債']]},
   {big:'fl', label:'固定負債', leaves:[['ltloan','長期借入金 ★'],['bond','社債 ★'],['ofl','その他固定負債']]},
@@ -427,7 +438,8 @@ function buildInputForm(){
       return '';
     }).join('');
   }
-  $("bsForm").innerHTML = render(BS_STRUCT);
+  $("bsLeft").innerHTML = render(BS_LEFT);
+  $("bsRight").innerHTML = render(BS_RIGHT);
   $("plForm").innerHTML = render(PL_STRUCT);
   updateComputedInputs();
 }
@@ -446,6 +458,10 @@ function updateComputedInputs(){
   setTxt('na',d.na); setTxt('totalCapital',d.totalCapital);
   setTxt('grossProfit',d.grossProfit); setTxt('operatingProfit',d.operatingProfit);
   setTxt('ordinaryProfit',d.ordinaryProfit); setTxt('pretaxProfit',d.pretaxProfit); setTxt('netIncome',d.netIncome);
+  const bal=$("bsBalance");
+  if(bal){ const diff=d.totalAssets-d.totalCapital, u=unitStr();
+    if(Math.round(diff)===0){ bal.className='bs-balance ok'; bal.textContent=`貸借一致（差額 0 ${u}）`; }
+    else { bal.className='bs-balance ng'; bal.textContent=`貸借差 ${diff>0?'+':''}${fmt(diff)} ${u}（資産合計 − 負債・純資産合計）— 一致するよう入力してください`; } }
 }
 
 /* ---------- period bar ---------- */
@@ -816,7 +832,8 @@ function onFormInput(e){
   periods[curIdx].vals[key]=parseFloat(t.value)||0;
   run();
 }
-$("bsForm").addEventListener("input", onFormInput);
+$("bsLeft").addEventListener("input", onFormInput);
+$("bsRight").addEventListener("input", onFormInput);
 $("plForm").addEventListener("input", onFormInput);
 function onDetClick(e){
   const b=e.target.closest(".det-toggle"); if(!b) return;
@@ -825,7 +842,8 @@ function onDetClick(e){
   if(v[key]){ const ls=leavesOf(big); const anyLeaf=ls.some(k=> (+v[k]||0)!==0); if(!anyLeaf){ v[otherOf(big)]=+v[big]||0; } }
   buildInputForm(); run();
 }
-$("bsForm").addEventListener("click", onDetClick);
+$("bsLeft").addEventListener("click", onDetClick);
+$("bsRight").addEventListener("click", onDetClick);
 $("plForm").addEventListener("click", onDetClick);
 $("unit").addEventListener("change", run);
 $("costType").addEventListener("change", e=>{ costType=e.target.value; buildInputForm(); run(); });
