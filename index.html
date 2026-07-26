@@ -91,6 +91,7 @@
   .subtab[data-cat="growth"].active{background:#5b8def;}
   .subtab[data-cat="eff"].active{background:#8b5cf6;}
   .subtab[data-cat="prof"].active{background:#e0873a;}
+  .subtab[data-cat="cost"].active{background:#0d9488;}
   .subtab[data-cat="safe"].active{background:#2f9e6f;}
   .companytabs .subtab.active{background:var(--accent);}
   .metricbtns{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;}
@@ -191,6 +192,7 @@
         <button class="subtab" data-cat="growth">成長性</button>
         <button class="subtab" data-cat="eff">効率性</button>
         <button class="subtab active" data-cat="prof">収益性</button>
+        <button class="subtab" data-cat="cost">コスト</button>
         <button class="subtab" data-cat="safe">安全性</button>
       </div>
       <div class="metricbtns" id="metricbtns"></div>
@@ -224,6 +226,13 @@
           <option value="億円" selected>億円</option>
           <option value="100万円">100万円</option>
           <option value="万円">万円</option>
+        </select>
+      </div>
+      <div class="field"><label>売上原価の型（業種）</label>
+        <select id="costType">
+          <option value="A" selected>製造業（材料費・労務費・外注費…）</option>
+          <option value="B">商業・小売（仕入・棚卸）</option>
+          <option value="C">サービス業（労務費・外注費…）</option>
         </select>
       </div>
 
@@ -276,10 +285,21 @@ function applyUnitLabels(){
 const MAXP = 5;
 const NUM_KEYS = ['ca','cash','sec','recv','inv','oca','fa','tfa','ifa','iota',
   'cl','payb','stloan','cpltd','ocl','fl','ltloan','bond','ofl',
-  'cap','csurp','re','ona','sales','cogs','sga','noi','noe','intexp','exg','exl','tax','dep'];
-const DET_KEYS = ['det_ca','det_fa','det_cl','det_fl'];
-const LEAF_MAP = {ca:['cash','sec','recv','inv','oca'], fa:['tfa','ifa','iota'], cl:['payb','stloan','cpltd','ocl'], fl:['ltloan','bond','ofl']};
-const OTHER_LEAF = {ca:'oca', fa:'iota', cl:'ocl', fl:'ofl'};
+  'cap','csurp','re','ona','sales','cogs','sga','noi','noe','intexp','exg','exl','tax','dep',
+  'matcost','labcost','subcon','depcogs','othcogs','beginv','purch','endinv',
+  'perscost','adv','rent','depsga','othsga'];
+const DET_KEYS = ['det_ca','det_fa','det_cl','det_fl','det_cogs','det_sga'];
+let costType = 'A';   // A:製造業 / B:商業・小売 / C:サービス業
+const SGA_LEAVES = [['perscost','人件費'],['adv','広告宣伝費・販促費'],['rent','地代家賃'],['depsga','減価償却費(販管)'],['othsga','その他販管費']];
+function cogsLeaves(){
+  if(costType==='A') return [['matcost','材料費'],['labcost','労務費'],['subcon','外注費'],['depcogs','減価償却費(製造)'],['othcogs','その他製造経費']];
+  if(costType==='B') return [['beginv','期首商品棚卸高'],['purch','当期商品仕入高'],['endinv','期末商品棚卸高(△控除)']];
+  return [['labcost','労務費'],['subcon','外注費'],['othcogs','その他直接経費']];
+}
+const LEAF_MAP = {ca:['cash','sec','recv','inv','oca'], fa:['tfa','ifa','iota'], cl:['payb','stloan','cpltd','ocl'], fl:['ltloan','bond','ofl'], sga:['perscost','adv','rent','depsga','othsga']};
+const OTHER_LEAF = {ca:'oca', fa:'iota', cl:'ocl', fl:'ofl', sga:'othsga'};
+const leavesOf = big => big==='cogs' ? cogsLeaves().map(x=>x[0]) : LEAF_MAP[big];
+const otherOf  = big => big==='cogs' ? (costType==='B'?'purch':'othcogs') : OTHER_LEAF[big];
 
 const DEFAULTS = (()=>{ const o={}; NUM_KEYS.forEach(k=> o[k]=0); DET_KEYS.forEach(k=> o[k]=false);
   Object.assign(o,{ca:5712,fa:19890,cl:5305,fl:9607,cap:5181,re:5508,sales:19742,cogs:15834,sga:3300,noi:100,noe:200,exg:0,exl:50,tax:181});
@@ -302,9 +322,20 @@ function computeVals(v){
   const na=cap+csurp+re+ona, totalAssets=ca+fa, totalCapital=cl+fl+na;
   const ibd=g('stloan')+g('cpltd')+g('ltloan')+g('bond');
   const cash=g('cash'), quick=g('cash')+g('sec')+g('recv'), inv=g('inv'), recv=g('recv');
-  const sales=g('sales'),cogs=g('cogs'),sga=g('sga'),noi=g('noi'),noe=g('noe'),intexp=g('intexp'),exg=g('exg'),exl=g('exl'),tax=g('tax'),dep=g('dep');
+  const sales=g('sales'),noi=g('noi'),noe=g('noe'),intexp=g('intexp'),exg=g('exg'),exl=g('exl'),tax=g('tax');
+  let cogs;
+  if(v.det_cogs){
+    if(costType==='A') cogs=g('matcost')+g('labcost')+g('subcon')+g('depcogs')+g('othcogs');
+    else if(costType==='B') cogs=g('beginv')+g('purch')-g('endinv');
+    else cogs=g('labcost')+g('subcon')+g('othcogs');
+  } else cogs=g('cogs');
+  const sga = v.det_sga ? g('perscost')+g('adv')+g('rent')+g('depsga')+g('othsga') : g('sga');
+  const dep = (v.det_cogs||v.det_sga) ? ((v.det_cogs?g('depcogs'):0)+(v.det_sga?g('depsga'):0)) : g('dep');
+  const laborCost = (v.det_cogs&&costType!=='B'?g('labcost'):0) + (v.det_sga?g('perscost'):0);
+  const personnelReady = !!(v.det_sga || (v.det_cogs&&costType!=='B'));
   const grossProfit=sales-cogs, operatingProfit=grossProfit-sga, ordinaryProfit=operatingProfit+noi-noe, pretaxProfit=ordinaryProfit+exg-exl, netIncome=pretaxProfit-tax;
   const busProfit=operatingProfit+noi, simpleCF=operatingProfit+dep;
+  const costRatio=sales? cogs/sales*100:0, sgaRatio=sales? sga/sales*100:0, personnelRatio=sales? laborCost/sales*100:0, laborShare=grossProfit>0? laborCost/grossProfit*100:0;
   const ibdReady=!!(v.det_cl||v.det_fl), quickReady=!!v.det_ca;
   const currentRatio=cl? ca/cl*100:0;
   const quickRatio=cl? quick/cl*100:0;
@@ -329,7 +360,10 @@ function computeVals(v){
     sales,cogs,sga,noi,noe,intexp,exg,exl,tax,dep,
     grossProfit,operatingProfit,ordinaryProfit,pretaxProfit,netIncome,busProfit,simpleCF,
     currentRatio,quickRatio,fixedLTRatio,roe,equityRatio,netMargin,opMargin,assetTurnover,finLeverage,
-    de,ibdRatio,netDe,debtMonths,icr,debtYears,invTurnover,recvDays,ibdReady,quickReady};
+    de,ibdRatio,netDe,debtMonths,icr,debtYears,invTurnover,recvDays,ibdReady,quickReady,
+    matcost:g('matcost'),labcost:g('labcost'),subcon:g('subcon'),depcogs:g('depcogs'),othcogs:g('othcogs'),
+    beginv:g('beginv'),purch:g('purch'),endinv:g('endinv'),perscost:g('perscost'),adv:g('adv'),rent:g('rent'),depsga:g('depsga'),othsga:g('othsga'),
+    laborCost,costRatio,sgaRatio,personnelRatio,laborShare,personnelReady};
 }
 const derived = () => periods.map(p=> ({year:p.year, d:computeVals(p.vals)}));
 
@@ -354,9 +388,9 @@ const BS_STRUCT = [
 ];
 const PL_STRUCT = [
   {plain:'sales', label:'売上高'},
-  {plain:'cogs', label:'売上原価'},
+  {big:'cogs', label:'売上原価', leavesFn:cogsLeaves},
   {auto:'grossProfit', label:'売上総利益（粗利）'},
-  {plain:'sga', label:'販管費'},
+  {big:'sga', label:'販管費', leaves:SGA_LEAVES},
   {auto:'operatingProfit', label:'営業利益'},
   {plain:'noi', label:'営業外収益'},
   {plain:'noe', label:'営業外費用'},
@@ -367,7 +401,7 @@ const PL_STRUCT = [
   {auto:'pretaxProfit', label:'税引前当期純利益'},
   {plain:'tax', label:'法人税等'},
   {auto:'netIncome', label:'当期純利益'},
-  {plain:'dep', label:'減価償却費（債務償還年数用）', sub:true},
+  {depRow:true, label:'減価償却費（債務償還年数用）'},
 ];
 function buildInputForm(){
   const v=periods[curIdx].vals, u=unitStr();
@@ -380,13 +414,14 @@ function buildInputForm(){
     if(det) h+=`<input type="number" id="in_${item.big}" value="0" readonly>`;
     else h+=`<input type="number" id="in_${item.big}" value="${g(item.big)}">`;
     h+=`<span class="unit">${u}</span><button class="det-toggle ${det?'on':''}" data-big="${item.big}">${det?'▾ 内訳':'▸ 内訳'}</button></div>`;
-    if(det) h+=item.leaves.map(([k,lb])=> numRow(k,lb,'fleaf')).join('');
+    if(det){ const lv=item.leavesFn? item.leavesFn(): item.leaves; h+=lv.map(([k,lb])=> numRow(k,lb,'fleaf')).join(''); }
     return h;
   }
   function render(struct){
     return struct.map(item=>{
       if(item.sec) return `<div class="fsec ${item.cls||''}">${item.sec}</div>`;
       if(item.big) return bigRow(item);
+      if(item.depRow) return (v.det_cogs||v.det_sga)? autoRow('dep', item.label, 'fsub') : numRow('dep', item.label, 'fsub');
       if(item.auto) return autoRow(item.auto, item.label, item.sub?'fsub':'');
       if(item.plain) return numRow(item.plain, item.label, item.sub?'fsub':'');
       return '';
@@ -404,6 +439,9 @@ function updateComputedInputs(){
   if(v.det_fa) setNum('fa',d.fa);
   if(v.det_cl) setNum('cl',d.cl);
   if(v.det_fl) setNum('fl',d.fl);
+  if(v.det_cogs) setNum('cogs',d.cogs);
+  if(v.det_sga) setNum('sga',d.sga);
+  if(v.det_cogs||v.det_sga) setTxt('dep',d.dep);
   setTxt('totalAssets',d.totalAssets); setTxt('liab',d.cl+d.fl); setTxt('ibd',d.ibd);
   setTxt('na',d.na); setTxt('totalCapital',d.totalCapital);
   setTxt('grossProfit',d.grossProfit); setTxt('operatingProfit',d.operatingProfit);
@@ -568,6 +606,29 @@ const CATS = {
         rows:[{lv:'good',name:'良好',range:'10% 以上',note:'本業の収益力が高い'},{lv:'warn',name:'普通',range:'2〜10%',note:'一般的な水準'},{lv:'bad',name:'低い',range:'2% 未満',note:'本業の採算が弱い'}],
         judge:d=>{const v=d.opMargin; return v>=10?'good':v>=2?'warn':'bad';} },
     ]},
+  cost:{ name:'コスト', note:'※人件費率・労働分配率は原価/販管費の内訳（人件費・労務費）入力が必要です。',
+    metrics:[
+      { key:'costr', label:'原価率', v:d=>d.costRatio, unit:'%', dec:1, hi:{boxes:['sales']},
+        formula:d=>`売上原価 <b>${fmt(d.cogs)}</b> ÷ 売上高 <b>${fmt(d.sales)}</b> × 100 ＝ <b>${p1(d.costRatio)}</b>%`,
+        meaning:'売上に対する売上原価の割合。低いほど粗利率が高い（100%−原価率＝粗利率）。',
+        rows:[{lv:'good',name:'低い',range:'70% 以下',note:'粗利率が高い'},{lv:'warn',name:'普通',range:'70〜85%',note:'標準的'},{lv:'bad',name:'高い',range:'85% 超',note:'粗利が薄い'}],
+        judge:d=>{const v=d.costRatio; return v<=70?'good':v<=85?'warn':'bad';} },
+      { key:'sgar', label:'販管費率', v:d=>d.sgaRatio, unit:'%', dec:1, hi:{boxes:['sales'],lines:['op']},
+        formula:d=>`販管費 <b>${fmt(d.sga)}</b> ÷ 売上高 <b>${fmt(d.sales)}</b> × 100 ＝ <b>${p1(d.sgaRatio)}</b>%`,
+        meaning:'売上に対する販管費の割合。低いほど固定費負担が軽い。',
+        rows:[{lv:'good',name:'低い',range:'15% 以下',note:'費用効率が良い'},{lv:'warn',name:'普通',range:'15〜30%',note:'標準的'},{lv:'bad',name:'高い',range:'30% 超',note:'固定費負担が重い'}],
+        judge:d=>{const v=d.sgaRatio; return v<=15?'good':v<=30?'warn':'bad';} },
+      { key:'persr', label:'人件費率', v:d=>d.personnelRatio, unit:'%', dec:1, hi:{boxes:['sales']}, ready:d=>d.personnelReady,
+        formula:d=>`人件費 <b>${fmt(d.laborCost)}</b>（労務費＋販管人件費）÷ 売上高 <b>${fmt(d.sales)}</b> × 100 ＝ <b>${p1(d.personnelRatio)}</b>%`,
+        meaning:'売上に対する人件費（原価の労務費＋販管の人件費）の割合。原価/販管費の内訳入力が必要です。',
+        rows:[{lv:'good',name:'低い',range:'15% 以下',note:'労働生産性が高い'},{lv:'warn',name:'普通',range:'15〜30%',note:'標準的'},{lv:'bad',name:'高い',range:'30% 超',note:'人件費負担が重い'}],
+        judge:d=>{const v=d.personnelRatio; return v<=15?'good':v<=30?'warn':'bad';} },
+      { key:'labshare', label:'労働分配率', v:d=>d.laborShare, unit:'%', dec:1, hi:{boxes:['sales']}, ready:d=>d.personnelReady,
+        formula:d=>`人件費 <b>${fmt(d.laborCost)}</b> ÷ 粗利 <b>${fmt(d.grossProfit)}</b> × 100 ＝ <b>${p1(d.laborShare)}</b>%`,
+        meaning:'付加価値（本ツールでは粗利で簡易代用）のうち人件費に分配された割合。高すぎると利益を圧迫、低すぎると賃金水準が低い可能性。',
+        rows:[{lv:'good',name:'適正',range:'50% 以下',note:'利益を確保しやすい'},{lv:'warn',name:'やや高',range:'50〜70%',note:'標準〜やや高い'},{lv:'bad',name:'高い',range:'70% 超',note:'利益を圧迫'}],
+        judge:d=>{const v=d.laborShare; return v<=50?'good':v<=70?'warn':'bad';} },
+    ]},
   safe:{ name:'安全性',
     metrics:[
       { key:'current', label:'流動比率', v:d=>d.currentRatio, unit:'%', dec:1, hi:{boxes:['ca','cl']},
@@ -702,21 +763,22 @@ const BS_ROWS=[
   {k:'na',name:'純資産合計',tot:true},
   {k:'totalCapital',name:'負債・純資産合計',grand:true},
 ];
-const PL_ROWS=[
-  {k:'sales',name:'売上高'},{k:'cogs',name:'売上原価'},{k:'grossProfit',name:'売上総利益（粗利）',tot:true},
-  {k:'sga',name:'販管費'},{k:'operatingProfit',name:'営業利益',tot:true},
-  {k:'noi',name:'営業外収益'},{k:'noe',name:'営業外費用'},{k:'intexp',name:'うち支払利息',leaf:true},
-  {k:'ordinaryProfit',name:'経常利益',tot:true},
-  {k:'exg',name:'特別利益'},{k:'exl',name:'特別損失'},{k:'pretaxProfit',name:'税引前当期純利益',tot:true},
-  {k:'tax',name:'法人税等'},{k:'netIncome',name:'当期純利益',tot:true},
-  {k:'dep',name:'減価償却費',leaf:true},
-];
+function plRows(){
+  const r=[{k:'sales',name:'売上高'},{k:'cogs',name:'売上原価',tot:true}];
+  cogsLeaves().forEach(([k,nm])=> r.push({k,name:nm,leaf:true}));
+  r.push({k:'grossProfit',name:'売上総利益（粗利）',tot:true},{k:'sga',name:'販管費',tot:true});
+  SGA_LEAVES.forEach(([k,nm])=> r.push({k,name:nm,leaf:true}));
+  r.push({k:'operatingProfit',name:'営業利益',tot:true},{k:'noi',name:'営業外収益'},{k:'noe',name:'営業外費用'},{k:'intexp',name:'うち支払利息',leaf:true},
+    {k:'ordinaryProfit',name:'経常利益',tot:true},{k:'exg',name:'特別利益'},{k:'exl',name:'特別損失'},{k:'pretaxProfit',name:'税引前当期純利益',tot:true},
+    {k:'tax',name:'法人税等'},{k:'netIncome',name:'当期純利益',tot:true},{k:'dep',name:'減価償却費(合計)',leaf:true});
+  return r;
+}
 function renderDetail(ds){
   document.querySelectorAll('#segToggle .cbtn').forEach(x=> x.classList.toggle('active', x.dataset.seg===cmpSeg));
   const u=unitStr(), val=(d,k)=> k==='liab'?(d.cl+d.fl):d[k];
   const groups=[];
   if(cmpSeg==='all'||cmpSeg==='bs') groups.push({title:'貸借対照表（BS）', rows:BS_ROWS});
-  if(cmpSeg==='all'||cmpSeg==='pl') groups.push({title:'損益計算書（PL）', rows:PL_ROWS});
+  if(cmpSeg==='all'||cmpSeg==='pl') groups.push({title:'損益計算書（PL）', rows:plRows()});
   let h=`<table class="cmp-detail"><thead><tr><th class="itemcol">項目</th>`;
   ds.forEach(r=> h+=`<th>${r.year}年度</th>`);
   h+=`<th>前期比(最新)</th></tr></thead><tbody>`;
@@ -756,14 +818,17 @@ function onFormInput(e){
 }
 $("bsForm").addEventListener("input", onFormInput);
 $("plForm").addEventListener("input", onFormInput);
-$("bsForm").addEventListener("click", e=>{
+function onDetClick(e){
   const b=e.target.closest(".det-toggle"); if(!b) return;
   const big=b.dataset.big, v=periods[curIdx].vals, key='det_'+big;
   v[key]=!v[key];
-  if(v[key]){ const anyLeaf=LEAF_MAP[big].some(k=> (+v[k]||0)!==0); if(!anyLeaf){ v[OTHER_LEAF[big]]=+v[big]||0; } }
+  if(v[key]){ const ls=leavesOf(big); const anyLeaf=ls.some(k=> (+v[k]||0)!==0); if(!anyLeaf){ v[otherOf(big)]=+v[big]||0; } }
   buildInputForm(); run();
-});
+}
+$("bsForm").addEventListener("click", onDetClick);
+$("plForm").addEventListener("click", onDetClick);
 $("unit").addEventListener("change", run);
+$("costType").addEventListener("change", e=>{ costType=e.target.value; buildInputForm(); run(); });
 $("resetBtn").addEventListener("click", openResetModal);
 $("delBtn").addEventListener("click", openDeleteModal);
 $("periodbar").addEventListener("click", e=>{
