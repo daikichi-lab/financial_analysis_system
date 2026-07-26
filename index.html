@@ -70,8 +70,26 @@
   .note{font-size:11px;color:var(--muted);margin-top:8px;}
 
   /* Chart */
-  .chart-card{overflow-x:auto;}
-  svg{display:block;width:100%;height:auto;min-width:720px;font-family:inherit;}
+  .chart-card{overflow:auto;}
+  svg{font-family:inherit;}
+  #chart svg{display:block;height:70vh;width:auto;max-width:100%;margin:0 auto;}
+
+  /* BS balance-sheet input (T-account, photo-like) */
+  .bs-title{background:#8a8f96;color:#fff;text-align:center;font-weight:700;padding:6px;border-radius:4px 4px 0 0;position:relative;font-size:13px;}
+  .bs-unit{position:absolute;right:10px;top:7px;font-size:10px;font-weight:400;}
+  .bs-sheet{border-collapse:collapse;width:100%;font-size:12px;table-layout:fixed;}
+  .bs-sheet td{border:1px solid #cfd4da;padding:4px 6px;height:30px;}
+  .bs-sheet .nm{background:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .bs-sheet .amt{text-align:right;font-variant-numeric:tabular-nums;}
+  .bs-sheet .amt input{width:100%;border:1px solid #bcc3cc;border-radius:3px;text-align:right;padding:3px 4px;font-size:12px;font-variant-numeric:tabular-nums;}
+  .bs-sheet .amt input:focus{outline:2px solid var(--accent);border-color:var(--accent);}
+  .bs-sheet .tot{background:#eef1f4;font-weight:700;}
+  .bs-sheet .sec-asset{background:#5b6670;color:#fff;font-weight:700;text-align:center;}
+  .bs-sheet .sec-liab{background:#2f6fb0;color:#fff;font-weight:700;text-align:center;}
+  .bs-sheet .sec-na{background:#2f9e6f;color:#fff;font-weight:700;text-align:center;}
+  .bs-sheet .grand td{background:#dfe4ea;font-weight:700;}
+  .bs-sheet .blankcell{background:#f6f7f9;text-align:center;vertical-align:middle;}
+  .bs-sheet .vlabel{writing-mode:vertical-rl;color:#9aa1a8;font-size:11px;letter-spacing:3px;}
 
   /* DuPont table */
   .dupont{border-collapse:collapse;font-size:12px;margin-bottom:6px;}
@@ -112,22 +130,54 @@
 
 <div class="wrap">
   <div class="tabs">
-    <button class="tab active" data-tab="input">① 数値入力</button>
-    <button class="tab" data-tab="view">② 図・分析を見る</button>
+    <button class="tab active" data-tab="view">① 図・分析を見る</button>
+    <button class="tab" data-tab="input">② 数値入力</button>
   </div>
 
-  <!-- ============ TAB 1: INPUT ============ -->
-  <div class="tabpane active" id="tab-input">
+  <!-- ============ TAB: INPUT ============ -->
+  <div class="tabpane" id="tab-input">
     <section class="panel">
       <h2>決算書の入力</h2>
 
       <h3>貸借対照表（BS）</h3>
-      <div class="field"><label>流動資産合計</label><input type="number" id="ca" value="5712"><span class="unit">億円</span></div>
-      <div class="field"><label>固定資産合計</label><input type="number" id="fa" value="19890"><span class="unit">億円</span></div>
-      <div class="field"><label>短期負債合計（流動負債）</label><input type="number" id="cl" value="5305"><span class="unit">億円</span></div>
-      <div class="field"><label>長期負債合計（固定負債）</label><input type="number" id="fl" value="9607"><span class="unit">億円</span></div>
-      <div class="field"><label>資本金合計</label><input type="number" id="cap" value="5181"><span class="unit">億円</span></div>
-      <div class="field"><label>利益剰余金合計</label><input type="number" id="re" value="5508"><span class="unit">億円</span></div>
+      <div class="bs-title">貸借対照表<span class="bs-unit">単位：億円</span></div>
+      <table class="bs-sheet">
+        <colgroup>
+          <col style="width:29%"><col style="width:21%"><col style="width:29%"><col style="width:21%">
+        </colgroup>
+        <tr>
+          <td colspan="2" class="sec-asset">資産の部</td>
+          <td colspan="2" class="sec-liab">負債の部</td>
+        </tr>
+        <tr>
+          <td class="nm">流動資産</td><td class="amt"><input type="number" id="ca" value="5712"></td>
+          <td class="nm">流動負債（短期）</td><td class="amt"><input type="number" id="cl" value="5305"></td>
+        </tr>
+        <tr>
+          <td class="nm">固定資産</td><td class="amt"><input type="number" id="fa" value="19890"></td>
+          <td class="nm">固定負債（長期）</td><td class="amt"><input type="number" id="fl" value="9607"></td>
+        </tr>
+        <tr>
+          <td class="blankcell" colspan="2" rowspan="5"><span class="vlabel">会社が持っている財産</span></td>
+          <td class="nm tot">負債合計</td><td class="amt tot" id="totLiab">0</td>
+        </tr>
+        <tr>
+          <td colspan="2" class="sec-na">純資産の部</td>
+        </tr>
+        <tr>
+          <td class="nm">資本金</td><td class="amt"><input type="number" id="cap" value="5181"></td>
+        </tr>
+        <tr>
+          <td class="nm">利益剰余金</td><td class="amt"><input type="number" id="re" value="5508"></td>
+        </tr>
+        <tr>
+          <td class="nm tot">純資産合計</td><td class="amt tot" id="totNA">0</td>
+        </tr>
+        <tr class="grand">
+          <td class="nm tot">資産合計</td><td class="amt tot" id="totAssets">0</td>
+          <td class="nm tot">負債・純資産合計</td><td class="amt tot" id="totLNA">0</td>
+        </tr>
+      </table>
 
       <h3>損益計算書（PL）</h3>
       <div class="field"><label>売上高</label><input type="number" id="sales" value="19742"><span class="unit">億円</span></div>
@@ -143,12 +193,12 @@
         <button class="btn-primary" id="calcBtn">分析する</button>
         <button class="btn-ghost" id="resetBtn">初期値に戻す</button>
       </div>
-      <p class="note">入力を変更すると自動で再計算されます。単位は任意（すべて同一単位で入力）。入力後「② 図・分析を見る」タブへ。</p>
+      <p class="note">入力を変更すると自動で再計算されます。単位は任意（すべて同一単位で入力）。入力後「① 図・分析を見る」タブへ。合計欄は自動計算されます。</p>
     </section>
   </div>
 
-  <!-- ============ TAB 2: VIEW ============ -->
-  <div class="tabpane" id="tab-view">
+  <!-- ============ TAB: VIEW ============ -->
+  <div class="tabpane active" id="tab-view">
     <section class="panel chart-card">
       <h2>百分率財務諸表チャート</h2>
       <div id="chart"></div>
@@ -391,8 +441,17 @@ function renderAnalysis(d){
 }
 
 /* ---------- run ---------- */
+function renderBS(d){
+  const set=(id,v)=>{const el=$(id); if(el) el.textContent=fmt(v);};
+  set("totLiab", d.cl + d.fl);
+  set("totNA", d.na);
+  set("totAssets", d.totalAssets);
+  set("totLNA", d.totalCapital);
+}
+
 function run(){
   const d = compute();
+  renderBS(d);
   drawChart(d);
   renderAnalysis(d);
 }
