@@ -170,6 +170,21 @@
   .ph{color:#94a3b8;font-size:13px;padding:24px;text-align:center;}
   #detailChart{overflow:hidden;width:100%;}
   #detailChart svg{display:block;width:100%;height:auto;margin:0 auto;}
+  .cf-pattern{border:1px solid #e2e8f0;border-radius:8px;padding:14px 16px;background:#fff;margin-bottom:12px;}
+  .cf-badge{display:inline-block;background:var(--accent);color:#fff;font-weight:800;font-size:14px;padding:4px 14px;border-radius:999px;}
+  .cf-desc{font-size:12.5px;color:#374151;margin-top:8px;line-height:1.7;}
+  .cf-signs{margin-top:8px;font-size:12.5px;color:#334155;}
+  .cf-signs b{font-variant-numeric:tabular-nums;}
+  .cf-tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin-bottom:14px;}
+  .cf-tile{border:1px solid #e2e8f0;border-radius:8px;padding:8px 10px;background:#fbfcfd;}
+  .cf-tile .t{font-size:11px;color:var(--muted);}
+  .cf-tile .v{font-size:16px;font-weight:800;font-variant-numeric:tabular-nums;}
+  .cf-h{font-size:12px;font-weight:700;color:var(--muted);margin:14px 0 6px;}
+  .cf-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;}
+  .cf-card{border:1px solid #e2e8f0;border-radius:8px;padding:10px;background:#fff;display:flex;gap:10px;align-items:flex-start;}
+  .cf-card.cur{border-color:var(--accent);box-shadow:0 0 0 2px rgba(43,108,176,.15);background:#eef5fc;}
+  .cf-card .cf-ct .nm{font-weight:700;font-size:12.5px;}
+  .cf-card .cf-ct .ds{color:#475569;font-size:11px;margin-top:3px;line-height:1.5;}
 
   /* modal */
   .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;z-index:100;padding:16px;}
@@ -231,6 +246,7 @@
         <button class="cbtn" data-view="stack">内訳の推移</button>
         <button class="cbtn" data-view="waterfall">PLウォーターフォール</button>
         <button class="cbtn" data-view="bridge">増減ブリッジ</button>
+        <button class="cbtn" data-view="cf">簡易CF</button>
       </div>
       <div id="viewControls" class="view-controls"></div>
       <div id="detailChart"></div>
@@ -842,7 +858,31 @@ function renderDetail(ds){
 }
 
 /* ---------- detail figures ---------- */
-let detView='items', itemSel=new Set(['sales','sga']), itemMode='bar', stackCat='ca', stackPct=false, wfIdx=-1, wfMode='full', bridgeTarget='op', detMetricKey='';
+let detView='items', itemSel=new Set(['sales','sga']), itemMode='bar', stackCat='ca', stackPct=false, wfIdx=-1, wfMode='full', bridgeTarget='op', detMetricKey='', cfMode='compare', cfIdx=-1;
+const CF_C={op:'#4E9A6B', iv:'#4E79A7', fi:'#8a8f96'};
+const CF_PATTERNS=[
+  {sign:'+--',no:'①',name:'安定型',desc:'本業で十分なキャッシュを稼ぎ、その範囲内外で投資・既存借入の弁済や株主配当を手当する。'},
+  {sign:'+-+',no:'②',name:'積極投資型',desc:'本業で稼ぐとともに資金調達も行い、設備投資を積極的に行っている。'},
+  {sign:'++-',no:'③',name:'B/S改善型',desc:'本業で稼ぎながら資産を売却してキャッシュ化し、借入弁済を進めて債務を軽くしている。'},
+  {sign:'+++',no:'④',name:'積極ピボット型',desc:'本業で稼ぎつつ資産売却でさらにキャッシュを生み、資金調達も行い次の展開に備える。'},
+  {sign:'--+',no:'⑤',name:'スタートアップ型/再建的ピボット型',desc:'本業では稼げていないが資金調達をして積極的に投資し、黒字化/再起を目指す。'},
+  {sign:'-++',no:'⑥',name:'注意型',desc:'本業でキャッシュが大きく減り、資産売却と資金調達で本業の減少を穴埋めしている。'},
+  {sign:'-+-',no:'⑦',name:'リストラ型',desc:'本業で稼げていないが、資産を売却して借入弁済を進めている。'},
+  {sign:'---',no:'⑧',name:'過去切り崩し型',desc:'本業で稼げず投資も弁済も行う。過去のキャッシュ蓄積があるからこそ成り立つ。'},
+];
+const cfSign=v=> v>=0?'+':'-';
+const cfPattern=(op,iv,fi)=> CF_PATTERNS.find(p=>p.sign===cfSign(op)+cfSign(iv)+cfSign(fi))||null;
+function computeCF(a,c){
+  const opCF = c.pretaxProfit + c.dep - c.tax - (c.recv-a.recv) - (c.inv-a.inv) + (c.payb-a.payb);
+  const capex = (c.fa-a.fa) + c.dep;
+  const invCF = -capex;
+  const dividend = Math.max(0, a.re + c.netIncome - c.re);
+  const finCF = (c.ibd-a.ibd) + (c.cap-a.cap) + (c.csurp-a.csurp) - dividend;
+  const calc = opCF+invCF+finCF, actual = c.cash-a.cash, adj = actual-calc;
+  return {opCF,invCF,finCF,dividend,capex,calc,actual,adj,fcf:opCF+invCF};
+}
+function cfMini(sign){ const cols=[CF_C.op,CF_C.iv,CF_C.fi]; let s='<svg width="58" height="44" viewBox="0 0 58 44">'+'<line x1="2" y1="24" x2="56" y2="24" stroke="#ccc"/>';
+  for(let i=0;i<3;i++){ const up=sign[i]==='+', x=6+i*17, y=up?10:24; s+=`<rect x="${x}" y="${y}" width="12" height="14" fill="${cols[i]}"/>`; } return s+'</svg>'; }
 const PAL=['#4E79A7','#F28E2B','#59A14F','#E15759','#B07AA1','#76B7B2','#EDC948','#FF9DA7','#9C755F','#BAB0AC','#86BCB6','#D37295'];
 const detVal=(d,k)=> k==='liab'?(d.cl+d.fl):d[k];
 function itemDefs(){
@@ -888,6 +928,14 @@ function renderDetailControls(ds){
     h+=`<div class="ctl-row"><span class="ctl-lbl">表示：</span><button class="chip ${wfMode==='full'?'on':''}" data-wfmode="full">全体（当期純利益まで）</button><button class="chip ${wfMode==='ordinary'?'on':''}" data-wfmode="ordinary">経常利益（原価・販管費の内訳）</button></div>`;
   } else if(detView==='bridge'){
     h+=`<div class="ctl-row"><span class="ctl-lbl">対象利益：</span><button class="chip ${bridgeTarget==='op'?'on':''}" data-bt="op">営業利益</button><button class="chip ${bridgeTarget==='ni'?'on':''}" data-bt="ni">当期純利益</button><span class="ctl-lbl" style="margin-left:10px;">${ds.length>=2?`${ds[ds.length-2].year}年度 → ${ds[ds.length-1].year}年度`:'（2期以上必要）'}</span></div>`;
+  } else if(detView==='cf'){
+    if(ds.length<2){ h+=`<div class="ctl-row"><span class="ctl-lbl">簡易CFには2期以上の入力が必要です。</span></div>`; }
+    else {
+      h+=`<div class="ctl-row"><span class="ctl-lbl">表示：</span><button class="chip ${cfMode==='compare'?'on':''}" data-cfmode="compare">比較（期間）</button><button class="chip ${cfMode==='waterfall'?'on':''}" data-cfmode="waterfall">ウォーターフォール（1期）</button></div>`;
+      if(cfMode==='waterfall'){ const idx=cfIdx<1?ds.length-1:Math.min(cfIdx,ds.length-1);
+        h+=`<div class="ctl-row"><span class="ctl-lbl">対象期：</span><select id="cfPeriod">`+ds.map((r,i)=> i>=1?`<option value="${i}" ${i===idx?'selected':''}>${ds[i-1].year}→${r.year}年度</option>`:'').join('')+`</select></div>`;
+      }
+    }
   }
   $("viewControls").innerHTML=h;
   if(detView==='items'){ const {bs,pl}=itemDefs();
@@ -906,6 +954,7 @@ function drawDetailChart(ds){
   if(detView==='items') drawSeriesChart(ds);
   else if(detView==='stack') drawStackChart(ds);
   else if(detView==='waterfall') drawWaterfall(ds);
+  else if(detView==='cf') drawCF(ds);
   else drawBridge(ds);
 }
 function drawSeriesChart(ds){
@@ -999,6 +1048,7 @@ function viewMetricKeys(){
   return [];
 }
 function renderDetailMetrics(ds){
+  if(detView==='cf'){ renderCFPanel(ds); return; }
   const list=viewMetricKeys().map(k=>ALL_METRICS[k]).filter(Boolean);
   if(!list.length){ $("detMetricBtns").innerHTML=''; $("detMetricDetail").innerHTML='<p class="ph">この図に対応する指標はありません。</p>'; return; }
   if(!list.some(m=>m.key===detMetricKey)) detMetricKey=list[0].key;
@@ -1016,6 +1066,45 @@ function drawBridge(ds){
     steps=[{t:'total',label:`${ya} 純利益`,val:a.netIncome},{t:'flow',label:'売上高',amt:+D('sales')},{t:'flow',label:'売上原価',amt:-D('cogs')},{t:'flow',label:'販管費',amt:-D('sga')},{t:'flow',label:'営業外収益',amt:+D('noi')},{t:'flow',label:'営業外費用',amt:-D('noe')},{t:'flow',label:'特別利益',amt:+D('exg')},{t:'flow',label:'特別損失',amt:-D('exl')},{t:'flow',label:'法人税等',amt:-D('tax')},{t:'total',label:`${yc} 純利益`,val:c.netIncome}];
   }
   drawSteps(steps,title);
+}
+function drawCF(ds){
+  if(ds.length<2){ $("detailChart").innerHTML='<p class="ph">簡易CFには2期以上の入力が必要です。「③ 数値入力」で期を追加してください。</p>'; $("detailLegend").innerHTML=''; return; }
+  if(cfMode==='waterfall'){
+    const idx=cfIdx<1?ds.length-1:Math.min(cfIdx,ds.length-1), cf=computeCF(ds[idx-1].d, ds[idx].d);
+    drawSteps([{t:'flow',label:'営業CF',amt:cf.opCF},{t:'flow',label:'投資CF',amt:cf.invCF},{t:'flow',label:'財務CF',amt:cf.finCF},{t:'flow',label:'その他調整',amt:cf.adj},{t:'total',label:'現金増減',val:cf.actual}], `${ds[idx-1].year}→${ds[idx].year}年度 簡易キャッシュフロー`);
+    return;
+  }
+  const items=[]; for(let i=1;i<ds.length;i++) items.push({year:ds[i].year, cf:computeCF(ds[i-1].d,ds[i].d)});
+  const years=items.map(x=>x.year); let mn=0,mx=0;
+  items.forEach(x=>[x.cf.opCF,x.cf.invCF,x.cf.finCF].forEach(v=>{mn=Math.min(mn,v);mx=Math.max(mx,v);}));
+  if(mx===mn) mx=mn+1;
+  const keys=[['opCF','営業CF',CF_C.op],['invCF','投資CF',CF_C.iv],['finCF','財務CF',CF_C.fi]];
+  const W=Math.max(520,120+years.length*170), H=430, AX=90, TOP=30, BOT=360, R=W-20;
+  const Y=v=>BOT-(v-mn)/(mx-mn)*(BOT-TOP);
+  let s=svgOpen(W,H)+`<text x="6" y="18" font-size="12" fill="#777">単位：${unitStr()}</text>`+axisY(mn,mx,AX,TOP,BOT,R,Y);
+  const gW=(R-AX-20)/years.length;
+  years.forEach((yr,gi)=>{ const gx=AX+20+gi*gW, bw=Math.min(40,(gW-20)/3);
+    keys.forEach((k,ki)=>{ const v=items[gi].cf[k[0]], x=gx+(gW-bw*3)/2+ki*bw, y0=Y(0), y=Y(v);
+      s+=`<rect x="${x}" y="${Math.min(y,y0)}" width="${Math.max(1,bw-3)}" height="${Math.max(0,Math.abs(y-y0))}" fill="${k[2]}"/>`;
+      s+=`<text x="${x+(bw-3)/2}" y="${v>=0?y-4:y+12}" font-size="10" text-anchor="middle" fill="#444">${fmt(v)}</text>`; });
+    s+=`<text x="${gx+gW/2}" y="${BOT+20}" font-size="12" text-anchor="middle" font-weight="bold">${yr}年度</text>`;
+  });
+  s+=`</svg>`; $("detailChart").innerHTML=s;
+  $("detailLegend").innerHTML=keys.map(k=>`<span class="lg"><i style="background:${k[2]}"></i>${k[1]}</span>`).join('');
+}
+function renderCFPanel(ds){
+  $("detMetricBtns").innerHTML='';
+  if(ds.length<2){ $("detMetricDetail").innerHTML='<p class="ph">簡易CFには2期以上の入力が必要です。</p>'; return; }
+  const idx=(cfMode==='waterfall')?(cfIdx<1?ds.length-1:Math.min(cfIdx,ds.length-1)):ds.length-1;
+  const a=ds[idx-1].d, c=ds[idx].d, cf=computeCF(a,c), pat=cfPattern(cf.opCF,cf.invCF,cf.finCF), u=unitStr();
+  const opm = c.sales? cf.opCF/c.sales*100 : 0, sgn=v=>(v>=0?'+':'')+fmt(v);
+  const tile=(t,v)=>`<div class="cf-tile"><div class="t">${t}</div><div class="v">${v}</div></div>`;
+  let h=`<div class="cf-pattern"><div><span class="cf-badge">該当 ${pat?pat.no+' '+pat.name:'—'}</span></div><div class="cf-desc">${pat?pat.desc:''}</div>
+    <div class="cf-signs">営業CF <b>${sgn(cf.opCF)}</b>　／　投資CF <b>${sgn(cf.invCF)}</b>　／　財務CF <b>${sgn(cf.finCF)}</b>　（${ds[idx-1].year}→${ds[idx].year}年度・単位：${u}）</div></div>`;
+  h+=`<div class="cf-tiles">${tile('営業CF',fmt(cf.opCF))}${tile('投資CF',fmt(cf.invCF))}${tile('財務CF',fmt(cf.finCF))}${tile('フリーCF(営業+投資)',fmt(cf.fcf))}${tile('現金増減',fmt(cf.actual))}${tile('営業CFマージン',p1(opm)+'%')}</div>`;
+  h+=`<div class="cf-h">キャッシュフロー8パターン（該当を強調）</div><div class="cf-grid">`+CF_PATTERNS.map(p=>`<div class="cf-card ${pat&&p.sign===pat.sign?'cur':''}"><div class="cf-mini">${cfMini(p.sign)}</div><div class="cf-ct"><div class="nm">${p.no} ${p.name}</div><div class="ds">${p.desc}</div></div></div>`).join('')+`</div>`;
+  h+=`<p class="note" style="margin-top:10px;">簡易CF（間接法・近似）：営業CF＝税引前利益＋減価償却費−法人税等−売上債権増−棚卸資産増＋仕入債務増／投資CF＝−(固定資産増＋減価償却費)／財務CF＝有利子負債増＋増資−配当（配当は利益剰余金から逆算）。現預金・売上債権・棚卸資産・仕入債務・固定資産・有利子負債などの内訳入力があるほど精度が上がります。検算差額は「その他調整」に含めています。</p>`;
+  $("detMetricDetail").innerHTML=h;
 }
 
 /* ---------- run ---------- */
@@ -1078,11 +1167,12 @@ $("metricbtns").addEventListener("click", e=>{ const b=e.target.closest(".mbtn")
 $("metricdetail").addEventListener("click", e=>{ const b=e.target.closest(".cbtn"); if(!b||b.disabled) return; cmpN=+b.dataset.n; run(); });
 $("viewToggle").addEventListener("click", e=>{ const b=e.target.closest(".cbtn"); if(!b) return; detView=b.dataset.view; detMetricKey=''; run(); });
 $("viewControls").addEventListener("click", e=>{
-  const b=e.target.closest("[data-preset],[data-mode],[data-pct],[data-bt],[data-wfmode],#toggleItems"); if(!b) return;
+  const b=e.target.closest("[data-preset],[data-mode],[data-pct],[data-bt],[data-wfmode],[data-cfmode],#toggleItems"); if(!b) return;
   if(b.dataset.preset!=null){ itemSel=new Set(PRESETS[+b.dataset.preset][1]); run(); }
   else if(b.dataset.mode){ itemMode=b.dataset.mode; run(); }
   else if(b.dataset.pct!=null){ stackPct=(b.dataset.pct==='1'); run(); }
   else if(b.dataset.wfmode){ wfMode=b.dataset.wfmode; drawDetailChart(derived()); renderDetailControls(derived()); }
+  else if(b.dataset.cfmode){ cfMode=b.dataset.cfmode; run(); }
   else if(b.dataset.bt){ bridgeTarget=b.dataset.bt; run(); }
   else if(b.id==='toggleItems'){ const ic=$("itemChecks"); if(ic) ic.hidden=!ic.hidden; }
 });
@@ -1090,6 +1180,7 @@ $("viewControls").addEventListener("change", e=>{
   const t=e.target;
   if(t.id==='stackCat'){ stackCat=t.value; detMetricKey=''; drawDetailChart(derived()); renderDetailMetrics(derived()); }
   else if(t.id==='wfPeriod'){ wfIdx=+t.value; drawDetailChart(derived()); }
+  else if(t.id==='cfPeriod'){ cfIdx=+t.value; drawDetailChart(derived()); renderDetailMetrics(derived()); }
   else if(t.dataset && t.dataset.item!=null){ if(t.checked) itemSel.add(t.dataset.item); else itemSel.delete(t.dataset.item); drawDetailChart(derived()); }
 });
 $("detMetricBtns").addEventListener("click", e=>{ const b=e.target.closest(".mbtn"); if(!b) return; detMetricKey=b.dataset.key; renderDetailMetrics(derived()); });
