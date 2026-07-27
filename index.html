@@ -118,20 +118,32 @@
   .subtab.flowtab.active{background:#e8a11a;color:#fff;border-color:transparent;}
   .ind-wrap{margin-left:auto;font-size:12px;color:#475569;display:flex;align-items:center;gap:6px;}
   .ind-wrap select{padding:5px 8px;border:1px solid #cbd5e0;border-radius:6px;font-size:12px;}
-  .flow-intro{font-size:12.5px;color:#475569;background:#f6f8fb;border:1px solid #e2e8f0;border-radius:8px;padding:8px 12px;margin-bottom:12px;}
-  .flow{display:flex;flex-direction:column;gap:4px;}
-  .fl-step{border:1px solid #e2e8f0;border-radius:10px;padding:10px 12px;background:#fafbfc;}
-  .fl-h{font-weight:800;color:#1a2733;font-size:13.5px;margin-bottom:8px;}
-  .fl-main{margin-bottom:6px;}
-  .fl-cond{font-size:12px;color:#b45309;margin:4px 0 8px;font-weight:700;}
-  .fl-row{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:4px 0;}
-  .fl-sep{color:#94a3b8;}
-  .fl-node{padding:7px 12px;border:1.5px solid #cbd5e0;background:#fff;color:#243b53;font-size:12.5px;font-weight:700;border-radius:8px;cursor:pointer;transition:.12s;}
+  .flow-intro{font-size:13px;line-height:1.7;color:#334155;background:#f6f8fb;border:1px solid #e2e8f0;border-radius:8px;padding:10px 14px;margin-bottom:14px;}
+  .flow2{display:flex;flex-direction:column;align-items:stretch;gap:0;max-width:820px;margin:0 auto;}
+  .fl2-step{border:1px solid #d7dee6;border-radius:12px;padding:14px 16px;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.04);}
+  .fl2-head{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
+  .fl2-badge{background:#2b6cb0;color:#fff;font-weight:800;font-size:12px;padding:3px 10px;border-radius:999px;}
+  .fl2-cat{font-weight:800;color:#1a2733;font-size:15px;}
+  .fl2-mainrow{display:flex;align-items:center;gap:10px;margin-bottom:8px;}
+  .fl2-lead{font-size:12px;color:#64748b;font-weight:700;background:#eef2f6;padding:3px 8px;border-radius:6px;}
+  .fl2-q{font-size:13.5px;font-weight:800;color:#243b53;margin:8px 0;padding:8px 12px;background:#f0f6ff;border-left:4px solid #2b6cb0;border-radius:0 6px 6px 0;}
+  .fl2-branch{display:flex;flex-direction:column;gap:6px;margin:6px 0 4px;}
+  .fl2-arm{font-size:12.5px;padding:6px 12px;border-radius:8px;background:#f8fafc;border:1px dashed #cbd5e0;color:#64748b;}
+  .fl2-arm.on-yes{background:#eaf7f0;border:1.5px solid #2f9e6f;color:#1c6b48;font-weight:700;}
+  .fl2-arm.on-no{background:#fdecea;border:1.5px solid #d1453f;color:#a3302b;font-weight:700;}
+  .fl2-drilllabel{font-size:12px;color:#b45309;font-weight:800;margin:10px 0 4px;}
+  .fl2-drill{display:flex;flex-wrap:wrap;gap:10px;margin:4px 0;}
+  .fl2-item{display:flex;flex-direction:column;gap:2px;}
+  .fl2-why{font-size:10.5px;color:#94a3b8;padding-left:2px;}
+  .fl2-down{text-align:center;color:#94a3b8;font-size:20px;line-height:1;padding:4px 0;}
+  .fl2-summary{margin-top:6px;font-size:13px;line-height:1.7;color:#334155;background:#fffdf5;border:1px solid #efe0b8;border-radius:10px;padding:12px 16px;}
+  .fl-node{display:inline-flex;flex-direction:column;align-items:flex-start;gap:1px;padding:7px 12px;border:1.5px solid #cbd5e0;border-left-width:6px;border-left-color:#cbd5e0;background:#fff;color:#243b53;font-size:12.5px;font-weight:700;border-radius:8px;cursor:pointer;transition:.12s;}
   .fl-node:hover{border-color:#2b6cb0;background:#eef5fc;}
-  .fl-node.cur{border-color:#e8a11a;background:#fff7e8;box-shadow:0 0 0 2px rgba(232,161,26,.25);}
-  .fl-main .fl-node{font-size:13.5px;padding:9px 16px;border-color:#2b6cb0;color:#2b6cb0;}
-  .fl-arrow{text-align:center;color:#94a3b8;font-size:11px;padding:2px 0;}
-  .fl-arrow:last-child{display:none;}
+  .fl-node.cur{background:#fff7e8;box-shadow:0 0 0 2px rgba(232,161,26,.4);}
+  .fl-node.j-good{border-left-color:#2f9e6f;} .fl-node.j-warn{border-left-color:#d9a13a;} .fl-node.j-bad{border-left-color:#d1453f;}
+  .fl-node .fl-val{font-size:13px;font-weight:800;font-variant-numeric:tabular-nums;color:#1a2733;}
+  .fl-node .fl-val small{font-size:9px;font-weight:600;}
+  .fl2-mainrow .fl-node{border-color:#2b6cb0;font-size:13.5px;}
   /* 業種ベンチマーク行 */
   .bm-row{font-size:13px;color:#334155;padding:8px 10px;background:#f6f8fb;border:1px solid #e2e8f0;border-radius:8px;}
   .bm-row b{font-variant-numeric:tabular-nums;}
@@ -1156,7 +1168,7 @@ function metricDetailHTML(m, ds, catNote){
      </div>`;
 }
 function renderFlow(ds){
-  $("flowArea").innerHTML = flowchartHTML() + (ALL_METRICS[flowKey]? metricDetailHTML(ALL_METRICS[flowKey], ds):'');
+  $("flowArea").innerHTML = flowchartHTML(ds) + (ALL_METRICS[flowKey]? metricDetailHTML(ALL_METRICS[flowKey], ds):'');
 }
 function renderAnalysis(ds){
   document.querySelectorAll('#subtabs .subtab').forEach(b=> b.classList.toggle('active', b.dataset.cat===curCat));
@@ -1172,31 +1184,55 @@ function renderAnalysis(ds){
 }
 // 指標の読み方フロー（辿るだけで読める）
 const FLOW=[
-  {h:'① 収益性：本業で稼げているか', main:{k:'opm',t:'営業利益率（まずここ）'},
-   cond:'▼ 低い（2%未満）なら「なぜ薄い？」を分解',
-   rows:[[{k:'gm',t:'売上総利益率（粗利が薄い？）'},{k:'sgar',t:'販管費率（固定費が重い？）'}],
-         [{k:'costr',t:'└ 売上原価率（原価内訳へ）'},{k:'persr',t:'└ 人件費率／労働分配率'}]]},
-  {h:'② 効率性：資産・人をどれだけ売上/利益に', main:{k:'atoturn',t:'総資産回転率'},
-   cond:'▼ 低いなら「どの資産が回っていない？」',
-   rows:[[{k:'faturn',t:'固定資産回転率（設備過大？）'},{k:'recvdays',t:'売上債権回転期間（回収遅い？）'},{k:'invturn',t:'棚卸資産回転率（在庫過多？）'}],
-         [{k:'roe',t:'ROE'},{k:'roa',t:'ROA'},{k:'vaemp',t:'労働生産性（1人当たり付加価値）'}]]},
-  {h:'③ 安全性：つぶれにくいか', main:{k:'equity',t:'自己資本比率（財務体質）'},
-   cond:'▼ 低い（20%未満）＝借入依存。返済できる？',
-   rows:[[{k:'debtratio',t:'負債比率'},{k:'de',t:'D/Eレシオ（有利子負債）'}],
-         [{k:'debty',t:'債務償還年数（何年で返せる）'},{k:'icr',t:'インタレスト・カバレッジ（利払い余力）'}],
-         [{k:'current',t:'流動比率（短期の支払能力）'},{k:'wc',t:'└ 運転資本'},{k:'fixedlt',t:'固定長期適合率（設備の資金調達）'}]]},
-  {h:'④ 成長性：伸びているか', main:{k:'gsales',t:'売上高成長率'},
-   cond:'▼ 増収でも増益とは限らない。利益の伸びを確認',
-   rows:[[{k:'ggross',t:'売上総利益成長率'},{k:'gop',t:'営業利益成長率'},{k:'gna',t:'純資産成長率'}]]},
+  {step:'STEP 1', cat:'収益性 ― ちゃんと儲かっているか', main:'opm', pass:d=>d.opMargin>=2,
+   q:'営業利益率は 2% 以上あるか？',
+   yes:'本業は黒字。次のSTEPへ',
+   no:'本業が弱い。下の指標で「なぜ薄いか」を分解',
+   drill:[{k:'gm',why:'粗利が薄い？'},{k:'sgar',why:'固定費（販管費）が重い？'}],
+   drill2:[{k:'costr',why:'原価のどこが重い（材料/労務/外注/減価償却）'},{k:'persr',why:'人件費・労働分配率は適正か'}]},
+  {step:'STEP 2', cat:'効率性 ― 資産・人を活かせているか', main:'atoturn', pass:d=>d.atoturn>=1,
+   q:'総資産回転率は 1.0回 以上か？（資産をきちんと売上に変えているか）',
+   yes:'効率は概ね良好。次のSTEPへ',
+   no:'どの資産が眠っているかを確認',
+   drill:[{k:'faturn',why:'設備が過大？'},{k:'recvdays',why:'売掛金の回収が遅い？'},{k:'invturn',why:'在庫が多い？'}],
+   drill2:[{k:'roa',why:'総合効率（ROA）'},{k:'vaemp',why:'1人当たりの生産性'}]},
+  {step:'STEP 3', cat:'安全性 ― つぶれにくいか（返せるか）', main:'equity', pass:d=>d.equityRatio>=20,
+   q:'自己資本比率は 20% 以上あるか？',
+   yes:'財務体質は最低限OK。返済余力も確認',
+   no:'借入依存。返せるか・払えるかを確認',
+   drill:[{k:'debty',why:'何年で返せる？（債務償還年数）'},{k:'icr',why:'利息を払えている？（ICR）'}],
+   drill2:[{k:'current',why:'短期の支払能力（流動比率）'},{k:'fixedlt',why:'設備を長期資金で賄えているか'}]},
+  {step:'STEP 4', cat:'成長性 ― 伸びているか', main:'gsales', pass:d=>d.gSales!=null && d.gSales>0,
+   q:'売上は前期より増えているか？',
+   yes:'増収。利益も伸びているか確認',
+   no:'減収。まず収益源の立て直しを',
+   drill:[{k:'gop',why:'営業利益は伸びている？'},{k:'gna',why:'純資産は積み上がっている？'}],
+   drill2:[]},
 ];
-function flowNode(n){ const cur=(n.k===flowKey); return `<button class="fl-node${cur?' cur':''}" data-fk="${n.k}">${n.t}</button>`; }
-function flowchartHTML(){
-  let h=`<div class="flow-intro">気になるカテゴリの先頭指標から読み、「悪い」ときは矢印の先の指標へ辿ってください。ノードを押すと下に解説（計算式・意味・判定・業種平均）が出ます。</div><div class="flow">`;
-  FLOW.forEach(step=>{
-    h+=`<div class="fl-step"><div class="fl-h">${step.h}</div><div class="fl-main">${flowNode(step.main)}</div><div class="fl-cond">${step.cond}</div>`;
-    step.rows.forEach(row=>{ h+=`<div class="fl-row">`+row.map(flowNode).join('<span class="fl-sep">／</span>')+`</div>`; });
-    h+=`</div><div class="fl-arrow">▼ 次のカテゴリへ</div>`;
+function flowNode(k, ds){
+  const m=ALL_METRICS[k]; if(!m) return '';
+  const latest=ds[ds.length-1].d, cur=(k===flowKey), lv=metricJudge(m,latest), jc=lv?` j-${lv}`:'';
+  return `<button class="fl-node${cur?' cur':''}${jc}" data-fk="${k}">${m.label}<span class="fl-val">${metricDisp(m,latest)}</span></button>`;
+}
+function flowchartHTML(ds){
+  const latest=ds[ds.length-1].d;
+  let h=`<div class="flow-intro"><b>読み方</b>：上から <b>STEP 1 → 4</b> の順に見ます。各STEPの「まず見る指標」がQ.の目安を満たすか確認し、<b>満たさない</b>なら下の分岐指標を辿って“なぜ悪いか”の原因を探ります。数字の色＝<b style="color:#2f9e6f">緑:良好</b>／<b style="color:#d9a13a">黄:普通</b>／<b style="color:#d1453f">赤:危険</b>。<b>▶</b> は自社が今どちらの分岐かの目印。指標を押すと下に詳しい解説が出ます。</div><div class="flow2">`;
+  FLOW.forEach((s,i)=>{
+    const m=ALL_METRICS[s.main], good=s.pass(latest);
+    h+=`<div class="fl2-step">
+      <div class="fl2-head"><span class="fl2-badge">${s.step}</span><span class="fl2-cat">${s.cat}</span></div>
+      <div class="fl2-mainrow"><span class="fl2-lead">まず見る</span>${flowNode(s.main,ds)}</div>
+      <div class="fl2-q">Q. ${s.q}</div>
+      <div class="fl2-branch">
+        <div class="fl2-arm ${good?'on-yes':''}">${good?'▶ ':''}✔ はい … ${s.yes}</div>
+        <div class="fl2-arm ${good?'':'on-no'}">${good?'':'▶ '}✘ いいえ／弱い … ${s.no}</div>
+      </div>`;
+    if(s.drill.length){ h+=`<div class="fl2-drilllabel">↳ 原因を分解（クリックで解説）</div><div class="fl2-drill">`+s.drill.map(d=>`<span class="fl2-item">${flowNode(d.k,ds)}<span class="fl2-why">${d.why}</span></span>`).join('')+`</div>`; }
+    if(s.drill2.length){ h+=`<div class="fl2-drill">`+s.drill2.map(d=>`<span class="fl2-item">${flowNode(d.k,ds)}<span class="fl2-why">${d.why}</span></span>`).join('')+`</div>`; }
+    h+=`</div>`;
+    if(i<FLOW.length-1) h+=`<div class="fl2-down">▼</div>`;
   });
+  h+=`<div class="fl2-summary">🔎 <b>まとめ方</b>：上で <b style="color:#d1453f">赤（危険）</b>・<b style="color:#d9a13a">黄（普通）</b> になった指標が、この会社の<b>課題の候補</b>。特に赤が出たSTEPから優先して原因（分岐指標）と対策を検討します。</div>`;
   return h+`</div>`;
 }
 
