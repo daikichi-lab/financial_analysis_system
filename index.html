@@ -315,7 +315,7 @@
         </select>
       </div>
       <div class="field"><label>従業員数（任意）</label>
-        <input type="number" id="in_emp" value="0"><span class="unit">人</span>
+        <input type="number" id="in_emp" value="0"><span class="unit-fixed">人</span>
         <span class="note" style="margin:0 0 0 8px;">※労働生産性の算出に使用（不明なら空欄でOK）</span>
       </div>
 
@@ -341,8 +341,9 @@
         <button class="btn-primary" id="calcBtn">分析する</button>
         <button class="btn-ghost" id="resetBtn">この期をリセット（0）</button>
         <button class="btn-ghost" id="delBtn">この期を削除</button>
+        <button class="btn-ghost" id="saveBtn">💾 この内容でHTML保存</button>
       </div>
-      <p class="note">各大項目の内訳（中分類）を常時入力できます。合計は入力可で、「その他」は 合計−主要内訳 の差額を自動表示します。有利子負債（★）・減価償却費は内訳から自動集計。「＋ 期を追加」で最大3期まで比較できます。</p>
+      <p class="note">各大項目の内訳（中分類）を常時入力できます。合計は入力可で、「その他」は 合計−主要内訳 の差額を自動表示します。有利子負債（★）・減価償却費は内訳から自動集計。「＋ 期を追加」で最大3期まで比較できます。<br>💾 <b>この内容でHTML保存</b>：入力データをこのHTML自体に埋め込んで保存します。ダウンロードしたHTMLを次に開くと、保存した内容が自動で復元されます。</p>
     </section>
   </div>
 
@@ -356,6 +357,9 @@
 
   <footer>簡易版：収益性・効率性・安全性（有利子負債・ICR・債務償還年数ほか）・成長性を最大3期で比較</footer>
 </div>
+
+<!-- ============ SAVED STATE (保存ボタンで自動書き込み) ============ -->
+<script type="application/json" id="appState"></script>
 
 <!-- ============ MODAL ============ -->
 <div class="modal-overlay" id="modal" hidden>
@@ -1565,8 +1569,61 @@ $("mainControls").addEventListener("click", e=>{
 });
 $("mainControls").addEventListener("change", e=>{ if(e.target.id==='mPeriod'){ pidx=+e.target.value; run(); } });
 
+/* ---------- 保存 / 復元（自己完結型HTML） ---------- */
+function saveHTML(){
+  // 現在の入力値をフォームから確定
+  if(typeof readInputs==='function') readInputs();
+  const state = {
+    v: 1,
+    savedAt: new Date().toISOString(),
+    periods: periods,
+    costType: costType,
+    unit: unitStr(),
+    industry: industry
+  };
+  // HTML自身に状態を埋め込む
+  const holder = $("appState");
+  if(holder) holder.textContent = JSON.stringify(state);
+  // アクティブ要素の value 属性を実DOMに反映（select/input）
+  document.querySelectorAll("select").forEach(sel=>{
+    const opts = sel.querySelectorAll("option");
+    opts.forEach(o=> o.removeAttribute("selected"));
+    const cur = sel.options[sel.selectedIndex];
+    if(cur) cur.setAttribute("selected","selected");
+  });
+  const html = "<!doctype html>\n" + document.documentElement.outerHTML;
+  const blob = new Blob([html], {type:"text/html;charset=utf-8"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  const y = state.savedAt.slice(0,10).replace(/-/g,"");
+  a.href = url;
+  a.download = "財務分析_" + y + ".html";
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(()=> URL.revokeObjectURL(url), 4000);
+}
+function restoreState(){
+  const holder = $("appState");
+  if(!holder) return false;
+  const raw = (holder.textContent||"").trim();
+  if(!raw) return false;
+  let s;
+  try{ s = JSON.parse(raw); }catch(e){ return false; }
+  if(!s || !Array.isArray(s.periods) || !s.periods.length) return false;
+  // periods を正規化（欠損キーは 0 / DET_KEYS は既定 true）
+  periods = s.periods.map(p=> ({ year: p.year, vals: Object.assign(zeros(), p.vals||{}) }));
+  if(s.costType){ costType = s.costType; const ct=$("costType"); if(ct) ct.value = s.costType; }
+  if(s.industry){ industry = s.industry; const isl=$("indSel"); if(isl) isl.value = s.industry; }
+  if(s.unit){ const u=$("unit"); if(u) u.value = s.unit; }
+  curIdx = 0;
+  return true;
+}
+
+restoreState();
 buildInputForm();
 run();
+$("saveBtn").addEventListener("click", saveHTML);
 </script>
 </body>
 </html>
