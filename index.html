@@ -1487,8 +1487,8 @@ function renderCS(ds){
   if(pmode==='single') ctl+=`<span class="ctl-lbl" style="margin-left:8px;">対象期：</span><select id="mPeriod">`+ds.map((r,i)=> i>=1?`<option value="${i}" ${i===idx?'selected':''}>${TLAB(ds[i-1].year)}→${TLAB(r.year)}</option>`:'').join('')+`</select>`;
   ctl+=`</div>`;
   $("mainControls").innerHTML=ctl;
-  if(pmode==='single'){ const cf=computeCF(ds[idx-1].d,ds[idx].d);
-    const r=drawSteps([{t:'flow',label:'営業CF',amt:cf.opCF},{t:'flow',label:'投資CF',amt:cf.invCF},{t:'flow',label:'財務CF',amt:cf.finCF},{t:'flow',label:'その他調整',amt:cf.adj},{t:'total',label:'現金増減',val:cf.actual}], `${TLAB(ds[idx-1].year)}→${TLAB(ds[idx].year)} 簡易キャッシュフロー`);
+  if(pmode==='single'){ const cf=computeCF(ds[idx-1].d,ds[idx].d), startCash=ds[idx-1].d.cash, endCash=ds[idx].d.cash;
+    const r=drawSteps([{t:'total',label:'期首現金',val:startCash},{t:'flow',label:'営業CF',amt:cf.opCF},{t:'flow',label:'投資CF',amt:cf.invCF},{t:'flow',label:'財務CF',amt:cf.finCF},{t:'flow',label:'その他調整',amt:cf.adj},{t:'total',label:'期末現金',val:endCash}], `${TLAB(ds[idx-1].year)}→${TLAB(ds[idx].year)} 現金の増減（期首→期末）`);
     $("chart").innerHTML=r.svg; $("legend").innerHTML=r.legend;
   } else { const r=drawCFCompare(ds); $("chart").innerHTML=r.svg; $("legend").innerHTML=r.legend; }
   const a=ds[idx-1].d,c=ds[idx].d,cf=computeCF(a,c),pat=cfPattern(cf.opCF,cf.invCF,cf.finCF),u=unitStr();
