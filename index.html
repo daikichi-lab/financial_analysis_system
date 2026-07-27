@@ -248,6 +248,7 @@
   <div class="tabs">
     <button class="tab active" data-tab="view">① 財務分析</button>
     <button class="tab" data-tab="input">② 数値入力</button>
+    <button class="tab" data-tab="flow">③ 読み方フロー</button>
   </div>
 
   <!-- ============ TAB: VIEW ============ -->
@@ -271,7 +272,6 @@
         <button class="subtab" data-cat="eff">効率性</button>
         <button class="subtab active" data-cat="prof">収益性</button>
         <button class="subtab" data-cat="safe">安全性</button>
-        <button class="subtab flowtab" data-cat="flow">③ 読み方フロー</button>
         <span class="ind-wrap">業種：<select id="indSel">
           <option value="manuf">製造業</option>
           <option value="wholesale">卸売業</option>
@@ -331,6 +331,14 @@
         <button class="btn-ghost" id="delBtn">この期を削除</button>
       </div>
       <p class="note">各大項目の内訳（中分類）を常時入力できます。合計は入力可で、「その他」は 合計−主要内訳 の差額を自動表示します。有利子負債（★）・減価償却費は内訳から自動集計。「＋ 期を追加」で最大3期まで比較できます。</p>
+    </section>
+  </div>
+
+  <!-- ============ TAB: FLOW ============ -->
+  <div class="tabpane" id="tab-flow">
+    <section class="panel">
+      <h2>指標の読み方フロー</h2>
+      <div id="flowArea"></div>
     </section>
   </div>
 
@@ -1147,9 +1155,11 @@ function metricDetailHTML(m, ds, catNote){
        ${noteHTML}
      </div>`;
 }
+function renderFlow(ds){
+  $("flowArea").innerHTML = flowchartHTML() + (ALL_METRICS[flowKey]? metricDetailHTML(ALL_METRICS[flowKey], ds):'');
+}
 function renderAnalysis(ds){
   document.querySelectorAll('#subtabs .subtab').forEach(b=> b.classList.toggle('active', b.dataset.cat===curCat));
-  if(curCat==='flow'){ $("metricbtns").innerHTML=''; $("metricdetail").innerHTML = flowchartHTML() + (ALL_METRICS[flowKey]? metricDetailHTML(ALL_METRICS[flowKey], ds):''); return; }
   const cat=CATS[curCat];
   const hasDetail=cat.metrics.some(m=>m.detailOnly);
   const mets=cat.metrics.filter(m=> showDetail || !m.detailOnly);
@@ -1448,6 +1458,7 @@ function run(){
   const ds=derived();
   renderAnalysis(ds);   // 先に指標を確定（選択指標＝チャート強調に反映）
   renderMainChart(ds);
+  renderFlow(ds);
 }
 
 /* ---------- listeners ---------- */
@@ -1484,9 +1495,10 @@ $("calcBtn").addEventListener("click", ()=>{ run(); switchTab("view"); });
 $("subtabs").addEventListener("click", e=>{ const b=e.target.closest(".subtab"); if(!b) return; curCat=b.dataset.cat; if(curCat!=='flow'){ curKey=CATS[curCat].metrics.filter(m=>!m.detailOnly)[0].key; } run(); });
 $("indSel").addEventListener("change", e=>{ industry=e.target.value; run(); });
 $("metricbtns").addEventListener("click", e=>{ const b=e.target.closest(".mbtn"); if(!b) return; if(b.id==='detMetToggle'){ showDetail=!showDetail; } else if(b.dataset.key){ curKey=b.dataset.key; } run(); });
-$("metricdetail").addEventListener("click", e=>{
-  const fn=e.target.closest(".fl-node"); if(fn){ flowKey=fn.dataset.fk; run(); return; }
-  const b=e.target.closest(".cbtn"); if(!b||b.disabled) return; cmpN=+b.dataset.n; run(); });
+$("metricdetail").addEventListener("click", e=>{ const b=e.target.closest(".cbtn"); if(!b||b.disabled) return; cmpN=+b.dataset.n; run(); });
+$("flowArea").addEventListener("click", e=>{
+  const fn=e.target.closest(".fl-node"); if(fn){ flowKey=fn.dataset.fk; renderFlow(derived()); return; }
+  const b=e.target.closest(".cbtn"); if(b&&!b.disabled){ cmpN=+b.dataset.n; renderFlow(derived()); } });
 $("scopeToggle").addEventListener("click", e=>{ const b=e.target.closest(".cbtn"); if(!b) return; scope=b.dataset.scope; pidx=-1; run(); });
 $("mainControls").addEventListener("click", e=>{
   const b=e.target.closest("[data-pmode],[data-plbreak]"); if(!b) return;
