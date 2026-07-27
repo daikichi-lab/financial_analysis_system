@@ -816,12 +816,9 @@ function plWaterfall(d, title){
   return drawSteps([
     {t:'total',label:'売上高',val:d.sales},
     {t:'flow',label:'売上原価',amt:-d.cogs},
-    {t:'sub',label:'粗利',val:d.grossProfit},
     {t:'flow',label:'販管費',amt:-d.sga},
-    {t:'sub',label:'営業利益',val:d.operatingProfit},
     {t:'flow',label:'営業外収益',amt:d.noi},
     {t:'flow',label:'営業外費用',amt:-d.noe},
-    {t:'sub',label:'経常利益',val:d.ordinaryProfit},
     {t:'flow',label:'特別損益',amt:(d.exg-d.exl)},
     {t:'flow',label:'法人税等',amt:-d.tax},
     {t:'total',label:'当期純利益',val:d.netIncome},
