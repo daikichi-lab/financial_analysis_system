@@ -333,20 +333,20 @@ function applyUnitLabels(){
 }
 
 const MAXP = 3;
-const NUM_KEYS = ['ca','cash','sec','recv','inv','oca','fa','tfa','ifa','iota',
-  'cl','payb','stloan','cpltd','ocl','fl','ltloan','bond','ofl','ibds','ibdl',
+const NUM_KEYS = ['ca','cash','sec','recv','inv','oca','stloanto','prepaid','fa','tfa','ifa','iota','building','vehicle','land','software','invsec',
+  'cl','payb','stloan','cpltd','ocl','payables','taxpay','fl','ltloan','bond','ofl','execloan','lease','ibds','ibdl',
   'cap','csurp','re','ona','sales','cogs','sga','noi','recint','noe','intexp','exg','exl','tax','dep',
   'matcost','labcost','subcon','depcogs','othcogs','beginv','purch','endinv',
-  'perscost','adv','rent','depsga','othsga'];
+  'perscost','execcomp','salary','welfare','adv','rent','depsga','outsourcing','othsga'];
 const DET_KEYS = ['det_ca','det_fa','det_cl','det_fl','det_cogs','det_sga'];
 let costType = 'A';   // A:製造業 / B:商業・小売 / C:サービス業
-const SGA_LEAVES = [['perscost','人件費'],['adv','広告宣伝費・販促費'],['rent','地代家賃'],['depsga','減価償却費(販管)'],['othsga','その他販管費']];
+const SGA_LEAVES = [['execcomp','役員報酬'],['salary','給与・賞与'],['welfare','法定福利費・福利厚生費'],['adv','広告宣伝・販売促進費'],['rent','地代家賃'],['depsga','減価償却費'],['outsourcing','業務委託費・支払報酬'],['othsga','その他販管費']];
 function cogsLeaves(){
   if(costType==='A') return [['matcost','材料費'],['labcost','労務費'],['subcon','外注費'],['depcogs','減価償却費(製造)'],['othcogs','その他製造経費']];
   if(costType==='B') return [['beginv','期首商品棚卸高'],['purch','当期商品仕入高'],['endinv','期末商品棚卸高(△控除)']];
   return [['labcost','労務費'],['subcon','外注費'],['othcogs','その他直接経費']];
 }
-const LEAF_MAP = {ca:['cash','sec','recv','inv','oca'], fa:['tfa','ifa','iota'], cl:['payb','stloan','cpltd','ocl'], fl:['ltloan','bond','ofl'], sga:['perscost','adv','rent','depsga','othsga']};
+const LEAF_MAP = {ca:['cash','recv','inv','stloanto','prepaid','oca'], fa:['building','vehicle','land','software','invsec','iota'], cl:['payb','stloan','cpltd','payables','taxpay','ocl'], fl:['ltloan','bond','execloan','lease','ofl'], sga:['execcomp','salary','welfare','adv','rent','depsga','outsourcing','othsga']};
 const OTHER_LEAF = {ca:'oca', fa:'iota', cl:'ocl', fl:'ofl', sga:'othsga'};
 const leavesOf = big => big==='cogs' ? cogsLeaves().map(x=>x[0]) : LEAF_MAP[big];
 const otherOf  = big => big==='cogs' ? (costType==='B'?'purch':'othcogs') : OTHER_LEAF[big];
@@ -374,14 +374,14 @@ function computeVals(v){
   const g=k=> +v[k]||0;
   // 大項目（合計）が主。内訳を開いた場合、その他＝合計−主要内訳 の残差とする
   const ca=g('ca'), fa=g('fa'), cl=g('cl'), fl=g('fl');
-  const cash=g('cash'), sec=g('sec'), recv=g('recv'), inv=g('inv');
-  const oca = v.det_ca ? ca-(cash+sec+recv+inv) : g('oca');
-  const tfa=g('tfa'), ifa=g('ifa');
-  const iota = v.det_fa ? fa-(tfa+ifa) : g('iota');
-  const payb=g('payb'), stloan=g('stloan'), cpltd=g('cpltd');
-  const ocl = v.det_cl ? cl-(payb+stloan+cpltd) : g('ocl');
-  const ltloan=g('ltloan'), bond=g('bond');
-  const ofl = v.det_fl ? fl-(ltloan+bond) : g('ofl');
+  const cash=g('cash'), sec=g('sec'), recv=g('recv'), inv=g('inv'), stloanto=g('stloanto'), prepaid=g('prepaid');
+  const oca = v.det_ca ? ca-(cash+recv+inv+stloanto+prepaid) : g('oca');
+  const building=g('building'), vehicle=g('vehicle'), land=g('land'), software=g('software'), invsec=g('invsec');
+  const iota = v.det_fa ? fa-(building+vehicle+land+software+invsec) : g('iota');
+  const payb=g('payb'), stloan=g('stloan'), cpltd=g('cpltd'), payables=g('payables'), taxpay=g('taxpay');
+  const ocl = v.det_cl ? cl-(payb+stloan+cpltd+payables+taxpay) : g('ocl');
+  const ltloan=g('ltloan'), bond=g('bond'), execloan=g('execloan'), lease=g('lease');
+  const ofl = v.det_fl ? fl-(ltloan+bond+execloan+lease) : g('ofl');
   const cap=g('cap'), csurp=g('csurp'), re=g('re'), ona=g('ona');
   const na=cap+csurp+re+ona, totalAssets=ca+fa, totalCapital=cl+fl+na;
   // 有利子負債：内訳を開けば ★項目の合計、閉じていれば直接入力（短期/長期）
@@ -396,10 +396,10 @@ function computeVals(v){
     else { cogs=g('cogs'); othcogs = cogs-(costType==='A' ? g('matcost')+g('labcost')+g('subcon')+g('depcogs') : g('labcost')+g('subcon')); }
   } else cogs=g('cogs');
   const sga = g('sga');
-  const othsga = v.det_sga ? sga-(g('perscost')+g('adv')+g('rent')+g('depsga')) : g('othsga');
+  const othsga = v.det_sga ? sga-(g('execcomp')+g('salary')+g('welfare')+g('adv')+g('rent')+g('depsga')+g('outsourcing')) : g('othsga');
   // 減価償却費：内訳を開けば内訳の値、閉じていれば直接入力（製造原価分・販管費分）
   const dep = g('depcogs') + g('depsga');
-  const laborCost = (v.det_cogs&&costType!=='B'?g('labcost'):0) + (v.det_sga?g('perscost'):0);
+  const laborCost = (v.det_cogs&&costType!=='B'?g('labcost'):0) + (v.det_sga?(g('execcomp')+g('salary')+g('welfare')):0);
   const personnelReady = !!(v.det_sga || (v.det_cogs&&costType!=='B'));
   const grossProfit=sales-cogs, operatingProfit=grossProfit-sga, ordinaryProfit=operatingProfit+noi-noe, pretaxProfit=ordinaryProfit+exg-exl, netIncome=pretaxProfit-tax;
   const busProfit=operatingProfit+recint, simpleCF=operatingProfit+dep;
@@ -434,15 +434,15 @@ function computeVals(v){
   const debtYears=(ibd<=0)?0:(simpleCF>0? ibd/simpleCF:Infinity);
   const invTurnover=inv>0? cogs/inv:0;
   const recvDays=sales>0? recv/(sales/365):0;
-  return {ca,fa,cl,fl,cash,sec,recv,inv,oca,tfa,ifa,iota,
-    payb,stloan,cpltd,ocl,ltloan,bond,ofl,
+  return {ca,fa,cl,fl,cash,sec,recv,inv,oca,stloanto,prepaid,iota,building,vehicle,land,software,invsec,
+    payb,stloan,cpltd,ocl,payables,taxpay,ltloan,bond,ofl,execloan,lease,
     cap,csurp,re,ona,na,totalAssets,totalCapital,ibd,ibdShort,ibdLong,quick,
     sales,cogs,sga,noi,recint,noe,intexp,exg,exl,tax,dep,
     grossProfit,operatingProfit,ordinaryProfit,pretaxProfit,netIncome,busProfit,simpleCF,
     currentRatio,quickRatio,fixedLTRatio,roe,equityRatio,netMargin,opMargin,grossMargin,assetTurnover,finLeverage,ordMargin,roa,roic,nopat,investedCap,
     de,ibdRatio,netDe,debtMonths,icr,debtYears,invTurnover,recvDays,ibdReady,quickReady,atoturn,faturn,debtRatio,fixedRatio,wc,
     matcost:g('matcost'),labcost:g('labcost'),subcon:g('subcon'),depcogs:g('depcogs'),othcogs,
-    beginv:g('beginv'),purch:g('purch'),endinv:g('endinv'),perscost:g('perscost'),adv:g('adv'),rent:g('rent'),depsga:g('depsga'),othsga,
+    beginv:g('beginv'),purch:g('purch'),endinv:g('endinv'),execcomp:g('execcomp'),salary:g('salary'),welfare:g('welfare'),adv:g('adv'),rent:g('rent'),depsga:g('depsga'),outsourcing:g('outsourcing'),othsga,
     laborCost,costRatio,sgaRatio,personnelRatio,laborShare,personnelReady,detCogs:!!v.det_cogs,detSga:!!v.det_sga};
 }
 const derived = () => {
@@ -460,14 +460,14 @@ const derived = () => {
 /* ---------- input form (BS/PL) ---------- */
 const BS_LEFT = [
   {sec:'資産の部'},
-  {big:'ca', label:'流動資産', leaves:[['cash','現金・預金'],['recv','売上債権(売掛金・受取手形)'],['inv','棚卸資産'],['sec','有価証券(短期)'],['oca','その他流動資産']]},
-  {big:'fa', label:'固定資産', leaves:[['tfa','有形固定資産'],['ifa','無形固定資産'],['iota','投資その他の資産']]},
+  {big:'ca', label:'流動資産', leaves:[['cash','現預金'],['recv','売上債権'],['inv','棚卸資産'],['stloanto','短期貸付金・役員貸付金'],['prepaid','前払・仮払・立替金'],['oca','その他流動資産']]},
+  {big:'fa', label:'固定資産', leaves:[['building','建物・設備'],['vehicle','車両・工具器具備品'],['land','土地'],['software','ソフトウェア・無形資産'],['invsec','投資有価証券・保険積立金'],['iota','長期貸付金・その他投資']]},
   {auto:'totalAssets', label:'資産合計'},
 ];
 const BS_RIGHT = [
   {sec:'負債の部', cls:'liab'},
-  {big:'cl', label:'流動負債', leaves:[['payb','仕入債務(買掛金・支払手形)'],['stloan','短期借入金 ★'],['cpltd','1年内返済長期借入金 ★'],['ocl','その他流動負債']], uchi:{key:'ibds', label:'└ うち有利子負債（短期）★'}},
-  {big:'fl', label:'固定負債', leaves:[['ltloan','長期借入金 ★'],['bond','社債 ★'],['ofl','その他固定負債']], uchi:{key:'ibdl', label:'└ うち有利子負債（長期）★'}},
+  {big:'cl', label:'流動負債（短期負債）', leaves:[['payb','買掛金・支払手形'],['stloan','短期借入金 ★'],['cpltd','1年以内返済予定長期借入金 ★'],['payables','未払金・未払費用'],['taxpay','未払税金'],['ocl','その他短期負債']], uchi:{key:'ibds', label:'└ うち有利子負債（短期）★'}},
+  {big:'fl', label:'固定負債（長期負債）', leaves:[['ltloan','長期借入金 ★'],['bond','社債 ★'],['execloan','役員・関係者借入金'],['lease','リース債務・引当金'],['ofl','その他長期負債']], uchi:{key:'ibdl', label:'└ うち有利子負債（長期）★'}},
   {auto:'liab', label:'負債合計'},
   {auto:'ibd', label:'（有利子負債 合計 ★）', sub:true},
   {sec:'純資産の部', cls:'na'},
@@ -1078,9 +1078,9 @@ function itemGroups(){ return [
   ['売上・利益',[['sales','売上高'],['grossProfit','粗利'],['operatingProfit','営業利益'],['ordinaryProfit','経常利益'],['netIncome','当期純利益']]],
   ['原価の内訳',[['cogs','売上原価']].concat(cogsLeaves())],
   ['販管費の内訳',[['sga','販管費']].concat(SGA_LEAVES)],
-  ['流動資産の内訳',[['ca','流動資産'],['cash','現金・預金'],['recv','売上債権'],['inv','棚卸資産'],['sec','有価証券'],['oca','その他流動資産']]],
-  ['固定資産の内訳',[['fa','固定資産'],['tfa','有形固定資産'],['ifa','無形固定資産'],['iota','投資その他']]],
-  ['負債の内訳',[['liab','負債合計'],['ibd','有利子負債'],['payb','仕入債務'],['stloan','短期借入金'],['cpltd','1年内返済長期借入'],['ocl','その他流動負債'],['ltloan','長期借入金'],['bond','社債'],['ofl','その他固定負債']]],
+  ['流動資産の内訳',[['ca','流動資産'],['cash','現預金'],['recv','売上債権'],['inv','棚卸資産'],['stloanto','短期貸付金'],['prepaid','前払・仮払金'],['oca','その他流動資産']]],
+  ['固定資産の内訳',[['fa','固定資産'],['building','建物・設備'],['vehicle','車両・器具備品'],['land','土地'],['software','ソフト・無形'],['invsec','投資有価証券'],['iota','長期貸付・その他']]],
+  ['負債の内訳',[['liab','負債合計'],['ibd','有利子負債'],['payb','買掛金・支払手形'],['stloan','短期借入金'],['cpltd','1年内返済長期借入'],['payables','未払金・未払費用'],['taxpay','未払税金'],['ocl','その他短期負債'],['ltloan','長期借入金'],['bond','社債'],['execloan','役員・関係者借入'],['lease','リース・引当金'],['ofl','その他長期負債']]],
   ['純資産の内訳',[['na','純資産合計'],['cap','資本金'],['csurp','資本剰余金'],['re','利益剰余金'],['ona','その他純資産']]],
   ['合計',[['totalAssets','資産合計'],['totalCapital','総資本']]],
 ]; }
@@ -1193,10 +1193,10 @@ function renderMetricPanel(ds, keys, cur){
 }
 /* ---- sub-tab renderers ---- */
 let dSub='all';
-let allMetricKey='';
-let plMode='all', plPeriodIdx=-1, plMetricKey='';
-let bsSel='all', bsMetricKey='';
-let csMode2='compare', csIdx2=-1;
+let allIdx=-1, allMetricKey='';
+let plMode='multi', plBreak='main', plIdx=-1, plMetricKey='';
+let bsMode='multi', bsIdx=-1, bsMetricKey='';
+let csMode2='multi', csIdx2=-1;
 function renderDetail2(ds){
   document.querySelectorAll('#dSubToggle .cbtn').forEach(x=>x.classList.toggle('active',x.dataset.dsub===dSub));
   $("dTable").innerHTML=''; $("dMetricBtns").innerHTML=''; $("dMetricDetail").innerHTML='';
@@ -1207,48 +1207,49 @@ function renderDetail2(ds){
 }
 const BS_LEGEND=`<span class="lg"><i style="background:${C.ca}"></i>流動資産</span><span class="lg"><i style="background:${C.fa}"></i>固定資産</span><span class="lg"><i style="background:${C.cl}"></i>流動負債</span><span class="lg"><i style="background:${C.fl}"></i>固定負債</span><span class="lg"><i style="background:${C.na}"></i>純資産</span><span class="lg" style="color:#888">点線の内枠＝うち有利子負債／うち減価償却費</span>`;
 function dAll(ds){
-  const m=ALL_METRICS[allMetricKey];
-  $("dControls").innerHTML=`<p class="note" style="margin:2px 0 6px;">BS・PLを最大値100%で図解（①期間比較と同じ図）。負債の点線枠＝有利子負債。下段は有利子負債を 短期(＋)／長期(−) で表示。指標ボタンで該当箇所を強調します。</p>`;
-  $("dChart").innerHTML = `<div class="fig50">`+comboSVG(ds, m?m.hi:null, true)+`</div>` + drawIBDDiverge(ds);
+  const idx = allIdx<0? ds.length-1 : Math.min(allIdx, ds.length-1);
+  const one=[ds[idx]], m=ALL_METRICS[allMetricKey];
+  $("dControls").innerHTML=`<div class="ctl-row"><span class="ctl-lbl">対象期（1期のみ）：</span><select id="allPeriod">`+ds.map((r,i)=>`<option value="${i}" ${i===idx?'selected':''}>${TLAB(r.year)}</option>`).join('')+`</select></div><p class="note" style="margin:4px 0 6px;">BS・PLを1期で図解。負債の点線枠＝うち有利子負債、下段＝短期(＋)／長期(−)。指標ボタンで該当箇所を強調。</p>`;
+  $("dChart").innerHTML = `<div class="fig50">`+comboSVG(one, m?m.hi:null, true)+`</div>` + drawIBDDiverge(one);
   $("dLegend").innerHTML = BS_LEGEND+`<span class="lg"><i style="background:${C.gp}"></i>粗利</span>`;
   allMetricKey=renderMetricPanel(ds,['roe','finlev','roa','turnover','roic','icr','debty','recvdays','invturn'],allMetricKey);
 }
 function dPL(ds){
-  const chips=`<span class="ctl-lbl">表示：</span><button class="chip ${plMode==='all'?'on':''}" data-plmode="all">PL全体</button><button class="chip ${plMode==='cogs'?'on':''}" data-plmode="cogs">原価の内訳</button><button class="chip ${plMode==='sga'?'on':''}" data-plmode="sga">販管費の内訳</button>`;
-  if(plMode==='all'){
-    const idx = plPeriodIdx<0? ds.length-1 : Math.min(plPeriodIdx, ds.length-1);
-    $("dControls").innerHTML=`<div class="ctl-row">${chips}<span class="ctl-lbl" style="margin-left:8px;">ウォーターフォール対象期：</span><select id="plPeriod">`+ds.map((r,i)=>`<option value="${i}" ${i===idx?'selected':''}>${TLAB(r.year)}</option>`).join('')+`</select></div>`;
-    const cmp=drawSeries(ds,['sales','cogs','grossProfit','sga','operatingProfit','ordinaryProfit','netIncome'],'bar');
+  const modeChips=`<span class="ctl-lbl">表示：</span><button class="chip ${plMode==='multi'?'on':''}" data-plmode="multi">3期比較</button><button class="chip ${plMode==='single'?'on':''}" data-plmode="single">1期のみ</button>`;
+  if(plMode==='single'){
+    const idx = plIdx<0? ds.length-1 : Math.min(plIdx, ds.length-1);
+    $("dControls").innerHTML=`<div class="ctl-row">${modeChips}<span class="ctl-lbl" style="margin-left:8px;">対象期：</span><select id="plPeriod">`+ds.map((r,i)=>`<option value="${i}" ${i===idx?'selected':''}>${TLAB(r.year)}</option>`).join('')+`</select></div>`;
     const wf=plWaterfall(ds[idx].d, `${TLAB(ds[idx].year)} PLウォーターフォール`);
-    $("dChart").innerHTML=`<div class="ctl-lbl" style="margin:2px 0;">期間比較（棒・点線＝推移）</div>`+cmp.svg+`<div style="height:10px;"></div>`+wf.svg;
-    $("dLegend").innerHTML=cmp.legend;
+    $("dChart").innerHTML=wf.svg; $("dLegend").innerHTML=wf.legend;
   } else {
-    $("dControls").innerHTML=`<div class="ctl-row">${chips}</div>`;
-    drawItemTrend(ds, plMode==='cogs'?cogsLeaves():SGA_LEAVES, plMode==='cogs'?'売上原価の内訳':'販管費の内訳');
+    $("dControls").innerHTML=`<div class="ctl-row">${modeChips}<span class="ctl-lbl" style="margin-left:8px;">内訳：</span><button class="chip ${plBreak==='main'?'on':''}" data-plbreak="main">主要項目</button><button class="chip ${plBreak==='cogs'?'on':''}" data-plbreak="cogs">原価の内訳</button><button class="chip ${plBreak==='sga'?'on':''}" data-plbreak="sga">販管費の内訳</button></div>`;
+    if(plBreak==='main'){ const cmp=drawSeries(ds,['sales','cogs','grossProfit','sga','operatingProfit','ordinaryProfit','netIncome'],'bar'); $("dChart").innerHTML=cmp.svg; $("dLegend").innerHTML=cmp.legend; }
+    else { drawItemTrend(ds, plBreak==='cogs'?cogsLeaves():SGA_LEAVES, plBreak==='cogs'?'売上原価の内訳':'販管費の内訳'); }
   }
   plMetricKey=renderMetricPanel(ds,['gm','opm','ordm','npm','persr','labshare'],plMetricKey);
 }
 function dBS(ds){
-  const opt=[['all','BS全体'],['totalAssets','総資産'],['ibd','有利子負債'],['na','純資産']];
-  $("dControls").innerHTML=`<div class="ctl-row"><span class="ctl-lbl">対象：</span>`+opt.map(o=>`<button class="chip ${bsSel===o[0]?'on':''}" data-bssel="${o[0]}">${o[1]}</button>`).join('')+`</div>`;
-  if(bsSel==='all'){
-    const m=ALL_METRICS[bsMetricKey];
-    $("dChart").innerHTML=`<div class="fig50">`+comboSVG(ds, m?m.hi:null, false)+`</div>`;
-    $("dLegend").innerHTML=BS_LEGEND;
+  const modeChips=`<span class="ctl-lbl">表示：</span><button class="chip ${bsMode==='multi'?'on':''}" data-bsmode="multi">3期比較</button><button class="chip ${bsMode==='single'?'on':''}" data-bsmode="single">1期のみ</button>`;
+  const m=ALL_METRICS[bsMetricKey];
+  if(bsMode==='single'){
+    const idx = bsIdx<0? ds.length-1 : Math.min(bsIdx, ds.length-1);
+    $("dControls").innerHTML=`<div class="ctl-row">${modeChips}<span class="ctl-lbl" style="margin-left:8px;">対象期：</span><select id="bsPeriod">`+ds.map((r,i)=>`<option value="${i}" ${i===idx?'selected':''}>${TLAB(r.year)}</option>`).join('')+`</select></div>`;
+    $("dChart").innerHTML=`<div class="fig50">`+comboSVG([ds[idx]], m?m.hi:null, false)+`</div>`;
   } else {
-    const meta={totalAssets:['総資産','#5b8def'],ibd:['有利子負債','#C4433F'],na:['純資産','#8E5AA0']}[bsSel];
-    drawSingleTrend(ds,bsSel,meta[1],meta[0]);
+    $("dControls").innerHTML=`<div class="ctl-row">${modeChips}</div>`;
+    $("dChart").innerHTML=`<div class="fig50">`+comboSVG(ds, m?m.hi:null, false)+`</div>`;
   }
+  $("dLegend").innerHTML=BS_LEGEND;
   bsMetricKey=renderMetricPanel(ds,['equity','current','fixedratio','fixedlt','debtratio','wc','de','ibdr','netde','debtm','quick'],bsMetricKey);
 }
 function dCS(ds){
   if(ds.length<2){ $("dControls").innerHTML=''; $("dChart").innerHTML='<p class="ph">簡易CFには2期以上の入力が必要です。「③ 数値入力」で期を追加してください。</p>'; $("dLegend").innerHTML=''; $("dMetricDetail").innerHTML=''; $("dTable").innerHTML=''; return; }
   const idx=csIdx2<1?ds.length-1:Math.min(csIdx2,ds.length-1);
-  let h=`<div class="ctl-row"><span class="ctl-lbl">表示：</span><button class="chip ${csMode2==='compare'?'on':''}" data-csmode="compare">比較（期間）</button><button class="chip ${csMode2==='waterfall'?'on':''}" data-csmode="waterfall">ウォーターフォール（1期）</button>`;
-  if(csMode2==='waterfall') h+=`<span class="ctl-lbl" style="margin-left:8px;">対象期：</span><select id="csPeriod">`+ds.map((r,i)=> i>=1?`<option value="${i}" ${i===idx?'selected':''}>${TLAB(ds[i-1].year)}→${TLAB(r.year)}</option>`:'').join('')+`</select>`;
+  let h=`<div class="ctl-row"><span class="ctl-lbl">表示：</span><button class="chip ${csMode2==='multi'?'on':''}" data-csmode="multi">3期比較</button><button class="chip ${csMode2==='pair'?'on':''}" data-csmode="pair">2期比較（1期分）</button>`;
+  if(csMode2==='pair') h+=`<span class="ctl-lbl" style="margin-left:8px;">対象期：</span><select id="csPeriod">`+ds.map((r,i)=> i>=1?`<option value="${i}" ${i===idx?'selected':''}>${TLAB(ds[i-1].year)}→${TLAB(r.year)}</option>`:'').join('')+`</select>`;
   h+=`</div>`;
   $("dControls").innerHTML=h;
-  if(csMode2==='waterfall'){ const cf=computeCF(ds[idx-1].d,ds[idx].d);
+  if(csMode2==='pair'){ const cf=computeCF(ds[idx-1].d,ds[idx].d);
     const r=drawSteps([{t:'flow',label:'営業CF',amt:cf.opCF},{t:'flow',label:'投資CF',amt:cf.invCF},{t:'flow',label:'財務CF',amt:cf.finCF},{t:'flow',label:'その他調整',amt:cf.adj},{t:'total',label:'現金増減',val:cf.actual}], `${TLAB(ds[idx-1].year)}→${TLAB(ds[idx].year)} 簡易キャッシュフロー`);
     $("dChart").innerHTML=r.svg; $("dLegend").innerHTML=r.legend;
   } else drawCFCompare(ds);
@@ -1327,15 +1328,18 @@ $("metricbtns").addEventListener("click", e=>{ const b=e.target.closest(".mbtn")
 $("metricdetail").addEventListener("click", e=>{ const b=e.target.closest(".cbtn"); if(!b||b.disabled) return; cmpN=+b.dataset.n; run(); });
 $("dSubToggle").addEventListener("click", e=>{ const b=e.target.closest(".cbtn"); if(!b) return; dSub=b.dataset.dsub; renderDetail2(derived()); });
 $("dControls").addEventListener("click", e=>{
-  const b=e.target.closest("[data-plmode],[data-bssel],[data-csmode]"); if(!b) return;
+  const b=e.target.closest("[data-plmode],[data-plbreak],[data-bsmode],[data-csmode]"); if(!b) return;
   if(b.dataset.plmode){ plMode=b.dataset.plmode; renderDetail2(derived()); }
-  else if(b.dataset.bssel){ bsSel=b.dataset.bssel; renderDetail2(derived()); }
+  else if(b.dataset.plbreak){ plBreak=b.dataset.plbreak; renderDetail2(derived()); }
+  else if(b.dataset.bsmode){ bsMode=b.dataset.bsmode; renderDetail2(derived()); }
   else if(b.dataset.csmode){ csMode2=b.dataset.csmode; renderDetail2(derived()); }
 });
 $("dControls").addEventListener("change", e=>{
   const t=e.target;
   if(t.id==='csPeriod'){ csIdx2=+t.value; renderDetail2(derived()); }
-  else if(t.id==='plPeriod'){ plPeriodIdx=+t.value; renderDetail2(derived()); }
+  else if(t.id==='plPeriod'){ plIdx=+t.value; renderDetail2(derived()); }
+  else if(t.id==='allPeriod'){ allIdx=+t.value; renderDetail2(derived()); }
+  else if(t.id==='bsPeriod'){ bsIdx=+t.value; renderDetail2(derived()); }
 });
 $("dMetricBtns").addEventListener("click", e=>{ const b=e.target.closest(".mbtn"); if(!b) return; const k=b.dataset.key;
   if(dSub==='all') allMetricKey=k; else if(dSub==='pl') plMetricKey=k; else if(dSub==='bs') bsMetricKey=k;
