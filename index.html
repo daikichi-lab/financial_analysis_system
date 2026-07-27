@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>決算書 財務分析（簡易版・最大5期）</title>
+<title>決算書 財務分析（簡易版・最大3期）</title>
 <style>
   :root{
     --bg:#f4f5f7;--panel:#ffffff;--line:#333;--ink:#1a1a1a;--muted:#666;
@@ -209,7 +209,7 @@
 <body>
 <header>
   <h1>決算書 財務分析ツール（簡易版）</h1>
-  <p>最大5期を入力（中分類の詳細入力可）→ 期間比較・詳細比較・指標分析</p>
+  <p>最大3期を入力（中分類の詳細入力可）→ 期間比較・詳細比較・指標分析</p>
 </header>
 
 <div class="wrap">
@@ -222,7 +222,7 @@
   <!-- ============ TAB: VIEW ============ -->
   <div class="tabpane active" id="tab-view">
     <section class="panel chart-card">
-      <h2>百分率財務諸表チャート（期間比較・最大5期）</h2>
+      <h2>百分率財務諸表チャート（期間比較・最大3期）</h2>
       <div id="chart"></div>
       <div class="legend" id="legend"></div>
     </section>
@@ -297,11 +297,11 @@
         <button class="btn-ghost" id="resetBtn">この期をリセット（0）</button>
         <button class="btn-ghost" id="delBtn">この期を削除</button>
       </div>
-      <p class="note">各大項目の「▸ 内訳」で中分類の詳細入力ができます（合計は内訳を開いても入力可。「その他」は 合計−主要内訳 の差額を自動表示）。有利子負債は自動計算です。「＋ 期を追加」で最大5期まで比較できます。</p>
+      <p class="note">各大項目の「▸ 内訳」で中分類の詳細入力ができます（合計は内訳を開いても入力可。「その他」は 合計−主要内訳 の差額を自動表示）。有利子負債は自動計算です。「＋ 期を追加」で最大3期まで比較できます。</p>
     </section>
   </div>
 
-  <footer>簡易版：収益性・効率性・安全性（有利子負債・ICR・債務償還年数ほか）・成長性を最大5期で比較</footer>
+  <footer>簡易版：収益性・効率性・安全性（有利子負債・ICR・債務償還年数ほか）・成長性を最大3期で比較</footer>
 </div>
 
 <!-- ============ MODAL ============ -->
@@ -332,7 +332,7 @@ function applyUnitLabels(){
   const bu=document.querySelector(".bs-unit"); if(bu) bu.textContent="単位："+u;
 }
 
-const MAXP = 5;
+const MAXP = 3;
 const NUM_KEYS = ['ca','cash','sec','recv','inv','oca','fa','tfa','ifa','iota',
   'cl','payb','stloan','cpltd','ocl','fl','ltloan','bond','ofl',
   'cap','csurp','re','ona','sales','cogs','sga','noi','recint','noe','intexp','exg','exl','tax','dep',
@@ -542,7 +542,7 @@ function renderPeriodBar(){
   let h='';
   periods.forEach((p,i)=>{ h+=`<button class="ptab ${i===curIdx?'active':''}" data-i="${i}">${TLAB(p.year)}</button>`; });
   h+=`<span class="addper"><button class="btn-add" id="addBtn" ${periods.length>=MAXP?'disabled':''}>＋ 期を追加</button>`;
-  if(periods.length>=MAXP) h+=`<span style="font-size:11px;color:#94a3b8;">最大5期</span>`;
+  if(periods.length>=MAXP) h+=`<span style="font-size:11px;color:#94a3b8;">最大3期</span>`;
   h+='</span>';
   $("periodbar").innerHTML=h;
 }
@@ -594,7 +594,7 @@ function comboSVG(ds, hi, showPL){
   if(gmax<=0) gmax=1;
   const AX=70, TOP=70, BOT=470, chH=BOT-TOP;
   const Y=p=> BOT-(p/100)*chH, PV=v=> v/gmax*100;
-  const BW=56, PLGAP=30, GPAD=34, groupInner=(showPL?3*BW+PLGAP:2*BW), slot=groupInner+GPAD*2, x0=AX+24, W=x0+n*slot+20, H=560;
+  const BW=74, PLGAP=38, GPAD=44, groupInner=(showPL?3*BW+PLGAP:2*BW), slot=groupInner+GPAD*2, x0=AX+24, W=2*x0+n*slot, H=560;
   const boxKeep=hi? new Set(hi.boxes||[]):null; if(boxKeep&&boxKeep.has('sales')) boxKeep.add('gp');
   const box=(x,w,yT,yB,fill,title)=> `<rect x="${x}" y="${yT}" width="${w}" height="${Math.max(0,yB-yT)}" fill="${fill}" stroke="#333" stroke-width="1">${title?`<title>${title}</title>`:''}</rect>`;
   const segLabel=(x,yT,yB,val)=> (yB-yT>=20)? `<text x="${x+BW/2}" y="${(yT+yB)/2+4}" font-size="13" fill="#fff" text-anchor="middle">${fmt(val)}</text>`:'';
@@ -917,7 +917,7 @@ function judgeTable(rows, curLv){
 function cmpTable(m, ds){
   const avail=ds.length, nsel=Math.min(cmpN,avail), start=avail-nsel;
   const isAmt=(typeof m.unit==='function');
-  let h=`<div class="cmp-toggle">`+[1,3,5].map(nn=>`<button class="cbtn ${cmpN===nn?'active':''}" data-n="${nn}" ${nn>avail?'disabled':''}>${nn}期</button>`).join('')+`</div>`;
+  let h=`<div class="cmp-toggle">`+[1,2,3].map(nn=>`<button class="cbtn ${cmpN===nn?'active':''}" data-n="${nn}" ${nn>avail?'disabled':''}>${nn}期</button>`).join('')+`</div>`;
   h+=`<table class="judge"><tr><th>期</th><th>${m.label}</th><th>前期比</th><th>判定</th></tr>`;
   for(let i=start;i<avail;i++){
     const r=ds[i], disp=metricDisp(m,r.d);
