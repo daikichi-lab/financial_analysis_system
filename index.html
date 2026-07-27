@@ -79,8 +79,12 @@
   /* chart */
   .chart-card{overflow:hidden;}
   svg{font-family:inherit;}
-  #chart{width:100%;height:60vh;}
-  #chart svg{display:block;width:100%;height:100%;margin:0 auto;}
+  #chart{width:100%;}
+  .fig60{height:60vh;width:100%;}
+  .fig60 svg{display:block;width:100%;height:100%;margin:0 auto;}
+  #mainExtra{margin-top:10px;}
+  .mbtn.detmet{background:#eef2f6;color:#475569;border-style:dashed;}
+  .mbtn.detmet.active{background:#64748b;color:#fff;}
   .legend{display:flex;flex-wrap:wrap;gap:14px;justify-content:center;margin-top:10px;font-size:12px;color:#444;}
   .legend .lg{display:inline-flex;align-items:center;gap:5px;}
   .legend .lg i{width:14px;height:12px;border:1px solid #333;display:inline-block;}
@@ -209,22 +213,29 @@
 <body>
 <header>
   <h1>決算書 財務分析ツール（簡易版）</h1>
-  <p>最大3期を入力（中分類の詳細入力可）→ 期間比較・詳細比較・指標分析</p>
+  <p>最大3期を入力（中分類の内訳入力）→ 全体／PL／BS／CS と指標分析を1画面で比較</p>
 </header>
 
 <div class="wrap">
   <div class="tabs">
-    <button class="tab active" data-tab="view">① 期間比較</button>
-    <button class="tab" data-tab="detail">② 詳細比較</button>
-    <button class="tab" data-tab="input">③ 数値入力</button>
+    <button class="tab active" data-tab="view">① 財務分析</button>
+    <button class="tab" data-tab="input">② 数値入力</button>
   </div>
 
   <!-- ============ TAB: VIEW ============ -->
   <div class="tabpane active" id="tab-view">
     <section class="panel chart-card">
-      <h2>百分率財務諸表チャート（期間比較・最大3期）</h2>
+      <h2>財務分析（最大3期）</h2>
+      <div class="cmp-toggle" id="scopeToggle">
+        <button class="cbtn active" data-scope="all">全体（BS＋PL）</button>
+        <button class="cbtn" data-scope="pl">PLのみ</button>
+        <button class="cbtn" data-scope="bs">BSのみ</button>
+        <button class="cbtn" data-scope="cs">CS（簡易）</button>
+      </div>
+      <div id="mainControls" class="view-controls"></div>
       <div id="chart"></div>
       <div class="legend" id="legend"></div>
+      <div id="mainExtra"></div>
     </section>
     <div class="analysis">
       <div class="subtabs" id="subtabs">
@@ -236,26 +247,6 @@
       <div class="metricbtns" id="metricbtns"></div>
       <div class="metricdetail" id="metricdetail"></div>
     </div>
-  </div>
-
-  <!-- ============ TAB: DETAIL ============ -->
-  <div class="tabpane" id="tab-detail">
-    <section class="panel">
-      <h2>詳細比較（原因追究）</h2>
-      <p class="note" style="margin-top:0;">事業がうまくいっていない／改善余地がある点を、必要な比較だけに絞って原因追究する場所です。</p>
-      <div class="cmp-toggle" id="dSubToggle">
-        <button class="cbtn active" data-dsub="all">全体</button>
-        <button class="cbtn" data-dsub="pl">PL</button>
-        <button class="cbtn" data-dsub="bs">BS</button>
-        <button class="cbtn" data-dsub="cs">CS</button>
-      </div>
-      <div id="dControls" class="view-controls"></div>
-      <div id="dChart"></div>
-      <div class="legend" id="dLegend"></div>
-      <div class="metricbtns" id="dMetricBtns"></div>
-      <div class="metricdetail" id="dMetricDetail"></div>
-      <div id="dTable"></div>
-    </section>
   </div>
 
   <!-- ============ TAB: INPUT ============ -->
@@ -297,7 +288,7 @@
         <button class="btn-ghost" id="resetBtn">この期をリセット（0）</button>
         <button class="btn-ghost" id="delBtn">この期を削除</button>
       </div>
-      <p class="note">各大項目の「▸ 内訳」で中分類の詳細入力ができます（合計は内訳を開いても入力可。「その他」は 合計−主要内訳 の差額を自動表示）。有利子負債は自動計算です。「＋ 期を追加」で最大3期まで比較できます。</p>
+      <p class="note">各大項目の内訳（中分類）を常時入力できます。合計は入力可で、「その他」は 合計−主要内訳 の差額を自動表示します。有利子負債（★）・減価償却費は内訳から自動集計。「＋ 期を追加」で最大3期まで比較できます。</p>
     </section>
   </div>
 
@@ -351,7 +342,7 @@ const OTHER_LEAF = {ca:'oca', fa:'iota', cl:'ocl', fl:'ofl', sga:'othsga'};
 const leavesOf = big => big==='cogs' ? cogsLeaves().map(x=>x[0]) : LEAF_MAP[big];
 const otherOf  = big => big==='cogs' ? (costType==='B'?'purch':'othcogs') : OTHER_LEAF[big];
 
-const zeros = ()=>{ const o={}; NUM_KEYS.forEach(k=> o[k]=0); DET_KEYS.forEach(k=> o[k]=false); return o; };
+const zeros = ()=>{ const o={}; NUM_KEYS.forEach(k=> o[k]=0); DET_KEYS.forEach(k=> o[k]=true); return o; };
 const mk = obj => Object.assign(zeros(), obj);
 const DEFAULTS = mk({ca:5712,fa:19890,cl:5305,fl:9607,cap:5181,re:5509,sales:19742,cogs:15834,sga:3300,noi:100,noe:200,exg:0,exl:50,tax:181});
 // デモ用の3期分データ（貸借一致・成長ケース。内訳まで入力済み＝各明細を表示）
@@ -379,7 +370,7 @@ const DEMO = [
 
 /* ---------- state ---------- */
 let periods = DEMO.map(p=> ({year:p.year, vals:Object.assign({}, p.vals)}));
-let curIdx = 0, curCat='prof', curKey='gm', cmpN=3, cmpSeg='all';
+let curIdx = 0, curCat='prof', curKey='gm', cmpN=3, cmpSeg='all', showDetail=false;
 const sortPeriods = () => periods.sort((a,b)=> a.year-b.year);
 
 /* ---------- compute ---------- */
@@ -515,15 +506,13 @@ function buildInputForm(){
   const numRow=(key,label,cls='')=> `<div class="frow ${cls}"><label>${label}</label><input type="number" id="in_${key}" value="${g(key)}"><span class="unit">${u}</span></div>`;
   const autoRow=(key,label,cls='')=> `<div class="frow fauto ${cls}"><label>${label}</label><span class="autoval" id="in_${key}">0</span><span class="unit">${u}</span></div>`;
   function bigRow(item){
-    const det=!!v['det_'+item.big];
-    const cogsIdentity = (item.big==='cogs' && det && costType==='B'); // 商業の原価は期首+仕入−期末の計算式
+    const cogsIdentity = (item.big==='cogs' && costType==='B'); // 商業の原価は期首+仕入−期末の計算式
     let h=`<div class="frow fbig"><label>${item.label}</label>`;
     if(cogsIdentity) h+=`<input type="number" id="in_${item.big}" value="0" readonly>`;
-    else h+=`<input type="number" id="in_${item.big}" value="${g(item.big)}">`; // 合計は内訳を開いても入力可
-    h+=`<span class="unit">${u}</span><button class="det-toggle ${det?'on':''}" data-big="${item.big}">${det?'▾ 内訳':'▸ 内訳'}</button></div>`;
-    if(det){ const lv=item.leavesFn? item.leavesFn(): item.leaves; const resid=cogsIdentity?null:otherOf(item.big);
-      h+=lv.map(([k,lb])=> k===resid ? autoRow(k,lb,'fleaf') : numRow(k,lb,'fleaf')).join(''); }
-    else if(item.uchi){ h+=numRow(item.uchi.key, item.uchi.label, 'fsub'); } // 内訳を開かずに うち有利子負債／うち減価償却費 を直接入力
+    else h+=`<input type="number" id="in_${item.big}" value="${g(item.big)}">`; // 合計は入力可（「その他」は差額を自動計算）
+    h+=`<span class="unit">${u}</span></div>`;
+    const lv=item.leavesFn? item.leavesFn(): item.leaves, resid=cogsIdentity?null:otherOf(item.big); // 内訳は常時表示
+    h+=lv.map(([k,lb])=> k===resid ? autoRow(k,lb,'fleaf') : numRow(k,lb,'fleaf')).join('');
     return h;
   }
   function render(struct){
@@ -721,13 +710,15 @@ const SHADES={
   na:['#a884b6','#9970a6','#8E5AA0','#7d4f8e','#6c447c','#5b396a'],
   cogs:['#bdbdbd','#ababab','#999999','#878787','#757575','#636363'],
 };
-function comboDetailSVG(row, hi){
+function comboDetailSVG(row, hi, showPL){
+  showPL = showPL!==false;
   const d=row.d, u=unitStr();
-  const W=784,H=624,AX=95,TOP=82,BOT=560,chH=BOT-TOP,BW=150,PLGAP=64,x0=135;
+  const BW=150,PLGAP=64,AX=95,TOP=82,BOT=560,chH=BOT-TOP,x0=135;
   const bx=[x0,x0+BW,x0+2*BW+PLGAP];
+  const W = showPL ? 784 : (2*x0+2*BW), H=624;
   const catX={ca:bx[0],fa:bx[0],cl:bx[1],fl:bx[1],na:bx[1],sales:bx[2],gp:bx[2]};
-  let posMax=Math.max(d.totalAssets,d.totalCapital,d.cl+d.fl+Math.max(d.na,0),d.cl+d.fl,d.sales,d.grossProfit);
-  let negMin=Math.min(0,d.na,d.grossProfit,d.operatingProfit,d.ordinaryProfit,d.netIncome);
+  let posMax=Math.max(d.totalAssets,d.totalCapital,d.cl+d.fl+Math.max(d.na,0),d.cl+d.fl, showPL?d.sales:0, showPL?d.grossProfit:0);
+  let negMin=Math.min(0,d.na, showPL?d.grossProfit:0, showPL?d.operatingProfit:0, showPL?d.ordinaryProfit:0, showPL?d.netIncome:0);
   if(posMax<=0)posMax=1;
   const span=posMax-negMin, Y=v=>BOT-((v-negMin)/span)*chH, y0=Y(0);
   const boxKeep=hi?new Set(hi.boxes||[]):null; if(boxKeep&&boxKeep.has('sales'))boxKeep.add('gp');
@@ -762,35 +753,36 @@ function comboDetailSVG(row, hi){
     if(yNaNeg-y0>=24) s+=`<text x="${bx[1]+BW/2}" y="${(y0+yNaNeg)/2-2}" font-size="10.5" fill="#c53030" text-anchor="middle">純資産(債務超過)</text><text x="${bx[1]+BW/2}" y="${(y0+yNaNeg)/2+12}" font-size="11.5" fill="#c53030" text-anchor="middle" font-weight="bold">${fmt(d.na)}</text>`;
     note('na',y0,yNaNeg);
   }
-  // 売上（PL）
+  // 売上（PL）※showPL時のみ
   const ySales=Y(d.sales), yOp=Y(d.operatingProfit), yOrd=Y(d.ordinaryProfit), yNi=Y(d.netIncome);
-  s+=`<rect x="${bx[2]}" y="${ySales}" width="${BW}" height="${Math.max(0,y0-ySales)}" fill="#ffffff" stroke="#333" stroke-width="1"><title>売上高：${fmt(d.sales)} ${u}</title></rect>`;
-  note('sales',ySales,y0);
-  if(d.grossProfit>=0){
-    const gpSeg={name:'粗利',val:d.grossProfit,col:C.gp,cat:'gp'};
-    const cogsSegs=d.detCogs?mapseg(cogsLeaves().map(l=>[l[1],d[l[0]]]),SHADES.cogs,'sales'):[{name:'売上原価',val:d.cogs,col:'#b9b9b9',cat:'sales'}];
-    s+=drawStack(bx[2],[gpSeg].concat(cogsSegs),0);
-  } else {
-    const gpT=Y(Math.max(d.grossProfit,0)),gpB=Y(Math.min(d.grossProfit,0));
-    s+=`<rect x="${bx[2]}" y="${gpT}" width="${BW}" height="${Math.max(0,gpB-gpT)}" fill="${C.gp}" stroke="#333"><title>粗利：${fmt(d.grossProfit)} ${u}</title></rect>`+seglabel(bx[2],gpT,gpB,'粗利',d.grossProfit); note('gp',gpT,gpB);
+  if(showPL){
+    s+=`<rect x="${bx[2]}" y="${ySales}" width="${BW}" height="${Math.max(0,y0-ySales)}" fill="#ffffff" stroke="#333" stroke-width="1"><title>売上高：${fmt(d.sales)} ${u}</title></rect>`;
+    note('sales',ySales,y0);
+    if(d.grossProfit>=0){
+      const gpSeg={name:'粗利',val:d.grossProfit,col:C.gp,cat:'gp'};
+      const cogsSegs=d.detCogs?mapseg(cogsLeaves().map(l=>[l[1],d[l[0]]]),SHADES.cogs,'sales'):[{name:'売上原価',val:d.cogs,col:'#b9b9b9',cat:'sales'}];
+      s+=drawStack(bx[2],[gpSeg].concat(cogsSegs),0);
+    } else {
+      const gpT=Y(Math.max(d.grossProfit,0)),gpB=Y(Math.min(d.grossProfit,0));
+      s+=`<rect x="${bx[2]}" y="${gpT}" width="${BW}" height="${Math.max(0,gpB-gpT)}" fill="${C.gp}" stroke="#333"><title>粗利：${fmt(d.grossProfit)} ${u}</title></rect>`+seglabel(bx[2],gpT,gpB,'粗利',d.grossProfit); note('gp',gpT,gpB);
+    }
+    const pline=(y,col,nm,val)=> `<line x1="${bx[2]}" y1="${y}" x2="${bx[2]+BW}" y2="${y}" stroke="${col}" stroke-width="1.6"><title>${nm}：${fmt(val)} ${u}</title></line><text x="${bx[2]+BW+4}" y="${y+4}" font-size="10" fill="${col}">${nm} ${fmt(val)}</text>`;
+    s+=pline(yOp,'#333','営業利益',d.operatingProfit)+pline(yOrd,'#2b6cb0','経常利益',d.ordinaryProfit)+pline(yNi,'#c53030',(d.netIncome<0?'当期純損失':'当期純利益'),d.netIncome);
+    s+=`<text x="${bx[2]+BW/2}" y="${ySales-6}" font-size="12" fill="#333" text-anchor="middle" font-weight="bold">${fmt(d.sales)}</text>`;
+    s+=`<text x="${bx[2]+BW/2}" y="${BOT+20}" font-size="12" fill="#444" text-anchor="middle" font-weight="bold">売上・利益</text>`;
   }
-  // 利益ライン
-  const pline=(y,col,nm,val)=> `<line x1="${bx[2]}" y1="${y}" x2="${bx[2]+BW}" y2="${y}" stroke="${col}" stroke-width="1.6"><title>${nm}：${fmt(val)} ${u}</title></line><text x="${bx[2]+BW+4}" y="${y+4}" font-size="10" fill="${col}">${nm} ${fmt(val)}</text>`;
-  s+=pline(yOp,'#333','営業利益',d.operatingProfit)+pline(yOrd,'#2b6cb0','経常利益',d.ordinaryProfit)+pline(yNi,'#c53030',(d.netIncome<0?'当期純損失':'当期純利益'),d.netIncome);
   // 合計ラベル
   s+=`<text x="${bx[0]+BW/2}" y="${Y(d.totalAssets)-6}" font-size="12" fill="#333" text-anchor="middle" font-weight="bold">${fmt(d.totalAssets)}</text>`;
   s+=`<text x="${bx[1]+BW/2}" y="${Y(Math.max(d.cl+d.fl+Math.max(d.na,0),d.totalCapital))-6}" font-size="12" fill="#333" text-anchor="middle" font-weight="bold">${fmt(d.totalCapital)}</text>`;
-  s+=`<text x="${bx[2]+BW/2}" y="${ySales-6}" font-size="12" fill="#333" text-anchor="middle" font-weight="bold">${fmt(d.sales)}</text>`;
   s+=`<text x="${bx[0]+BW/2}" y="${BOT+20}" font-size="12" fill="#444" text-anchor="middle" font-weight="bold">資産</text>`;
   s+=`<text x="${bx[1]+BW/2}" y="${BOT+20}" font-size="12" fill="#444" text-anchor="middle" font-weight="bold">負債・純資産</text>`;
-  s+=`<text x="${bx[2]+BW/2}" y="${BOT+20}" font-size="12" fill="#444" text-anchor="middle" font-weight="bold">売上・利益</text>`;
   // 強調（指標ボタン）
   if(hi){
     Object.keys(catR).forEach(cat=>{ if(!boxKeep.has(cat)){ const r=catR[cat]; s+=`<rect x="${catX[cat]}" y="${r[0]}" width="${BW}" height="${Math.max(0,r[1]-r[0])}" fill="#f4f5f7" fill-opacity="0.66"/>`; } });
     const grp={};
     (hi.boxes||[]).forEach(cat=>{ if(!catR[cat])return; const col=catX[cat]; if(!grp[col])grp[col]=[catR[cat][0],catR[cat][1]]; else{grp[col][0]=Math.min(grp[col][0],catR[cat][0]);grp[col][1]=Math.max(grp[col][1],catR[cat][1]);} });
     Object.keys(grp).forEach(col=>{ const g=grp[col]; s+=`<rect x="${col}" y="${g[0]}" width="${BW}" height="${Math.max(0,g[1]-g[0])}" fill="none" stroke="${GOLD}" stroke-width="4"/>`; });
-    (hi.lines||[]).forEach(k=>{ const y=(k==='op')?yOp:yNi; s+=`<line x1="${bx[2]}" y1="${y}" x2="${bx[2]+BW}" y2="${y}" stroke="${GOLD}" stroke-width="4"/>`; });
+    if(showPL) (hi.lines||[]).forEach(k=>{ const y=(k==='op')?yOp:yNi; s+=`<line x1="${bx[2]}" y1="${y}" x2="${bx[2]+BW}" y2="${y}" stroke="${GOLD}" stroke-width="4"/>`; });
   }
   s+=`</svg>`; return s;
 }
@@ -889,6 +881,16 @@ const CATS = {
         meaning:'売上のうち最終的に何％が利益として残るか。事業全体の総合採算性。',
         rows:[{lv:'good',name:'良好',range:'5% 以上',note:'高採算'},{lv:'warn',name:'普通',range:'0〜5%',note:'一般的な水準'},{lv:'bad',name:'赤字',range:'0% 未満',note:'最終赤字'}],
         judge:d=>{const v=d.netMargin; return v>=5?'good':v>=0?'warn':'bad';} },
+      { key:'persr', label:'人件費率', v:d=>d.personnelRatio, unit:'%', dec:1, hi:{boxes:['sales']}, ready:d=>d.personnelReady, detailOnly:true,
+        formula:d=>`人件費 <b>${fmt(d.laborCost)}</b>（労務費＋販管人件費）÷ 売上高 <b>${fmt(d.sales)}</b> × 100 ＝ <b>${p1(d.personnelRatio)}</b>%`,
+        meaning:'売上に対する人件費の割合。原価/販管費の内訳から算出。',
+        rows:[{lv:'good',name:'低い',range:'15% 以下',note:'労働生産性が高い'},{lv:'warn',name:'普通',range:'15〜30%',note:'標準的'},{lv:'bad',name:'高い',range:'30% 超',note:'人件費負担が重い'}],
+        judge:d=>{const v=d.personnelRatio; return v<=15?'good':v<=30?'warn':'bad';} },
+      { key:'labshare', label:'労働分配率', v:d=>d.laborShare, unit:'%', dec:1, hi:{boxes:['sales']}, ready:d=>d.personnelReady, detailOnly:true,
+        formula:d=>`人件費 <b>${fmt(d.laborCost)}</b> ÷ 粗利 <b>${fmt(d.grossProfit)}</b> × 100 ＝ <b>${p1(d.laborShare)}</b>%`,
+        meaning:'付加価値（粗利で簡易代用）のうち人件費に分配された割合。高すぎると利益を圧迫。',
+        rows:[{lv:'good',name:'適正',range:'50% 以下',note:'利益を確保しやすい'},{lv:'warn',name:'やや高',range:'50〜70%',note:'標準〜やや高い'},{lv:'bad',name:'高い',range:'70% 超',note:'利益を圧迫'}],
+        judge:d=>{const v=d.laborShare; return v<=50?'good':v<=70?'warn':'bad';} },
     ]},
   eff:{ name:'効率性', note:'※ROE＝売上高当期純利益率×総資本回転率×財務レバレッジ（デュポン分解）。',
     metrics:[
@@ -942,19 +944,6 @@ const CATS = {
         meaning:'売上債権が何日分の売上に相当するか＝回収の速さ。短いほど資金繰りが良い。詳細入力の売上債権が必要。',
         rows:[{lv:'good',name:'良好',range:'45日 以内',note:'回収が速い'},{lv:'warn',name:'普通',range:'45〜90日',note:'標準的'},{lv:'bad',name:'長い',range:'90日 超',note:'回収が遅い'}],
         judge:d=>{const v=d.recvDays; return v<=45?'good':v<=90?'warn':'bad';} },
-    ]},
-  cost:{ name:'コスト',
-    metrics:[
-      { key:'persr', label:'人件費率', v:d=>d.personnelRatio, unit:'%', dec:1, hi:{boxes:['sales']}, ready:d=>d.personnelReady, detailOnly:true,
-        formula:d=>`人件費 <b>${fmt(d.laborCost)}</b>（労務費＋販管人件費）÷ 売上高 <b>${fmt(d.sales)}</b> × 100 ＝ <b>${p1(d.personnelRatio)}</b>%`,
-        meaning:'売上に対する人件費の割合。原価/販管費の内訳入力が必要です。',
-        rows:[{lv:'good',name:'低い',range:'15% 以下',note:'労働生産性が高い'},{lv:'warn',name:'普通',range:'15〜30%',note:'標準的'},{lv:'bad',name:'高い',range:'30% 超',note:'人件費負担が重い'}],
-        judge:d=>{const v=d.personnelRatio; return v<=15?'good':v<=30?'warn':'bad';} },
-      { key:'labshare', label:'労働分配率', v:d=>d.laborShare, unit:'%', dec:1, hi:{boxes:['sales']}, ready:d=>d.personnelReady, detailOnly:true,
-        formula:d=>`人件費 <b>${fmt(d.laborCost)}</b> ÷ 粗利 <b>${fmt(d.grossProfit)}</b> × 100 ＝ <b>${p1(d.laborShare)}</b>%`,
-        meaning:'付加価値（粗利で簡易代用）のうち人件費に分配された割合。高すぎると利益を圧迫。',
-        rows:[{lv:'good',name:'適正',range:'50% 以下',note:'利益を確保しやすい'},{lv:'warn',name:'やや高',range:'50〜70%',note:'標準〜やや高い'},{lv:'bad',name:'高い',range:'70% 超',note:'利益を圧迫'}],
-        judge:d=>{const v=d.laborShare; return v<=50?'good':v<=70?'warn':'bad';} },
     ]},
   safe:{ name:'安全性',
     metrics:[
@@ -1084,10 +1073,13 @@ function metricDetailHTML(m, ds, catNote){
 function renderAnalysis(ds){
   document.querySelectorAll('#subtabs .subtab').forEach(b=> b.classList.toggle('active', b.dataset.cat===curCat));
   const cat=CATS[curCat];
-  const mets=cat.metrics.filter(m=>!m.detailOnly);
+  const hasDetail=cat.metrics.some(m=>m.detailOnly);
+  const mets=cat.metrics.filter(m=> showDetail || !m.detailOnly);
   if(!mets.some(m=>m.key===curKey)) curKey=mets[0].key;
   const latest=ds[ds.length-1].d;
-  $("metricbtns").innerHTML = mets.map(m=> `<button class="mbtn ${m.key===curKey?'active':''}" data-key="${m.key}"><span>${m.label}</span><span class="mbv">${metricDisp(m,latest)}</span></button>`).join('');
+  let btns = mets.map(m=> `<button class="mbtn ${m.key===curKey?'active':''}" data-key="${m.key}"><span>${m.label}</span><span class="mbv">${metricDisp(m,latest)}</span></button>`).join('');
+  if(hasDetail) btns += `<button class="mbtn detmet ${showDetail?'active':''}" id="detMetToggle"><span>${showDetail?'− 詳細指標を隠す':'＋ 詳細指標'}</span></button>`;
+  $("metricbtns").innerHTML = btns;
   $("metricdetail").innerHTML = metricDetailHTML(findMetric(curCat,curKey), ds, cat.note);
 }
 
@@ -1240,8 +1232,8 @@ function drawItemTrend(ds, leaves, title){
     s+=`<polyline points="${pts}" fill="none" stroke="#333" stroke-width="1.3" stroke-dasharray="4 3" opacity="0.7"/>`;
     s+=`<text x="${gx+gW/2}" y="${BOT+18}" font-size="11" text-anchor="middle" fill="#444">${labels[k]}</text>`;
   });
-  s+=`</svg>`; $("dChart").innerHTML=s;
-  $("dLegend").innerHTML=ds.map((r,pi)=>`<span class="lg"><i style="background:${PAL[pi%PAL.length]}"></i>${TLAB(r.year)}</span>`).join('');
+  s+=`</svg>`;
+  return {svg:s, legend:ds.map((r,pi)=>`<span class="lg"><i style="background:${PAL[pi%PAL.length]}"></i>${TLAB(r.year)}</span>`).join('')};
 }
 function drawSingleTrend(ds, key, color, label){
   let mn=0,mx=0; ds.forEach(r=>{ const v=detVal(r.d,key); mn=Math.min(mn,v); mx=Math.max(mx,v); }); if(mx===mn) mx=mn+1;
@@ -1272,8 +1264,8 @@ function drawCFCompare(ds){
       s+=`<text x="${x+(bw-3)/2}" y="${v>=0?y-4:y+12}" font-size="10" text-anchor="middle" fill="#444">${fmt(v)}</text>`; });
     s+=`<text x="${gx+gW/2}" y="${BOT+20}" font-size="12" text-anchor="middle" font-weight="bold">${TLAB(yr)}</text>`;
   });
-  s+=`</svg>`; $("dChart").innerHTML=s;
-  $("dLegend").innerHTML=keys.map(k=>`<span class="lg"><i style="background:${k[2]}"></i>${k[1]}</span>`).join('');
+  s+=`</svg>`;
+  return {svg:s, legend:keys.map(k=>`<span class="lg"><i style="background:${k[2]}"></i>${k[1]}</span>`).join('')};
 }
 function renderMetricPanel(ds, keys, cur){
   const list=keys.map(k=>ALL_METRICS[k]).filter(Boolean);
@@ -1285,73 +1277,50 @@ function renderMetricPanel(ds, keys, cur){
   return cur;
 }
 /* ---- sub-tab renderers ---- */
-let dSub='all';
-let allIdx=-1, allMetricKey='';
-let plMode='multi', plBreak='main', plIdx=-1, plMetricKey='';
-let bsMode='multi', bsIdx=-1, bsMetricKey='';
-let csMode2='multi', csIdx2=-1;
-function renderDetail2(ds){
-  document.querySelectorAll('#dSubToggle .cbtn').forEach(x=>x.classList.toggle('active',x.dataset.dsub===dSub));
-  $("dTable").innerHTML=''; $("dMetricBtns").innerHTML=''; $("dMetricDetail").innerHTML='';
-  if(dSub==='all') dAll(ds);
-  else if(dSub==='pl') dPL(ds);
-  else if(dSub==='bs') dBS(ds);
-  else dCS(ds);
-}
+let scope='all', pmode='multi', pidx=-1, plBreak='main';
 const BS_LEGEND=`<span class="lg"><i style="background:${C.ca}"></i>流動資産</span><span class="lg"><i style="background:${C.fa}"></i>固定資産</span><span class="lg"><i style="background:${C.cl}"></i>流動負債</span><span class="lg"><i style="background:${C.fl}"></i>固定負債</span><span class="lg"><i style="background:${C.na}"></i>純資産</span><span class="lg" style="color:#888">点線の内枠＝うち有利子負債／うち減価償却費</span>`;
-function dAll(ds){
-  const idx = allIdx<0? ds.length-1 : Math.min(allIdx, ds.length-1);
-  const one=[ds[idx]], m=ALL_METRICS[allMetricKey];
-  $("dControls").innerHTML=`<div class="ctl-row"><span class="ctl-lbl">対象期（1期のみ）：</span><select id="allPeriod">`+ds.map((r,i)=>`<option value="${i}" ${i===idx?'selected':''}>${TLAB(r.year)}</option>`).join('')+`</select></div><p class="note" style="margin:4px 0 6px;">BS・PLを1期で図解。③で内訳を入力すると科目名・数値まで表示します。指標ボタンで該当箇所を強調。</p>`;
-  $("dChart").innerHTML = comboDetailSVG(ds[idx], m?m.hi:null);
-  $("dLegend").innerHTML = BS_LEGEND+`<span class="lg"><i style="background:${C.gp}"></i>粗利</span>`;
-  allMetricKey=renderMetricPanel(ds,['roe','finlev','roa','turnover','roic','icr','debty','recvdays','invturn'],allMetricKey);
-}
-function dPL(ds){
-  const modeChips=`<span class="ctl-lbl">表示：</span><button class="chip ${plMode==='multi'?'on':''}" data-plmode="multi">3期比較</button><button class="chip ${plMode==='single'?'on':''}" data-plmode="single">1期のみ</button>`;
-  if(plMode==='single'){
-    const idx = plIdx<0? ds.length-1 : Math.min(plIdx, ds.length-1);
-    $("dControls").innerHTML=`<div class="ctl-row">${modeChips}<span class="ctl-lbl" style="margin-left:8px;">対象期：</span><select id="plPeriod">`+ds.map((r,i)=>`<option value="${i}" ${i===idx?'selected':''}>${TLAB(r.year)}</option>`).join('')+`</select></div>`;
-    const wf=plWaterfall(ds[idx].d, `${TLAB(ds[idx].year)} PLウォーターフォール`);
-    $("dChart").innerHTML=wf.svg; $("dLegend").innerHTML=wf.legend;
-  } else {
-    $("dControls").innerHTML=`<div class="ctl-row">${modeChips}<span class="ctl-lbl" style="margin-left:8px;">内訳：</span><button class="chip ${plBreak==='main'?'on':''}" data-plbreak="main">主要項目</button><button class="chip ${plBreak==='cogs'?'on':''}" data-plbreak="cogs">原価の内訳</button><button class="chip ${plBreak==='sga'?'on':''}" data-plbreak="sga">販管費の内訳</button></div>`;
-    if(plBreak==='main'){ const cmp=drawSeries(ds,['sales','cogs','grossProfit','sga','operatingProfit','ordinaryProfit','netIncome'],'bar'); $("dChart").innerHTML=cmp.svg; $("dLegend").innerHTML=cmp.legend; }
-    else { drawItemTrend(ds, plBreak==='cogs'?cogsLeaves():SGA_LEAVES, plBreak==='cogs'?'売上原価の内訳':'販管費の内訳'); }
+const LEG_FULL = BS_LEGEND+`<span class="lg"><i style="background:${C.gp}"></i>粗利</span>`;
+function renderMainChart(ds){
+  document.querySelectorAll('#scopeToggle .cbtn').forEach(x=>x.classList.toggle('active',x.dataset.scope===scope));
+  $("mainExtra").innerHTML='';
+  const hi=currentHi();
+  if(scope==='cs'){ renderCS(ds); return; }
+  const idx = pidx<0? ds.length-1 : Math.min(pidx, ds.length-1);
+  const modeChips=`<span class="ctl-lbl">期間：</span><button class="chip ${pmode==='multi'?'on':''}" data-pmode="multi">3期比較</button><button class="chip ${pmode==='single'?'on':''}" data-pmode="single">1期比較</button>`;
+  let ctl=`<div class="ctl-row">${modeChips}`;
+  if(pmode==='single') ctl+=`<span class="ctl-lbl" style="margin-left:8px;">対象期：</span><select id="mPeriod">`+ds.map((r,i)=>`<option value="${i}" ${i===idx?'selected':''}>${TLAB(r.year)}</option>`).join('')+`</select>`;
+  if(scope==='pl'&&pmode==='multi') ctl+=`<span class="ctl-lbl" style="margin-left:8px;">内訳：</span><button class="chip ${plBreak==='main'?'on':''}" data-plbreak="main">主要項目</button><button class="chip ${plBreak==='cogs'?'on':''}" data-plbreak="cogs">原価の内訳</button><button class="chip ${plBreak==='sga'?'on':''}" data-plbreak="sga">販管費の内訳</button>`;
+  ctl+=`</div>`;
+  $("mainControls").innerHTML=ctl;
+  if(scope==='all'){
+    if(pmode==='multi'){ $("chart").innerHTML=`<div class="fig60">`+comboSVG(ds,hi,true)+`</div>`; $("legend").innerHTML=LEG_FULL; }
+    else { $("chart").innerHTML=comboDetailSVG(ds[idx],hi,true); $("legend").innerHTML=LEG_FULL; }
+  } else if(scope==='bs'){
+    if(pmode==='multi'){ $("chart").innerHTML=`<div class="fig60">`+comboSVG(ds,hi,false)+`</div>`; $("legend").innerHTML=BS_LEGEND; }
+    else { $("chart").innerHTML=comboDetailSVG(ds[idx],hi,false); $("legend").innerHTML=BS_LEGEND; }
+  } else if(scope==='pl'){
+    if(pmode==='single'){ const wf=plWaterfall(ds[idx].d, `${TLAB(ds[idx].year)} PLウォーターフォール`); $("chart").innerHTML=wf.svg; $("legend").innerHTML=wf.legend; }
+    else if(plBreak==='main'){ const cmp=drawSeries(ds,['sales','cogs','grossProfit','sga','operatingProfit','ordinaryProfit','netIncome'],'bar'); $("chart").innerHTML=cmp.svg; $("legend").innerHTML=cmp.legend; }
+    else { const r=drawItemTrend(ds, plBreak==='cogs'?cogsLeaves():SGA_LEAVES, plBreak==='cogs'?'売上原価の内訳':'販管費の内訳'); $("chart").innerHTML=r.svg; $("legend").innerHTML=r.legend; }
   }
-  plMetricKey=renderMetricPanel(ds,['gm','opm','ordm','npm','persr','labshare'],plMetricKey);
 }
-function dBS(ds){
-  const modeChips=`<span class="ctl-lbl">表示：</span><button class="chip ${bsMode==='multi'?'on':''}" data-bsmode="multi">3期比較</button><button class="chip ${bsMode==='single'?'on':''}" data-bsmode="single">1期のみ</button>`;
-  const m=ALL_METRICS[bsMetricKey];
-  if(bsMode==='single'){
-    const idx = bsIdx<0? ds.length-1 : Math.min(bsIdx, ds.length-1);
-    $("dControls").innerHTML=`<div class="ctl-row">${modeChips}<span class="ctl-lbl" style="margin-left:8px;">対象期：</span><select id="bsPeriod">`+ds.map((r,i)=>`<option value="${i}" ${i===idx?'selected':''}>${TLAB(r.year)}</option>`).join('')+`</select></div>`;
-    $("dChart").innerHTML=`<div class="fig50">`+comboSVG([ds[idx]], m?m.hi:null, false)+`</div>`;
-  } else {
-    $("dControls").innerHTML=`<div class="ctl-row">${modeChips}</div>`;
-    $("dChart").innerHTML=`<div class="fig50">`+comboSVG(ds, m?m.hi:null, false)+`</div>`;
-  }
-  $("dLegend").innerHTML=BS_LEGEND;
-  bsMetricKey=renderMetricPanel(ds,['equity','current','fixedratio','fixedlt','debtratio','wc','de','ibdr','netde','debtm','quick'],bsMetricKey);
-}
-function dCS(ds){
-  if(ds.length<2){ $("dControls").innerHTML=''; $("dChart").innerHTML='<p class="ph">簡易CFには2期以上の入力が必要です。「③ 数値入力」で期を追加してください。</p>'; $("dLegend").innerHTML=''; $("dMetricDetail").innerHTML=''; $("dTable").innerHTML=''; return; }
-  const idx=csIdx2<1?ds.length-1:Math.min(csIdx2,ds.length-1);
-  let h=`<div class="ctl-row"><span class="ctl-lbl">表示：</span><button class="chip ${csMode2==='multi'?'on':''}" data-csmode="multi">3期比較</button><button class="chip ${csMode2==='pair'?'on':''}" data-csmode="pair">2期比較（1期分）</button>`;
-  if(csMode2==='pair') h+=`<span class="ctl-lbl" style="margin-left:8px;">対象期：</span><select id="csPeriod">`+ds.map((r,i)=> i>=1?`<option value="${i}" ${i===idx?'selected':''}>${TLAB(ds[i-1].year)}→${TLAB(r.year)}</option>`:'').join('')+`</select>`;
-  h+=`</div>`;
-  $("dControls").innerHTML=h;
-  if(csMode2==='pair'){ const cf=computeCF(ds[idx-1].d,ds[idx].d);
+function renderCS(ds){
+  const modeChips=`<span class="ctl-lbl">期間：</span><button class="chip ${pmode==='multi'?'on':''}" data-pmode="multi">3期比較</button><button class="chip ${pmode==='single'?'on':''}" data-pmode="single">2期比較（1期分）</button>`;
+  if(ds.length<2){ $("mainControls").innerHTML=`<div class="ctl-row">${modeChips}</div>`; $("chart").innerHTML='<p class="ph">簡易CFには2期以上の入力が必要です。「② 数値入力」で期を追加してください。</p>'; $("legend").innerHTML=''; return; }
+  const idx=pidx<1?ds.length-1:Math.min(pidx,ds.length-1);
+  let ctl=`<div class="ctl-row">${modeChips}`;
+  if(pmode==='single') ctl+=`<span class="ctl-lbl" style="margin-left:8px;">対象期：</span><select id="mPeriod">`+ds.map((r,i)=> i>=1?`<option value="${i}" ${i===idx?'selected':''}>${TLAB(ds[i-1].year)}→${TLAB(r.year)}</option>`:'').join('')+`</select>`;
+  ctl+=`</div>`;
+  $("mainControls").innerHTML=ctl;
+  if(pmode==='single'){ const cf=computeCF(ds[idx-1].d,ds[idx].d);
     const r=drawSteps([{t:'flow',label:'営業CF',amt:cf.opCF},{t:'flow',label:'投資CF',amt:cf.invCF},{t:'flow',label:'財務CF',amt:cf.finCF},{t:'flow',label:'その他調整',amt:cf.adj},{t:'total',label:'現金増減',val:cf.actual}], `${TLAB(ds[idx-1].year)}→${TLAB(ds[idx].year)} 簡易キャッシュフロー`);
-    $("dChart").innerHTML=r.svg; $("dLegend").innerHTML=r.legend;
-  } else drawCFCompare(ds);
+    $("chart").innerHTML=r.svg; $("legend").innerHTML=r.legend;
+  } else { const r=drawCFCompare(ds); $("chart").innerHTML=r.svg; $("legend").innerHTML=r.legend; }
   const a=ds[idx-1].d,c=ds[idx].d,cf=computeCF(a,c),pat=cfPattern(cf.opCF,cf.invCF,cf.finCF),u=unitStr();
   const opm=c.sales?cf.opCF/c.sales*100:0, sgn=v=>(v>=0?'+':'')+fmt(v), tile=(t,v)=>`<div class="cf-tile"><div class="t">${t}</div><div class="v">${v}</div></div>`;
   let mh=`<div class="cf-pattern"><div><span class="cf-badge">該当 ${pat?pat.no+' '+pat.name:'—'}</span></div><div class="cf-desc">${pat?pat.desc:''}</div><div class="cf-signs">営業CF <b>${sgn(cf.opCF)}</b>　／　投資CF <b>${sgn(cf.invCF)}</b>　／　財務CF <b>${sgn(cf.finCF)}</b>　（${TLAB(ds[idx-1].year)}→${TLAB(ds[idx].year)}・単位：${u}）</div></div>`;
   mh+=`<div class="cf-tiles">${tile('営業CF',fmt(cf.opCF))}${tile('投資CF',fmt(cf.invCF))}${tile('財務CF',fmt(cf.finCF))}${tile('フリーCF',fmt(cf.fcf))}${tile('現金増減',fmt(cf.actual))}${tile('営業CFマージン',p1(opm)+'%')}</div>`;
   mh+=`<div class="cf-h">キャッシュフロー8パターン（該当を強調）</div><div class="cf-grid">`+CF_PATTERNS.map(p=>`<div class="cf-card ${pat&&p.sign===pat.sign?'cur':''}"><div class="cf-mini">${cfMini(p.sign)}</div><div class="cf-ct"><div class="nm">${p.no} ${p.name}</div><div class="ds">${p.desc}</div></div></div>`).join('')+`</div>`;
-  $("dMetricBtns").innerHTML=''; $("dMetricDetail").innerHTML=mh;
   const rows=[['opCF','営業CF'],['invCF','投資CF'],['finCF','財務CF'],['fcf','フリーCF(営業+投資)'],['adj','その他調整'],['actual','現金増減']];
   let t=`<div class="cf-h">簡易CF 数値表（単位：${u}）</div><div class="detail-wrap"><table class="cmp-detail"><thead><tr><th class="itemcol">項目</th>`;
   for(let i=1;i<ds.length;i++) t+=`<th>${TLAB(ds[i-1].year)}→${TLAB(ds[i].year)}</th>`;
@@ -1359,7 +1328,7 @@ function dCS(ds){
   rows.forEach(([k,nm])=>{ t+=`<tr class="${k==='actual'?'grand':(k==='fcf'?'totrow':'')}"><td class="itemcol">${nm}</td>`;
     for(let i=1;i<ds.length;i++){ const cf2=computeCF(ds[i-1].d,ds[i].d); t+=`<td class="num">${fmt(cf2[k])}</td>`; } t+=`</tr>`; });
   t+=`</tbody></table></div>`;
-  $("dTable").innerHTML=t;
+  $("mainExtra").innerHTML=mh+t;
 }
 
 
@@ -1370,10 +1339,8 @@ function run(){
   renderPeriodBar();
   updateComputedInputs();
   const ds=derived();
-  drawChart(ds);
-  renderLegend();
-  renderAnalysis(ds);
-  renderDetail2(ds);
+  renderAnalysis(ds);   // 先に指標を確定（選択指標＝チャート強調に反映）
+  renderMainChart(ds);
 }
 
 /* ---------- listeners ---------- */
@@ -1386,16 +1353,6 @@ function onFormInput(e){
 $("bsLeft").addEventListener("input", onFormInput);
 $("bsRight").addEventListener("input", onFormInput);
 $("plForm").addEventListener("input", onFormInput);
-function onDetClick(e){
-  const b=e.target.closest(".det-toggle"); if(!b) return;
-  const big=b.dataset.big, v=periods[curIdx].vals, key='det_'+big;
-  v[key]=!v[key];
-  if(v[key]){ const ls=leavesOf(big); const anyLeaf=ls.some(k=> (+v[k]||0)!==0); if(!anyLeaf){ v[otherOf(big)]=+v[big]||0; } }
-  buildInputForm(); run();
-}
-$("bsLeft").addEventListener("click", onDetClick);
-$("bsRight").addEventListener("click", onDetClick);
-$("plForm").addEventListener("click", onDetClick);
 $("unit").addEventListener("change", run);
 $("costType").addEventListener("change", e=>{ costType=e.target.value; buildInputForm(); run(); });
 $("resetBtn").addEventListener("click", openResetModal);
@@ -1417,27 +1374,15 @@ function switchTab(name){
 document.querySelectorAll(".tab").forEach(t=> t.addEventListener("click", ()=> switchTab(t.dataset.tab)));
 $("calcBtn").addEventListener("click", ()=>{ run(); switchTab("view"); });
 $("subtabs").addEventListener("click", e=>{ const b=e.target.closest(".subtab"); if(!b) return; curCat=b.dataset.cat; curKey=CATS[curCat].metrics.filter(m=>!m.detailOnly)[0].key; run(); });
-$("metricbtns").addEventListener("click", e=>{ const b=e.target.closest(".mbtn"); if(!b) return; curKey=b.dataset.key; run(); });
+$("metricbtns").addEventListener("click", e=>{ const b=e.target.closest(".mbtn"); if(!b) return; if(b.id==='detMetToggle'){ showDetail=!showDetail; } else if(b.dataset.key){ curKey=b.dataset.key; } run(); });
 $("metricdetail").addEventListener("click", e=>{ const b=e.target.closest(".cbtn"); if(!b||b.disabled) return; cmpN=+b.dataset.n; run(); });
-$("dSubToggle").addEventListener("click", e=>{ const b=e.target.closest(".cbtn"); if(!b) return; dSub=b.dataset.dsub; renderDetail2(derived()); });
-$("dControls").addEventListener("click", e=>{
-  const b=e.target.closest("[data-plmode],[data-plbreak],[data-bsmode],[data-csmode]"); if(!b) return;
-  if(b.dataset.plmode){ plMode=b.dataset.plmode; renderDetail2(derived()); }
-  else if(b.dataset.plbreak){ plBreak=b.dataset.plbreak; renderDetail2(derived()); }
-  else if(b.dataset.bsmode){ bsMode=b.dataset.bsmode; renderDetail2(derived()); }
-  else if(b.dataset.csmode){ csMode2=b.dataset.csmode; renderDetail2(derived()); }
+$("scopeToggle").addEventListener("click", e=>{ const b=e.target.closest(".cbtn"); if(!b) return; scope=b.dataset.scope; pidx=-1; run(); });
+$("mainControls").addEventListener("click", e=>{
+  const b=e.target.closest("[data-pmode],[data-plbreak]"); if(!b) return;
+  if(b.dataset.pmode){ pmode=b.dataset.pmode; run(); }
+  else if(b.dataset.plbreak){ plBreak=b.dataset.plbreak; run(); }
 });
-$("dControls").addEventListener("change", e=>{
-  const t=e.target;
-  if(t.id==='csPeriod'){ csIdx2=+t.value; renderDetail2(derived()); }
-  else if(t.id==='plPeriod'){ plIdx=+t.value; renderDetail2(derived()); }
-  else if(t.id==='allPeriod'){ allIdx=+t.value; renderDetail2(derived()); }
-  else if(t.id==='bsPeriod'){ bsIdx=+t.value; renderDetail2(derived()); }
-});
-$("dMetricBtns").addEventListener("click", e=>{ const b=e.target.closest(".mbtn"); if(!b) return; const k=b.dataset.key;
-  if(dSub==='all') allMetricKey=k; else if(dSub==='pl') plMetricKey=k; else if(dSub==='bs') bsMetricKey=k;
-  renderDetail2(derived()); });
-$("dMetricDetail").addEventListener("click", e=>{ const b=e.target.closest(".cbtn"); if(!b||b.disabled) return; cmpN=+b.dataset.n; renderDetail2(derived()); });
+$("mainControls").addEventListener("change", e=>{ if(e.target.id==='mPeriod'){ pidx=+e.target.value; run(); } });
 
 buildInputForm();
 run();
