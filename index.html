@@ -601,6 +601,14 @@ function comboSVG(ds, hi, showPL){
   const segLabel2=(x,yT,yB,nm,val)=>{ const h=yB-yT; if(h<16) return ''; const cy=(yT+yB)/2;
     return h>=32 ? `<text x="${x+BW/2}" y="${cy-3}" font-size="11" fill="#fff" text-anchor="middle">${nm}</text><text x="${x+BW/2}" y="${cy+13}" font-size="13" fill="#fff" text-anchor="middle">${fmt(val)}</text>`
                  : `<text x="${x+BW/2}" y="${cy+4}" font-size="12" fill="#fff" text-anchor="middle">${fmt(val)}</text>`; };
+  // 「うち〜」の内訳バンド（親ボックスの下部に点線枠で表示）
+  const uchiBand=(x,yTop,yBot,total,sub,full,col)=>{
+    if(!(sub>0)||!(total>0)) return '';
+    const frac=Math.min(1,sub/total), bh=(yBot-yTop)*frac, by=yBot-bh;
+    let g=`<rect x="${x+7}" y="${by}" width="${BW-14}" height="${Math.max(0,bh)}" fill="none" stroke="${col}" stroke-width="1.6" stroke-dasharray="4 2"><title>${full}：${fmt(sub)} ${unitStr()}</title></rect>`;
+    if(bh>=12) g+=`<text x="${x+BW/2}" y="${by+bh/2+3}" font-size="9" fill="${col}" font-weight="bold" text-anchor="middle">${fmt(sub)}</text>`;
+    return g;
+  };
   let s=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="比較チャート" preserveAspectRatio="xMidYMid meet" style="display:block;width:100%;height:100%;margin:0 auto;">`;
   s+=`<line x1="${AX}" y1="${TOP}" x2="${AX}" y2="${BOT}" stroke="#333" stroke-width="1.5"/>`;
   s+=`<text x="${AX-30}" y="${TOP-12}" font-size="16" fill="#333">％</text>`;
@@ -624,19 +632,18 @@ function comboSVG(ds, hi, showPL){
     s+=`<rect x="${bx[1]}" y="${yRe}" width="${BW}" height="${Math.max(0,Y(0)-yRe)}" fill="transparent"><title>${tt('利益剰余金',d.re,d.totalCapital)}</title></rect>`;
     s+=box(bx[1],BW,yFl,yNa,C.fl,tt('固定負債',d.fl,d.totalCapital))+segLabel(bx[1],yFl,yNa,d.fl);
     s+=box(bx[1],BW,yCl,yFl,C.cl,tt('流動負債',d.cl,d.totalCapital))+segLabel(bx[1],yCl,yFl,d.cl);
-    // 有利子負債の点線オーバーレイ（流動＋固定にまたがる）
+    // うち有利子負債（流動負債＝短期／固定負債＝長期）を各ボックス内に点線枠で表示
     const ibdShort=d.stloan+d.cpltd, ibdLong=d.ltloan+d.bond;
-    if(d.ibd>0){
-      // 有利子負債の近似表示: 固定負債内のibdLongと流動負債内のibdShortを囲む点線枠
-      const yLongTop=Y(PV(d.na+d.fl)), yLongBot=Y(PV(d.na+d.fl-ibdLong)), yShortTop=Y(PV(d.na+d.fl+ibdShort)), yShortBot=Y(PV(d.na+d.fl));
-      const top=Math.min(yLongTop,yShortTop), bot=Math.max(yLongBot,yShortBot);
-      s+=`<rect x="${bx[1]+BW+3}" y="${top}" width="14" height="${Math.max(0,bot-top)}" fill="none" stroke="#333" stroke-width="1.5" stroke-dasharray="5 3"><title>${tt('有利子負債',d.ibd,d.totalCapital)}</title></rect>`;
-    }
+    s+=uchiBand(bx[1],yCl,yFl,d.cl,ibdShort,'うち有利子負債(短期)','#3a0d0b');
+    s+=uchiBand(bx[1],yFl,yNa,d.fl,ibdLong,'うち有利子負債(長期)','#3a0d0b');
     // 売上（PL）
     const ySales=Y(PV(d.sales)), yGp=Y(PV(d.grossProfit)), yOp=Y(PV(d.operatingProfit)), yNi=Y(PV(d.netIncome));
     if(showPL){
       s+=box(bx[2],BW,ySales,Y(0),'#ffffff',tt('売上高',d.sales,0));
       s+=box(bx[2],BW,yGp,Y(0),C.gp,tt('粗利',d.grossProfit,d.sales))+segLabel(bx[2],yGp,Y(0),d.grossProfit);
+      // 売上原価（ySales〜yGp）・販管費（yGp〜yOp）内の うち減価償却費
+      s+=uchiBand(bx[2],ySales,yGp,(d.sales-d.grossProfit),d.depcogs,'うち減価償却費(製造原価)','#1c4e80');
+      s+=uchiBand(bx[2],yGp,yOp,(d.grossProfit-d.operatingProfit),d.depsga,'うち減価償却費(販管費)','#1c4e80');
       s+=`<line x1="${bx[2]}" y1="${yOp}" x2="${bx[2]+BW}" y2="${yOp}" stroke="#333" stroke-width="1.5"><title>${tt('営業利益',d.operatingProfit,d.sales)}</title></line>`;
       s+=`<line x1="${bx[2]}" y1="${yNi}" x2="${bx[2]+BW}" y2="${yNi}" stroke="#c53030" stroke-width="1.5"><title>${tt('当期純利益',d.netIncome,d.sales)}</title></line>`;
     }
@@ -696,7 +703,7 @@ function plWaterfall(d, title){
 function renderLegend(){
   const items=[['流動資産',C.ca],['固定資産',C.fa],['流動負債',C.cl],['固定負債',C.fl],['純資産（資本金・利益剰余金）',C.na],['粗利',C.gp]];
   let h=items.map(([nm,c])=>`<span class="lg"><i style="background:${c}"></i>${nm}</span>`).join('');
-  h+=`<span class="lg"><i class="lgline"></i>営業利益</span><span class="lg"><i class="lgline red"></i>当期純利益</span><span class="lg" style="color:#888">（純資産内の点線＝資本金／利益剰余金の区切り・バーにカーソルで科目と数値）</span>`;
+  h+=`<span class="lg"><i class="lgline"></i>営業利益</span><span class="lg"><i class="lgline red"></i>当期純利益</span><span class="lg" style="color:#888">（点線の内枠＝うち有利子負債／うち減価償却費・純資産内の点線＝資本金／利益剰余金の区切り・バーにカーソルで科目と数値）</span>`;
   $("legend").innerHTML=h;
 }
 
@@ -1167,7 +1174,7 @@ function renderDetail2(ds){
   else if(dSub==='bs') dBS(ds);
   else dCS(ds);
 }
-const BS_LEGEND=`<span class="lg"><i style="background:${C.ca}"></i>流動資産</span><span class="lg"><i style="background:${C.fa}"></i>固定資産</span><span class="lg"><i style="background:${C.cl}"></i>流動負債</span><span class="lg"><i style="background:${C.fl}"></i>固定負債</span><span class="lg"><i style="background:${C.na}"></i>純資産</span><span class="lg" style="color:#888">点線枠＝有利子負債</span>`;
+const BS_LEGEND=`<span class="lg"><i style="background:${C.ca}"></i>流動資産</span><span class="lg"><i style="background:${C.fa}"></i>固定資産</span><span class="lg"><i style="background:${C.cl}"></i>流動負債</span><span class="lg"><i style="background:${C.fl}"></i>固定負債</span><span class="lg"><i style="background:${C.na}"></i>純資産</span><span class="lg" style="color:#888">点線の内枠＝うち有利子負債／うち減価償却費</span>`;
 function dAll(ds){
   const m=ALL_METRICS[allMetricKey];
   $("dControls").innerHTML=`<p class="note" style="margin:2px 0 6px;">BS・PLを最大値100%で図解（①期間比較と同じ図）。負債の点線枠＝有利子負債。下段は有利子負債を 短期(＋)／長期(−) で表示。指標ボタンで該当箇所を強調します。</p>`;
