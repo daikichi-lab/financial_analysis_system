@@ -109,6 +109,34 @@
   .mbtn.active{border-color:var(--accent);background:#eef5fc;color:var(--accent);box-shadow:0 0 0 2px rgba(43,108,176,.15);}
   .mbtn .mbv{font-size:13px;font-weight:800;font-variant-numeric:tabular-nums;}
   .mbtn .mbv small{font-size:10px;font-weight:600;margin-left:1px;}
+  /* 信号色（左ボーダー） */
+  .mbtn.j-good{border-left:6px solid #2f9e6f;}
+  .mbtn.j-warn{border-left:6px solid #d9a13a;}
+  .mbtn.j-bad{border-left:6px solid #d1453f;}
+  /* 業種セレクタ・読み方フロー */
+  .subtab.flowtab{background:#fdf2e0;border-color:#e6c47a;color:#8a5a12;}
+  .subtab.flowtab.active{background:#e8a11a;color:#fff;border-color:transparent;}
+  .ind-wrap{margin-left:auto;font-size:12px;color:#475569;display:flex;align-items:center;gap:6px;}
+  .ind-wrap select{padding:5px 8px;border:1px solid #cbd5e0;border-radius:6px;font-size:12px;}
+  .flow-intro{font-size:12.5px;color:#475569;background:#f6f8fb;border:1px solid #e2e8f0;border-radius:8px;padding:8px 12px;margin-bottom:12px;}
+  .flow{display:flex;flex-direction:column;gap:4px;}
+  .fl-step{border:1px solid #e2e8f0;border-radius:10px;padding:10px 12px;background:#fafbfc;}
+  .fl-h{font-weight:800;color:#1a2733;font-size:13.5px;margin-bottom:8px;}
+  .fl-main{margin-bottom:6px;}
+  .fl-cond{font-size:12px;color:#b45309;margin:4px 0 8px;font-weight:700;}
+  .fl-row{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:4px 0;}
+  .fl-sep{color:#94a3b8;}
+  .fl-node{padding:7px 12px;border:1.5px solid #cbd5e0;background:#fff;color:#243b53;font-size:12.5px;font-weight:700;border-radius:8px;cursor:pointer;transition:.12s;}
+  .fl-node:hover{border-color:#2b6cb0;background:#eef5fc;}
+  .fl-node.cur{border-color:#e8a11a;background:#fff7e8;box-shadow:0 0 0 2px rgba(232,161,26,.25);}
+  .fl-main .fl-node{font-size:13.5px;padding:9px 16px;border-color:#2b6cb0;color:#2b6cb0;}
+  .fl-arrow{text-align:center;color:#94a3b8;font-size:11px;padding:2px 0;}
+  .fl-arrow:last-child{display:none;}
+  /* 業種ベンチマーク行 */
+  .bm-row{font-size:13px;color:#334155;padding:8px 10px;background:#f6f8fb;border:1px solid #e2e8f0;border-radius:8px;}
+  .bm-row b{font-variant-numeric:tabular-nums;}
+  .bm-up{color:#2f9e6f;} .bm-down{color:#d1453f;}
+  .bm-note{font-size:11px;color:#94a3b8;margin-top:4px;font-weight:400;}
   .metricdetail{border:1px solid #e2e8f0;border-radius:8px;background:#fbfcfd;overflow:hidden;}
   .md-head{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:12px 16px;background:#f1f5f9;border-bottom:1px solid #e2e8f0;flex-wrap:wrap;}
   .md-title{font-size:15px;font-weight:700;}
@@ -243,6 +271,16 @@
         <button class="subtab" data-cat="eff">効率性</button>
         <button class="subtab active" data-cat="prof">収益性</button>
         <button class="subtab" data-cat="safe">安全性</button>
+        <button class="subtab flowtab" data-cat="flow">📖 指標の読み方フロー</button>
+        <span class="ind-wrap">業種：<select id="indSel">
+          <option value="manuf">製造業</option>
+          <option value="wholesale">卸売業</option>
+          <option value="retail">小売業</option>
+          <option value="construct">建設業</option>
+          <option value="service">サービス業</option>
+          <option value="it">情報通信業</option>
+          <option value="food">飲食・宿泊業</option>
+        </select></span>
       </div>
       <div class="metricbtns" id="metricbtns"></div>
       <div class="metricdetail" id="metricdetail"></div>
@@ -263,6 +301,10 @@
           <option value="万円">万円</option>
           <option value="円">円</option>
         </select>
+      </div>
+      <div class="field"><label>従業員数（任意）</label>
+        <input type="number" id="in_emp" value="0"><span class="unit">人</span>
+        <span class="note" style="margin:0 0 0 8px;">※労働生産性の算出に使用（不明なら空欄でOK）</span>
       </div>
 
       <h3>貸借対照表（BS）</h3>
@@ -328,7 +370,7 @@ const NUM_KEYS = ['ca','cash','sec','recv','inv','oca','stloanto','prepaid','fa'
   'cl','payb','stloan','cpltd','ocl','payables','taxpay','fl','ltloan','bond','ofl','execloan','lease','ibds','ibdl',
   'cap','csurp','re','ona','sales','cogs','sga','noi','recint','noe','intexp','exg','exl','tax','dep',
   'matcost','labcost','subcon','depcogs','othcogs','beginv','purch','endinv',
-  'perscost','execcomp','salary','welfare','adv','rent','depsga','outsourcing','othsga'];
+  'perscost','execcomp','salary','welfare','adv','rent','depsga','outsourcing','othsga','emp'];
 const DET_KEYS = ['det_ca','det_fa','det_cl','det_fl','det_cogs','det_sga'];
 let costType = 'A';   // A:製造業 / B:商業・小売 / C:サービス業
 const SGA_LEAVES = [['execcomp','役員報酬'],['salary','給与・賞与'],['welfare','法定福利費・福利厚生費'],['adv','広告宣伝・販売促進費'],['rent','地代家賃'],['depsga','減価償却費'],['outsourcing','業務委託費・支払報酬'],['othsga','その他販管費']];
@@ -348,19 +390,19 @@ const DEFAULTS = mk({ca:5712,fa:19890,cl:5305,fl:9607,cap:5181,re:5509,sales:197
 // デモ用の3期分データ（貸借一致・成長ケース。内訳まで入力済み＝各明細を表示）
 const DET_ON = {det_ca:true,det_fa:true,det_cl:true,det_fl:true,det_cogs:true,det_sga:true};
 const DEMO = [
-  {year:1, vals:mk(Object.assign({},DET_ON,{ca:5712,fa:19890,cl:5305,fl:9607,cap:5181,re:5509,
+  {year:1, vals:mk(Object.assign({},DET_ON,{emp:1200,ca:5712,fa:19890,cl:5305,fl:9607,cap:5181,re:5509,
     cash:1600,recv:2100,inv:1300,stloanto:200,prepaid:150,
     building:13000,vehicle:1500,land:3500,software:600,invsec:900,
     payb:1900,stloan:1500,cpltd:800,payables:600,taxpay:300, ltloan:6500,bond:1500,execloan:600,lease:400,
     sales:19742,cogs:15834,sga:3300,noi:100,recint:30,noe:200,intexp:150,exl:50,tax:181,
     matcost:9000,labcost:3000,subcon:800,depcogs:2500, execcomp:300,salary:1200,welfare:200,adv:350,rent:250,depsga:600,outsourcing:150}))},
-  {year:2, vals:mk(Object.assign({},DET_ON,{ca:6100,fa:20800,cl:5600,fl:9800,cap:5181,re:6319,
+  {year:2, vals:mk(Object.assign({},DET_ON,{emp:1240,ca:6100,fa:20800,cl:5600,fl:9800,cap:5181,re:6319,
     cash:1800,recv:2300,inv:1350,stloanto:200,prepaid:150,
     building:13800,vehicle:1500,land:3500,software:650,invsec:950,
     payb:2000,stloan:1400,cpltd:800,payables:650,taxpay:350, ltloan:6300,bond:1500,execloan:600,lease:450,
     sales:21500,cogs:17050,sga:3550,noi:110,recint:35,noe:210,intexp:160,exl:40,tax:300,
     matcost:9700,labcost:3200,subcon:850,depcogs:2600, execcomp:320,salary:1300,welfare:220,adv:380,rent:260,depsga:620,outsourcing:170}))},
-  {year:3, vals:mk(Object.assign({},DET_ON,{ca:6500,fa:21500,cl:5800,fl:9600,cap:5181,re:7419,
+  {year:3, vals:mk(Object.assign({},DET_ON,{emp:1280,ca:6500,fa:21500,cl:5800,fl:9600,cap:5181,re:7419,
     cash:2000,recv:2400,inv:1400,stloanto:250,prepaid:150,
     building:14200,vehicle:1600,land:3500,software:700,invsec:1000,
     payb:2100,stloan:1300,cpltd:800,payables:700,taxpay:380, ltloan:6100,bond:1400,execloan:600,lease:450,
@@ -370,7 +412,18 @@ const DEMO = [
 
 /* ---------- state ---------- */
 let periods = DEMO.map(p=> ({year:p.year, vals:Object.assign({}, p.vals)}));
-let curIdx = 0, curCat='prof', curKey='gm', cmpN=3, cmpSeg='all', showDetail=false;
+let curIdx = 0, curCat='prof', curKey='gm', cmpN=3, cmpSeg='all', showDetail=false, industry='manuf', flowKey='opm';
+const INDUSTRIES={manuf:'製造業',wholesale:'卸売業',retail:'小売業',construct:'建設業',service:'サービス業',it:'情報通信業',food:'飲食・宿泊業'};
+// 業種平均の目安（中小企業の概算値・単位は各指標に準拠）
+const BENCH={
+  manuf:{gm:22,costr:78,sgar:18,opm:3.5,ordm:4.0,npm:2.5,equity:40,current:180,fixedlt:85,fixedratio:120,debtratio:150,atoturn:1.0,faturn:1.6,roa:3.5,roe:8,labshare:50,persr:15,de:1.2,debty:8,icr:4},
+  wholesale:{gm:15,costr:85,sgar:12,opm:2.0,ordm:2.5,npm:1.5,equity:35,current:160,fixedlt:80,fixedratio:110,debtratio:180,atoturn:1.8,faturn:4.0,roa:3.0,roe:8,labshare:45,persr:10,de:1.5,debty:8,icr:4},
+  retail:{gm:30,costr:70,sgar:27,opm:2.5,ordm:3.0,npm:1.8,equity:30,current:140,fixedlt:90,fixedratio:140,debtratio:200,atoturn:1.8,faturn:3.0,roa:4.0,roe:9,labshare:50,persr:18,de:1.6,debty:9,icr:3.5},
+  construct:{gm:20,costr:80,sgar:15,opm:4.0,ordm:4.5,npm:3.0,equity:38,current:150,fixedlt:80,fixedratio:110,debtratio:160,atoturn:1.2,faturn:5.0,roa:4.5,roe:10,labshare:48,persr:18,de:1.0,debty:6,icr:5},
+  service:{gm:45,costr:55,sgar:40,opm:4.0,ordm:4.5,npm:3.0,equity:40,current:170,fixedlt:85,fixedratio:120,debtratio:150,atoturn:1.1,faturn:2.5,roa:4.0,roe:9,labshare:55,persr:35,de:1.1,debty:7,icr:4.5},
+  it:{gm:45,costr:55,sgar:38,opm:6.0,ordm:6.5,npm:4.5,equity:45,current:190,fixedlt:75,fixedratio:100,debtratio:120,atoturn:1.0,faturn:3.0,roa:6.0,roe:11,labshare:55,persr:38,de:0.8,debty:5,icr:8},
+  food:{gm:60,costr:40,sgar:56,opm:3.0,ordm:3.0,npm:1.5,equity:20,current:110,fixedlt:100,fixedratio:180,debtratio:300,atoturn:1.5,faturn:2.0,roa:3.0,roe:8,labshare:40,persr:30,de:2.5,debty:12,icr:2.5},
+};
 const sortPeriods = () => periods.sort((a,b)=> a.year-b.year);
 
 /* ---------- compute ---------- */
@@ -438,6 +491,10 @@ function computeVals(v){
   const debtYears=(ibd<=0)?0:(simpleCF>0? ibd/simpleCF:Infinity);
   const invTurnover=inv>0? cogs/inv:0;
   const recvDays=sales>0? recv/(sales/365):0;
+  // 従業員数・労働生産性（従業員数は任意）
+  const emp=g('emp'), empReady=emp>0;
+  const valueAdded=operatingProfit+laborCost+dep+g('rent')+intexp; // 簡易付加価値（中小企業庁方式の簡易版）
+  const salesPerEmp=empReady? sales/emp:0, vaPerEmp=empReady? valueAdded/emp:0, laborPerEmp=empReady? laborCost/emp:0;
   return {ca,fa,cl,fl,cash,sec,recv,inv,oca,stloanto,prepaid,iota,building,vehicle,land,software,invsec,
     payb,stloan,cpltd,ocl,payables,taxpay,ltloan,bond,ofl,execloan,lease,
     cap,csurp,re,ona,na,totalAssets,totalCapital,ibd,ibdShort,ibdLong,quick,
@@ -445,6 +502,7 @@ function computeVals(v){
     grossProfit,operatingProfit,ordinaryProfit,pretaxProfit,netIncome,busProfit,simpleCF,
     currentRatio,quickRatio,fixedLTRatio,roe,equityRatio,netMargin,opMargin,grossMargin,assetTurnover,finLeverage,ordMargin,roa,roic,nopat,investedCap,
     de,ibdRatio,netDe,debtMonths,icr,debtYears,invTurnover,recvDays,ibdReady,quickReady,atoturn,faturn,debtRatio,fixedRatio,wc,
+    emp,empReady,valueAdded,salesPerEmp,vaPerEmp,laborPerEmp,
     matcost:g('matcost'),labcost:g('labcost'),subcon:g('subcon'),depcogs:g('depcogs'),othcogs,
     beginv:g('beginv'),purch:g('purch'),endinv:g('endinv'),execcomp:g('execcomp'),salary:g('salary'),welfare:g('welfare'),adv:g('adv'),rent:g('rent'),depsga:g('depsga'),outsourcing:g('outsourcing'),othsga,
     laborCost,costRatio,sgaRatio,personnelRatio,laborShare,personnelReady,
@@ -527,6 +585,7 @@ function buildInputForm(){
   $("bsLeft").innerHTML = render(BS_LEFT);
   $("bsRight").innerHTML = render(BS_RIGHT);
   $("plForm").innerHTML = render(PL_STRUCT);
+  const empEl=$('in_emp'); if(empEl) empEl.value=g('emp');
   updateComputedInputs();
 }
 function updateComputedInputs(){
@@ -766,8 +825,9 @@ function comboDetailSVG(row, hi, showPL){
       const gpT=Y(Math.max(d.grossProfit,0)),gpB=Y(Math.min(d.grossProfit,0));
       s+=`<rect x="${bx[2]}" y="${gpT}" width="${BW}" height="${Math.max(0,gpB-gpT)}" fill="${C.gp}" stroke="#333"><title>粗利：${fmt(d.grossProfit)} ${u}</title></rect>`+seglabel(bx[2],gpT,gpB,'粗利',d.grossProfit); note('gp',gpT,gpB);
     }
-    const pline=(y,col,nm,val)=> `<line x1="${bx[2]}" y1="${y}" x2="${bx[2]+BW}" y2="${y}" stroke="${col}" stroke-width="1.6"><title>${nm}：${fmt(val)} ${u}</title></line><text x="${bx[2]+BW+4}" y="${y+4}" font-size="10" fill="${col}">${nm} ${fmt(val)}</text>`;
-    s+=pline(yOp,'#333','営業利益',d.operatingProfit)+pline(yOrd,'#2b6cb0','経常利益',d.ordinaryProfit)+pline(yNi,'#c53030',(d.netIncome<0?'当期純損失':'当期純利益'),d.netIncome);
+    const lines=[{y:yOp,col:'#333',nm:'営業利益',val:d.operatingProfit},{y:yOrd,col:'#2b6cb0',nm:'経常利益',val:d.ordinaryProfit},{y:yNi,col:'#c53030',nm:(d.netIncome<0?'当期純損失':'当期純利益'),val:d.netIncome}];
+    lines.forEach(L=> s+=`<line x1="${bx[2]}" y1="${L.y}" x2="${bx[2]+BW}" y2="${L.y}" stroke="${L.col}" stroke-width="1.6"><title>${L.nm}：${fmt(L.val)} ${u}</title></line>`);
+    let prevLy=-99; lines.map((L,i)=>({...L,i})).sort((a,b)=>a.y-b.y).forEach(L=>{ const ly=Math.max(L.y+4, prevLy+13); prevLy=ly; s+=`<text x="${bx[2]+BW+4}" y="${ly}" font-size="10" fill="${L.col}">${L.nm} ${fmt(L.val)}</text>`; });
     s+=`<text x="${bx[2]+BW/2}" y="${ySales-6}" font-size="12" fill="#333" text-anchor="middle" font-weight="bold">${fmt(d.sales)}</text>`;
     s+=`<text x="${bx[2]+BW/2}" y="${BOT+20}" font-size="12" fill="#444" text-anchor="middle" font-weight="bold">売上・利益</text>`;
   }
@@ -944,6 +1004,16 @@ const CATS = {
         meaning:'売上債権が何日分の売上に相当するか＝回収の速さ。短いほど資金繰りが良い。詳細入力の売上債権が必要。',
         rows:[{lv:'good',name:'良好',range:'45日 以内',note:'回収が速い'},{lv:'warn',name:'普通',range:'45〜90日',note:'標準的'},{lv:'bad',name:'長い',range:'90日 超',note:'回収が遅い'}],
         judge:d=>{const v=d.recvDays; return v<=45?'good':v<=90?'warn':'bad';} },
+      { key:'salesemp', label:'1人当たり売上高', v:d=>d.salesPerEmp, unit:()=>unitStr()+'/人', dec:2, hi:{boxes:['ca','fa','sales']}, ready:d=>d.empReady, detailOnly:true,
+        formula:d=>`売上高 <b>${fmt(d.sales)}</b> ÷ 従業員数 <b>${fmt(d.emp)}</b> 人 ＝ <b>${p2(d.salesPerEmp)}</b> ${unitStr()}/人`,
+        meaning:'従業員1人がどれだけの売上を生んだか。従業員数（②数値入力）が必要です。',
+        rows:[{lv:'good',name:'高い',range:'業種平均超',note:'人的効率が高い'},{lv:'warn',name:'標準',range:'業種平均並み',note:'—'},{lv:'bad',name:'低い',range:'業種平均未満',note:'人的効率に課題'}],
+        judge:d=>null },
+      { key:'vaemp', label:'労働生産性（1人当たり付加価値）', v:d=>d.vaPerEmp, unit:()=>unitStr()+'/人', dec:2, hi:{lines:['op']}, ready:d=>d.empReady, detailOnly:true,
+        formula:d=>`簡易付加価値 <b>${fmt(d.valueAdded)}</b>（営業利益＋人件費＋減価償却＋地代家賃＋支払利息）÷ 従業員数 <b>${fmt(d.emp)}</b> 人 ＝ <b>${p2(d.vaPerEmp)}</b> ${unitStr()}/人`,
+        meaning:'従業員1人が生み出す付加価値。労働生産性の中核指標。高いほど賃上げ余力・競争力が高い。従業員数が必要です。',
+        rows:[{lv:'good',name:'高い',range:'高水準',note:'生産性が高い'},{lv:'warn',name:'標準',range:'標準的',note:'—'},{lv:'bad',name:'低い',range:'低水準',note:'生産性に課題'}],
+        judge:d=>null },
     ]},
   safe:{ name:'安全性',
     metrics:[
@@ -1026,7 +1096,7 @@ function metricDisp(m,d){
   return `${s}<small>${u}</small>`;
 }
 const metricJudge=(m,d)=> metricReady(m,d)? m.judge(d): null;
-function currentHi(){ const m=findMetric(curCat,curKey); return m ? m.hi : null; }
+function currentHi(){ if(curCat==='flow'){ const m=ALL_METRICS[flowKey]; return m?m.hi:null; } const m=findMetric(curCat,curKey); return m ? m.hi : null; }
 
 function judgeTable(rows, curLv){
   let h=`<table class="judge"><tr><th>判定</th><th>目安（範囲）</th><th>コメント</th></tr>`;
@@ -1061,26 +1131,63 @@ function metricDetailHTML(m, ds, catNote){
   const lv=metricJudge(m,latest);
   const b = lv? badge(lv,(m.rows.find(r=>r.lv===lv)||{}).name||''):badge('na','参考');
   const noteHTML=(m.note||catNote)?`<div class="md-note">${m.note||''}${catNote||''}</div>`:'';
+  const bm=(BENCH[industry]||{})[m.key];
+  let bmHTML='';
+  if(bm!=null && metricReady(m,latest)){
+    const v=m.v(latest), u=(typeof m.unit==='function')?m.unit():m.unit, diff=v-bm;
+    bmHTML=`<div class="md-table"><div class="md-label">業種平均の目安（${INDUSTRIES[industry]}）</div><div class="bm-row">業種平均 <b>${p1(bm)}${u}</b>　／　自社 <b>${p1(v)}${u}</b>　／　差 <b class="bm-${diff>=0?'up':'down'}">${diff>=0?'+':''}${p1(diff)}${u}</b><div class="bm-note">※中小企業の概算値。業種・規模で幅があるため目安としてご覧ください。</div></div></div>`;
+  }
   return `<div class="md-head"><span class="md-title">${m.label}<span style="font-size:11px;color:#94a3b8;font-weight:600;margin-left:8px;">最新：${TLAB(latestYear)}</span></span><span class="md-value">${metricDisp(m,latest)} ${b}</span></div>
      <div class="md-body">
        <div><div class="md-label">計算式（${TLAB(latestYear)}）</div><div class="md-formula">${m.formula(latest)}</div></div>
        <div><div class="md-label">指標の意味</div><div class="md-meaning">${m.meaning}</div></div>
-       <div class="md-table"><div class="md-label">期間比較（1期／3期／5期）</div>${cmpTable(m,ds)}</div>
+       <div class="md-table"><div class="md-label">期間比較（1期／2期／3期）</div>${cmpTable(m,ds)}</div>
        <div class="md-table"><div class="md-label">判定の目安</div>${judgeTable(m.rows, lv)}</div>
+       ${bmHTML}
        ${noteHTML}
      </div>`;
 }
 function renderAnalysis(ds){
   document.querySelectorAll('#subtabs .subtab').forEach(b=> b.classList.toggle('active', b.dataset.cat===curCat));
+  if(curCat==='flow'){ $("metricbtns").innerHTML=''; $("metricdetail").innerHTML = flowchartHTML() + (ALL_METRICS[flowKey]? metricDetailHTML(ALL_METRICS[flowKey], ds):''); return; }
   const cat=CATS[curCat];
   const hasDetail=cat.metrics.some(m=>m.detailOnly);
   const mets=cat.metrics.filter(m=> showDetail || !m.detailOnly);
   if(!mets.some(m=>m.key===curKey)) curKey=mets[0].key;
   const latest=ds[ds.length-1].d;
-  let btns = mets.map(m=> `<button class="mbtn ${m.key===curKey?'active':''}" data-key="${m.key}"><span>${m.label}</span><span class="mbv">${metricDisp(m,latest)}</span></button>`).join('');
+  let btns = mets.map(m=>{ const lv=metricJudge(m,latest), jc=lv?` j-${lv}`:''; return `<button class="mbtn${jc} ${m.key===curKey?'active':''}" data-key="${m.key}"><span>${m.label}</span><span class="mbv">${metricDisp(m,latest)}</span></button>`;}).join('');
   if(hasDetail) btns += `<button class="mbtn detmet ${showDetail?'active':''}" id="detMetToggle"><span>${showDetail?'− 詳細指標を隠す':'＋ 詳細指標'}</span></button>`;
   $("metricbtns").innerHTML = btns;
   $("metricdetail").innerHTML = metricDetailHTML(findMetric(curCat,curKey), ds, cat.note);
+}
+// 指標の読み方フロー（辿るだけで読める）
+const FLOW=[
+  {h:'① 収益性：本業で稼げているか', main:{k:'opm',t:'営業利益率（まずここ）'},
+   cond:'▼ 低い（2%未満）なら「なぜ薄い？」を分解',
+   rows:[[{k:'gm',t:'売上総利益率（粗利が薄い？）'},{k:'sgar',t:'販管費率（固定費が重い？）'}],
+         [{k:'costr',t:'└ 売上原価率（原価内訳へ）'},{k:'persr',t:'└ 人件費率／労働分配率'}]]},
+  {h:'② 効率性：資産・人をどれだけ売上/利益に', main:{k:'atoturn',t:'総資産回転率'},
+   cond:'▼ 低いなら「どの資産が回っていない？」',
+   rows:[[{k:'faturn',t:'固定資産回転率（設備過大？）'},{k:'recvdays',t:'売上債権回転期間（回収遅い？）'},{k:'invturn',t:'棚卸資産回転率（在庫過多？）'}],
+         [{k:'roe',t:'ROE'},{k:'roa',t:'ROA'},{k:'vaemp',t:'労働生産性（1人当たり付加価値）'}]]},
+  {h:'③ 安全性：つぶれにくいか', main:{k:'equity',t:'自己資本比率（財務体質）'},
+   cond:'▼ 低い（20%未満）＝借入依存。返済できる？',
+   rows:[[{k:'debtratio',t:'負債比率'},{k:'de',t:'D/Eレシオ（有利子負債）'}],
+         [{k:'debty',t:'債務償還年数（何年で返せる）'},{k:'icr',t:'インタレスト・カバレッジ（利払い余力）'}],
+         [{k:'current',t:'流動比率（短期の支払能力）'},{k:'wc',t:'└ 運転資本'},{k:'fixedlt',t:'固定長期適合率（設備の資金調達）'}]]},
+  {h:'④ 成長性：伸びているか', main:{k:'gsales',t:'売上高成長率'},
+   cond:'▼ 増収でも増益とは限らない。利益の伸びを確認',
+   rows:[[{k:'ggross',t:'売上総利益成長率'},{k:'gop',t:'営業利益成長率'},{k:'gna',t:'純資産成長率'}]]},
+];
+function flowNode(n){ const cur=(n.k===flowKey); return `<button class="fl-node${cur?' cur':''}" data-fk="${n.k}">${n.t}</button>`; }
+function flowchartHTML(){
+  let h=`<div class="flow-intro">気になるカテゴリの先頭指標から読み、「悪い」ときは矢印の先の指標へ辿ってください。ノードを押すと下に解説（計算式・意味・判定・業種平均）が出ます。</div><div class="flow">`;
+  FLOW.forEach(step=>{
+    h+=`<div class="fl-step"><div class="fl-h">${step.h}</div><div class="fl-main">${flowNode(step.main)}</div><div class="fl-cond">${step.cond}</div>`;
+    step.rows.forEach(row=>{ h+=`<div class="fl-row">`+row.map(flowNode).join('<span class="fl-sep">／</span>')+`</div>`; });
+    h+=`</div><div class="fl-arrow">▼ 次のカテゴリへ</div>`;
+  });
+  return h+`</div>`;
 }
 
 /* ---------- detail comparison ---------- */
@@ -1354,6 +1461,7 @@ $("bsLeft").addEventListener("input", onFormInput);
 $("bsRight").addEventListener("input", onFormInput);
 $("plForm").addEventListener("input", onFormInput);
 $("unit").addEventListener("change", run);
+$("in_emp").addEventListener("input", e=>{ periods[curIdx].vals.emp=parseFloat(e.target.value)||0; run(); });
 $("costType").addEventListener("change", e=>{ costType=e.target.value; buildInputForm(); run(); });
 $("resetBtn").addEventListener("click", openResetModal);
 $("delBtn").addEventListener("click", openDeleteModal);
@@ -1373,9 +1481,12 @@ function switchTab(name){
 }
 document.querySelectorAll(".tab").forEach(t=> t.addEventListener("click", ()=> switchTab(t.dataset.tab)));
 $("calcBtn").addEventListener("click", ()=>{ run(); switchTab("view"); });
-$("subtabs").addEventListener("click", e=>{ const b=e.target.closest(".subtab"); if(!b) return; curCat=b.dataset.cat; curKey=CATS[curCat].metrics.filter(m=>!m.detailOnly)[0].key; run(); });
+$("subtabs").addEventListener("click", e=>{ const b=e.target.closest(".subtab"); if(!b) return; curCat=b.dataset.cat; if(curCat!=='flow'){ curKey=CATS[curCat].metrics.filter(m=>!m.detailOnly)[0].key; } run(); });
+$("indSel").addEventListener("change", e=>{ industry=e.target.value; run(); });
 $("metricbtns").addEventListener("click", e=>{ const b=e.target.closest(".mbtn"); if(!b) return; if(b.id==='detMetToggle'){ showDetail=!showDetail; } else if(b.dataset.key){ curKey=b.dataset.key; } run(); });
-$("metricdetail").addEventListener("click", e=>{ const b=e.target.closest(".cbtn"); if(!b||b.disabled) return; cmpN=+b.dataset.n; run(); });
+$("metricdetail").addEventListener("click", e=>{
+  const fn=e.target.closest(".fl-node"); if(fn){ flowKey=fn.dataset.fk; run(); return; }
+  const b=e.target.closest(".cbtn"); if(!b||b.disabled) return; cmpN=+b.dataset.n; run(); });
 $("scopeToggle").addEventListener("click", e=>{ const b=e.target.closest(".cbtn"); if(!b) return; scope=b.dataset.scope; pidx=-1; run(); });
 $("mainControls").addEventListener("click", e=>{
   const b=e.target.closest("[data-pmode],[data-plbreak]"); if(!b) return;
