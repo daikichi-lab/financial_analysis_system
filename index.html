@@ -334,7 +334,7 @@ function applyUnitLabels(){
 
 const MAXP = 3;
 const NUM_KEYS = ['ca','cash','sec','recv','inv','oca','fa','tfa','ifa','iota',
-  'cl','payb','stloan','cpltd','ocl','fl','ltloan','bond','ofl',
+  'cl','payb','stloan','cpltd','ocl','fl','ltloan','bond','ofl','ibds','ibdl',
   'cap','csurp','re','ona','sales','cogs','sga','noi','recint','noe','intexp','exg','exl','tax','dep',
   'matcost','labcost','subcon','depcogs','othcogs','beginv','purch','endinv',
   'perscost','adv','rent','depsga','othsga'];
@@ -376,7 +376,10 @@ function computeVals(v){
   const ofl = v.det_fl ? fl-(ltloan+bond) : g('ofl');
   const cap=g('cap'), csurp=g('csurp'), re=g('re'), ona=g('ona');
   const na=cap+csurp+re+ona, totalAssets=ca+fa, totalCapital=cl+fl+na;
-  const ibd=stloan+cpltd+ltloan+bond;
+  // 有利子負債：内訳を開けば ★項目の合計、閉じていれば直接入力（短期/長期）
+  const ibdShort = v.det_cl ? (stloan+cpltd) : g('ibds');
+  const ibdLong  = v.det_fl ? (ltloan+bond) : g('ibdl');
+  const ibd = ibdShort + ibdLong;
   const quick=cash+sec+recv;
   const sales=g('sales'),noi=g('noi'),recint=g('recint'),noe=g('noe'),intexp=g('intexp'),exg=g('exg'),exl=g('exl'),tax=g('tax');
   let cogs, othcogs=g('othcogs');
@@ -386,13 +389,14 @@ function computeVals(v){
   } else cogs=g('cogs');
   const sga = g('sga');
   const othsga = v.det_sga ? sga-(g('perscost')+g('adv')+g('rent')+g('depsga')) : g('othsga');
-  const dep = (v.det_cogs||v.det_sga) ? ((v.det_cogs?g('depcogs'):0)+(v.det_sga?g('depsga'):0)) : g('dep');
+  // 減価償却費：内訳を開けば内訳の値、閉じていれば直接入力（製造原価分・販管費分）
+  const dep = g('depcogs') + g('depsga');
   const laborCost = (v.det_cogs&&costType!=='B'?g('labcost'):0) + (v.det_sga?g('perscost'):0);
   const personnelReady = !!(v.det_sga || (v.det_cogs&&costType!=='B'));
   const grossProfit=sales-cogs, operatingProfit=grossProfit-sga, ordinaryProfit=operatingProfit+noi-noe, pretaxProfit=ordinaryProfit+exg-exl, netIncome=pretaxProfit-tax;
   const busProfit=operatingProfit+recint, simpleCF=operatingProfit+dep;
   const costRatio=sales? cogs/sales*100:0, sgaRatio=sales? sga/sales*100:0, personnelRatio=sales? laborCost/sales*100:0, laborShare=grossProfit>0? laborCost/grossProfit*100:0;
-  const ibdReady=!!(v.det_cl||v.det_fl), quickReady=!!v.det_ca;
+  const ibdReady=!!(v.det_cl||v.det_fl||(+v.ibds||0)!==0||(+v.ibdl||0)!==0), quickReady=!!v.det_ca;
   const currentRatio=cl? ca/cl*100:0;
   const quickRatio=cl? quick/cl*100:0;
   const fixedLTRatio=(na+fl)? fa/(na+fl)*100:0;
@@ -424,7 +428,7 @@ function computeVals(v){
   const recvDays=sales>0? recv/(sales/365):0;
   return {ca,fa,cl,fl,cash,sec,recv,inv,oca,tfa,ifa,iota,
     payb,stloan,cpltd,ocl,ltloan,bond,ofl,
-    cap,csurp,re,ona,na,totalAssets,totalCapital,ibd,quick,
+    cap,csurp,re,ona,na,totalAssets,totalCapital,ibd,ibdShort,ibdLong,quick,
     sales,cogs,sga,noi,recint,noe,intexp,exg,exl,tax,dep,
     grossProfit,operatingProfit,ordinaryProfit,pretaxProfit,netIncome,busProfit,simpleCF,
     currentRatio,quickRatio,fixedLTRatio,roe,equityRatio,netMargin,opMargin,grossMargin,assetTurnover,finLeverage,ordMargin,roa,roic,nopat,investedCap,
@@ -454,10 +458,10 @@ const BS_LEFT = [
 ];
 const BS_RIGHT = [
   {sec:'負債の部', cls:'liab'},
-  {big:'cl', label:'流動負債', leaves:[['payb','仕入債務(買掛金・支払手形)'],['stloan','短期借入金 ★'],['cpltd','1年内返済長期借入金 ★'],['ocl','その他流動負債']]},
-  {big:'fl', label:'固定負債', leaves:[['ltloan','長期借入金 ★'],['bond','社債 ★'],['ofl','その他固定負債']]},
+  {big:'cl', label:'流動負債', leaves:[['payb','仕入債務(買掛金・支払手形)'],['stloan','短期借入金 ★'],['cpltd','1年内返済長期借入金 ★'],['ocl','その他流動負債']], uchi:{key:'ibds', label:'└ うち有利子負債（短期）★'}},
+  {big:'fl', label:'固定負債', leaves:[['ltloan','長期借入金 ★'],['bond','社債 ★'],['ofl','その他固定負債']], uchi:{key:'ibdl', label:'└ うち有利子負債（長期）★'}},
   {auto:'liab', label:'負債合計'},
-  {auto:'ibd', label:'（うち有利子負債 ★）', sub:true},
+  {auto:'ibd', label:'（有利子負債 合計 ★）', sub:true},
   {sec:'純資産の部', cls:'na'},
   {plain:'cap', label:'資本金'},
   {plain:'csurp', label:'資本剰余金'},
@@ -468,9 +472,9 @@ const BS_RIGHT = [
 ];
 const PL_STRUCT = [
   {plain:'sales', label:'売上高'},
-  {big:'cogs', label:'売上原価', leavesFn:cogsLeaves},
+  {big:'cogs', label:'売上原価', leavesFn:cogsLeaves, uchi:{key:'depcogs', label:'└ うち減価償却費（製造原価）'}},
   {auto:'grossProfit', label:'売上総利益（粗利）'},
-  {big:'sga', label:'販管費', leaves:SGA_LEAVES},
+  {big:'sga', label:'販管費', leaves:SGA_LEAVES, uchi:{key:'depsga', label:'└ うち減価償却費（販管費）'}},
   {auto:'operatingProfit', label:'営業利益'},
   {plain:'noi', label:'営業外収益'},
   {plain:'recint', label:'うち受取利息・配当金', sub:true},
@@ -482,7 +486,6 @@ const PL_STRUCT = [
   {auto:'pretaxProfit', label:'税引前当期純利益'},
   {plain:'tax', label:'法人税等'},
   {auto:'netIncome', label:'当期純利益'},
-  {depRow:true, label:'減価償却費（債務償還年数用）'},
 ];
 function buildInputForm(){
   const v=periods[curIdx].vals, u=unitStr();
@@ -498,13 +501,13 @@ function buildInputForm(){
     h+=`<span class="unit">${u}</span><button class="det-toggle ${det?'on':''}" data-big="${item.big}">${det?'▾ 内訳':'▸ 内訳'}</button></div>`;
     if(det){ const lv=item.leavesFn? item.leavesFn(): item.leaves; const resid=cogsIdentity?null:otherOf(item.big);
       h+=lv.map(([k,lb])=> k===resid ? autoRow(k,lb,'fleaf') : numRow(k,lb,'fleaf')).join(''); }
+    else if(item.uchi){ h+=numRow(item.uchi.key, item.uchi.label, 'fsub'); } // 内訳を開かずに うち有利子負債／うち減価償却費 を直接入力
     return h;
   }
   function render(struct){
     return struct.map(item=>{
       if(item.sec) return `<div class="fsec ${item.cls||''}">${item.sec}</div>`;
       if(item.big) return bigRow(item);
-      if(item.depRow) return (v.det_cogs||v.det_sga)? autoRow('dep', item.label, 'fsub') : numRow('dep', item.label, 'fsub');
       if(item.auto) return autoRow(item.auto, item.label, item.sub?'fsub':'');
       if(item.plain) return numRow(item.plain, item.label, item.sub?'fsub':'');
       return '';
@@ -526,7 +529,6 @@ function updateComputedInputs(){
   if(v.det_cogs && costType==='B') setNum('cogs',d.cogs);       // 商業の原価は計算式のため合計を自動表示
   if(v.det_cogs && costType!=='B') setTxt('othcogs',d.othcogs); // その他＝合計−主要内訳
   if(v.det_sga) setTxt('othsga',d.othsga);
-  if(v.det_cogs||v.det_sga) setTxt('dep',d.dep);
   setTxt('totalAssets',d.totalAssets); setTxt('liab',d.cl+d.fl); setTxt('ibd',d.ibd);
   setTxt('na',d.na); setTxt('totalCapital',d.totalCapital);
   setTxt('grossProfit',d.grossProfit); setTxt('operatingProfit',d.operatingProfit);
@@ -633,9 +635,8 @@ function comboSVG(ds, hi, showPL){
     s+=box(bx[1],BW,yFl,yNa,C.fl,tt('固定負債',d.fl,d.totalCapital))+segLabel(bx[1],yFl,yNa,d.fl);
     s+=box(bx[1],BW,yCl,yFl,C.cl,tt('流動負債',d.cl,d.totalCapital))+segLabel(bx[1],yCl,yFl,d.cl);
     // うち有利子負債（流動負債＝短期／固定負債＝長期）を各ボックス内に点線枠で表示
-    const ibdShort=d.stloan+d.cpltd, ibdLong=d.ltloan+d.bond;
-    s+=uchiBand(bx[1],yCl,yFl,d.cl,ibdShort,'うち有利子負債(短期)','#3a0d0b');
-    s+=uchiBand(bx[1],yFl,yNa,d.fl,ibdLong,'うち有利子負債(長期)','#3a0d0b');
+    s+=uchiBand(bx[1],yCl,yFl,d.cl,d.ibdShort,'うち有利子負債(短期)','#3a0d0b');
+    s+=uchiBand(bx[1],yFl,yNa,d.fl,d.ibdLong,'うち有利子負債(長期)','#3a0d0b');
     // 売上（PL）
     const ySales=Y(PV(d.sales)), yGp=Y(PV(d.grossProfit)), yOp=Y(PV(d.operatingProfit)), yNi=Y(PV(d.netIncome));
     if(showPL){
@@ -668,7 +669,7 @@ function comboSVG(ds, hi, showPL){
 }
 function drawChart(ds){ $("chart").innerHTML = comboSVG(ds, currentHi(), true); }
 function drawIBDDiverge(ds){
-  const items=ds.map(({year,d})=>({year, st:d.stloan+d.cpltd, lt:d.ltloan+d.bond, cap:d.totalCapital, ibd:d.ibd}));
+  const items=ds.map(({year,d})=>({year, st:d.ibdShort, lt:d.ibdLong, cap:d.totalCapital, ibd:d.ibd}));
   let mx=1; items.forEach(x=>{ mx=Math.max(mx,x.st,x.lt); });
   const anyIbd=items.some(x=>x.ibd>0), n=items.length, u=unitStr();
   const W=Math.max(480,120+n*120), H=360, AX=70, TOP=34, BOT=326, MID=(TOP+BOT)/2, half=(BOT-MID)-16;
