@@ -354,14 +354,27 @@ const otherOf  = big => big==='cogs' ? (costType==='B'?'purch':'othcogs') : OTHE
 const zeros = ()=>{ const o={}; NUM_KEYS.forEach(k=> o[k]=0); DET_KEYS.forEach(k=> o[k]=false); return o; };
 const mk = obj => Object.assign(zeros(), obj);
 const DEFAULTS = mk({ca:5712,fa:19890,cl:5305,fl:9607,cap:5181,re:5509,sales:19742,cogs:15834,sga:3300,noi:100,noe:200,exg:0,exl:50,tax:181});
-// デモ用の3期分データ（貸借一致・成長ケース。有利子負債・減価償却費は直接入力欄に投入）
+// デモ用の3期分データ（貸借一致・成長ケース。内訳まで入力済み＝各明細を表示）
+const DET_ON = {det_ca:true,det_fa:true,det_cl:true,det_fl:true,det_cogs:true,det_sga:true};
 const DEMO = [
-  {year:1, vals:mk({ca:5712,fa:19890,cl:5305,fl:9607,cap:5181,re:5509,ibds:2300,ibdl:8000,
-    sales:19742,cogs:15834,sga:3300,noi:100,recint:30,noe:200,intexp:150,exl:50,tax:181,depcogs:2500,depsga:600})},
-  {year:2, vals:mk({ca:6100,fa:20800,cl:5600,fl:9800,cap:5181,re:6319,ibds:2200,ibdl:7800,
-    sales:21500,cogs:17050,sga:3550,noi:110,recint:35,noe:210,intexp:160,exl:40,tax:300,depcogs:2600,depsga:620})},
-  {year:3, vals:mk({ca:6500,fa:21500,cl:5800,fl:9600,cap:5181,re:7419,ibds:2100,ibdl:7500,
-    sales:23000,cogs:18000,sga:3700,noi:120,recint:40,noe:220,intexp:170,exg:0,exl:30,tax:450,depcogs:2700,depsga:640})},
+  {year:1, vals:mk(Object.assign({},DET_ON,{ca:5712,fa:19890,cl:5305,fl:9607,cap:5181,re:5509,
+    cash:1600,recv:2100,inv:1300,stloanto:200,prepaid:150,
+    building:13000,vehicle:1500,land:3500,software:600,invsec:900,
+    payb:1900,stloan:1500,cpltd:800,payables:600,taxpay:300, ltloan:6500,bond:1500,execloan:600,lease:400,
+    sales:19742,cogs:15834,sga:3300,noi:100,recint:30,noe:200,intexp:150,exl:50,tax:181,
+    matcost:9000,labcost:3000,subcon:800,depcogs:2500, execcomp:300,salary:1200,welfare:200,adv:350,rent:250,depsga:600,outsourcing:150}))},
+  {year:2, vals:mk(Object.assign({},DET_ON,{ca:6100,fa:20800,cl:5600,fl:9800,cap:5181,re:6319,
+    cash:1800,recv:2300,inv:1350,stloanto:200,prepaid:150,
+    building:13800,vehicle:1500,land:3500,software:650,invsec:950,
+    payb:2000,stloan:1400,cpltd:800,payables:650,taxpay:350, ltloan:6300,bond:1500,execloan:600,lease:450,
+    sales:21500,cogs:17050,sga:3550,noi:110,recint:35,noe:210,intexp:160,exl:40,tax:300,
+    matcost:9700,labcost:3200,subcon:850,depcogs:2600, execcomp:320,salary:1300,welfare:220,adv:380,rent:260,depsga:620,outsourcing:170}))},
+  {year:3, vals:mk(Object.assign({},DET_ON,{ca:6500,fa:21500,cl:5800,fl:9600,cap:5181,re:7419,
+    cash:2000,recv:2400,inv:1400,stloanto:250,prepaid:150,
+    building:14200,vehicle:1600,land:3500,software:700,invsec:1000,
+    payb:2100,stloan:1300,cpltd:800,payables:700,taxpay:380, ltloan:6100,bond:1400,execloan:600,lease:450,
+    sales:23000,cogs:18000,sga:3700,noi:120,recint:40,noe:220,intexp:170,exg:0,exl:30,tax:450,
+    matcost:10200,labcost:3400,subcon:900,depcogs:2700, execcomp:340,salary:1400,welfare:240,adv:400,rent:270,depsga:640,outsourcing:180}))},
 ];
 
 /* ---------- state ---------- */
