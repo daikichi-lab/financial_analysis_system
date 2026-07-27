@@ -507,7 +507,7 @@ function computeVals(v){
   const laborCost = (v.det_cogs&&costType!=='B'?g('labcost'):0) + (v.det_sga?(g('execcomp')+g('salary')+g('welfare')):0);
   const personnelReady = !!(v.det_sga || (v.det_cogs&&costType!=='B'));
   const grossProfit=sales-cogs, operatingProfit=grossProfit-sga, ordinaryProfit=operatingProfit+noi-noe, pretaxProfit=ordinaryProfit+exg-exl, netIncome=pretaxProfit-tax;
-  const busProfit=operatingProfit+recint, simpleCF=operatingProfit+dep;
+  const busProfit=operatingProfit+recint;
   const costRatio=sales? cogs/sales*100:0, sgaRatio=sales? sga/sales*100:0, personnelRatio=sales? laborCost/sales*100:0, laborShare=grossProfit>0? laborCost/grossProfit*100:0;
   const ibdReady=!!(v.det_cl||v.det_fl||(+v.ibds||0)!==0||(+v.ibdl||0)!==0), quickReady=!!v.det_ca;
   const currentRatio=cl? ca/cl*100:0;
@@ -537,7 +537,7 @@ function computeVals(v){
   const netDe=na? (ibd-cash)/na:0;
   const debtMonths=sales? ibd/(sales/12):0;
   const icr=intexp>0? busProfit/intexp:0;
-  const debtYears=(ibd<=0)?0:(simpleCF>0? ibd/simpleCF:Infinity);
+  // 債務償還年数は詳細CF（実際の営業CF）で算出するため derived() で前期と突き合わせて計算する
   const invTurnover=inv>0? cogs/inv:0;
   const recvDays=sales>0? recv/(sales/365):0;
   // 従業員数・労働生産性（従業員数は任意）
@@ -555,9 +555,9 @@ function computeVals(v){
     payb,stloan,cpltd,ocl,payables,taxpay,ltloan,bond,ofl,execloan,lease,
     cap,csurp,re,ona,na,totalAssets,totalCapital,bsDiff,bsBalanced,insolvent,negResiduals,ibd,ibdShort,ibdLong,quick,
     sales,cogs,sga,noi,recint,noe,intexp,exg,exl,tax,dep,
-    grossProfit,operatingProfit,ordinaryProfit,pretaxProfit,netIncome,busProfit,simpleCF,
+    grossProfit,operatingProfit,ordinaryProfit,pretaxProfit,netIncome,busProfit,
     currentRatio,quickRatio,fixedLTRatio,roe,equityRatio,netMargin,opMargin,grossMargin,fmRatio,assetTurnover,finLeverage,ordMargin,roa,roic,nopat,investedCap,
-    de,ibdRatio,netDe,debtMonths,icr,debtYears,invTurnover,recvDays,ibdReady,quickReady,atoturn,faturn,debtRatio,fixedRatio,wc,
+    de,ibdRatio,netDe,debtMonths,icr,invTurnover,recvDays,ibdReady,quickReady,atoturn,faturn,debtRatio,fixedRatio,wc,
     emp,empReady,valueAdded,salesPerEmp,vaPerEmp,laborPerEmp,
     matcost:g('matcost'),labcost:g('labcost'),subcon:g('subcon'),depcogs:g('depcogs'),othcogs,
     beginv:g('beginv'),purch:g('purch'),endinv:g('endinv'),execcomp:g('execcomp'),salary:g('salary'),welfare:g('welfare'),adv:g('adv'),rent:g('rent'),depsga:g('depsga'),outsourcing:g('outsourcing'),othsga,
@@ -572,6 +572,11 @@ const derived = () => {
     r.d.gGross = pv? g(r.d.grossProfit,pv.grossProfit):null;
     r.d.gOp    = pv? g(r.d.operatingProfit,pv.operatingProfit):null;
     r.d.gNa    = pv? g(r.d.na,pv.na):null;
+    // 詳細CF（実際の営業CF）と、それに基づく債務償還年数（前期がある期のみ算出）
+    const cf = pv? computeCF(pv, r.d) : null;
+    r.d.opCF = cf? cf.opCF : null;
+    r.d.opCFReady = cf!=null;
+    r.d.debtYears = (cf==null) ? null : (r.d.ibd<=0 ? 0 : (cf.opCF>0 ? r.d.ibd/cf.opCF : Infinity));
   });
   return arr;
 };
@@ -1163,10 +1168,12 @@ const CATS = {
         meaning:'事業利益で支払利息を何倍賄えるか＝利払い能力。営業外の受取利息配当金と支払利息の入力が必要です。',
         rows:[{lv:'good',name:'良好',range:'5倍 以上',note:'利払い余力が大きい'},{lv:'warn',name:'許容',range:'1〜5倍',note:'最低限は確保'},{lv:'bad',name:'危険',range:'1倍 未満',note:'利払いを賄えない'}],
         judge:d=>{const v=d.icr; return v>=5?'good':v>=1?'warn':'bad';} },
-      { key:'debty', label:'債務償還年数', v:d=>d.debtYears, unit:'年', dec:1, hi:{boxes:['cl','fl'],lines:['op']}, ready:d=>d.ibdReady, detailOnly:true,
-        dispVal:d=>{ if(!d.ibdReady) return '—'; if(d.ibd<=0) return '0<small>年</small>'; if(!isFinite(d.debtYears)) return '返済原資なし'; return p1(d.debtYears)+'<small>年</small>'; },
-        formula:d=>`有利子負債 <b>${fmt(d.ibd)}</b> ÷ 簡易営業CF <b>${fmt(d.simpleCF)}</b>（営業利益＋減価償却費 <b>${fmt(d.dep)}</b>）＝ <b>${isFinite(d.debtYears)?p1(d.debtYears):'—'}</b> 年`,
-        meaning:'今の稼ぐ力（営業利益＋減価償却）で有利子負債を何年で返せるか。短いほど安全。負債内訳と減価償却費の入力が必要です。',
+      { key:'debty', label:'債務償還年数', v:d=>d.debtYears, unit:'年', dec:1, hi:{boxes:['cl','fl'],lines:['op']}, ready:d=>d.ibdReady && d.opCFReady, detailOnly:true,
+        dispVal:d=>{ if(!d.ibdReady) return '—'; if(!d.opCFReady) return '<span class="md-na">—<small>（2期以上必要）</small></span>'; if(d.ibd<=0) return '0<small>年</small>'; if(!isFinite(d.debtYears)) return '返済原資なし'; return p1(d.debtYears)+'<small>年</small>'; },
+        formula:d=> d.opCFReady
+          ? `有利子負債 <b>${fmt(d.ibd)}</b> ÷ 営業CF <b>${fmt(d.opCF)}</b>（キャッシュフロー計算書の実際の営業キャッシュフロー）＝ <b>${isFinite(d.debtYears)?p1(d.debtYears):'—'}</b> 年`
+          : `有利子負債 <b>${fmt(d.ibd)}</b> ÷ 営業CF ＝ <b>—</b>（前期データがないため算出できません。②数値入力で2期以上を入力してください）`,
+        meaning:'実際の営業キャッシュフロー（CF計算書の営業CF）で有利子負債を何年で返せるか。短いほど安全。営業CFは前期との差分から算出するため2期以上の入力が必要です。負債内訳の入力も必要です。',
         rows:[{lv:'good',name:'良好',range:'10年 以内',note:'返済力が高い'},{lv:'warn',name:'許容',range:'10〜20年',note:'標準的'},{lv:'bad',name:'過大',range:'20年 超',note:'返済に長期間'}],
         judge:d=>{ if(d.ibd<=0) return 'good'; if(!isFinite(d.debtYears)) return 'bad'; const v=d.debtYears; return v<=10?'good':v<=20?'warn':'bad';} },
     ]},
@@ -1332,7 +1339,7 @@ function flowNode(k, ds){
 function cashConvHTML(ds){
   if(ds.length<2) return '';
   const cur=ds[ds.length-1].d, prev=ds[ds.length-2].d;
-  const ni=cur.netIncome, dcash=cur.cash-prev.cash, scf=cur.simpleCF, u=unitStr();
+  const ni=cur.netIncome, dcash=cur.cash-prev.cash, ocf=(cur.opCF!=null?cur.opCF:0), u=unitStr();
   let lv,msg;
   if(ni>0 && dcash<0){ lv='warn'; msg='利益は黒字なのに現預金は減少しています。増加運転資金（売掛金・在庫の増加）や借入返済・設備投資で現金が流出している可能性。<b>黒字でも資金繰りは要注意</b>です。'; }
   else if(ni>0 && dcash>=0){ lv='good'; msg='黒字で現預金も増加。利益がきちんと現金として残っています。'; }
@@ -1343,7 +1350,7 @@ function cashConvHTML(ds){
   const sign=v=>`<b style="color:${v>=0?'#2f9e6f':'#d1453f'}">${v>=0?'+':''}${fmt(v)} ${u}</b>`;
   return `<div class="cashconv">
     <div class="cc-head">💰 現金化 ― 利益は現金になっているか</div>
-    <div class="cc-row"><span>当期純利益 ${sign(ni)}</span><span>現預金の増減（前期比） ${sign(dcash)}</span><span>簡易営業CF（営業利益＋減価償却） ${sign(scf)}</span></div>
+    <div class="cc-row"><span>当期純利益 ${sign(ni)}</span><span>現預金の増減（前期比） ${sign(dcash)}</span><span>営業CF（CF計算書） ${sign(ocf)}</span></div>
     <div class="cc-note" style="background:${bg};color:${col}">${msg}</div>
   </div>`;
 }
@@ -1597,7 +1604,7 @@ function renderMainChart(ds){
 }
 function renderCS(ds){
   const modeChips=`<span class="ctl-lbl">期間：</span><button class="chip ${pmode==='multi'?'on':''}" data-pmode="multi">3期比較</button><button class="chip ${pmode==='single'?'on':''}" data-pmode="single">2期比較（1期分）</button>`;
-  if(ds.length<2){ $("mainControls").innerHTML=`<div class="ctl-row">${modeChips}</div>`; $("chart").innerHTML='<p class="ph">簡易CFには2期以上の入力が必要です。「② 数値入力」で期を追加してください。</p>'; $("legend").innerHTML=''; return; }
+  if(ds.length<2){ $("mainControls").innerHTML=`<div class="ctl-row">${modeChips}</div>`; $("chart").innerHTML='<p class="ph">キャッシュフロー（CF）には2期以上の入力が必要です。「② 数値入力」で期を追加してください。</p>'; $("legend").innerHTML=''; return; }
   const idx=pidx<1?ds.length-1:Math.min(pidx,ds.length-1);
   let ctl=`<div class="ctl-row">${modeChips}`;
   if(pmode==='single') ctl+=`<span class="ctl-lbl" style="margin-left:8px;">対象期：</span><select id="mPeriod">`+ds.map((r,i)=> i>=1?`<option value="${i}" ${i===idx?'selected':''}>${TLAB(ds[i-1].year)}→${TLAB(r.year)}</option>`:'').join('')+`</select>`;
@@ -1613,7 +1620,7 @@ function renderCS(ds){
   mh+=`<div class="cf-tiles">${tile('営業CF',fmt(cf.opCF))}${tile('投資CF',fmt(cf.invCF))}${tile('財務CF',fmt(cf.finCF))}${tile('フリーCF',fmt(cf.fcf))}${tile('現金増減',fmt(cf.actual))}${tile('営業CFマージン',p1(opm)+'%')}</div>`;
   mh+=`<div class="cf-h">キャッシュフロー8パターン（該当を強調）</div><div class="cf-grid">`+CF_PATTERNS.map(p=>`<div class="cf-card ${pat&&p.sign===pat.sign?'cur':''}"><div class="cf-mini">${cfMini(p.sign)}</div><div class="cf-ct"><div class="nm">${p.no} ${p.name}</div><div class="ds">${p.desc}</div></div></div>`).join('')+`</div>`;
   const rows=[['opCF','営業CF'],['invCF','投資CF'],['finCF','財務CF'],['fcf','フリーCF(営業+投資)'],['adj','その他調整'],['actual','現金増減']];
-  let t=`<div class="cf-h">簡易CF 数値表（単位：${u}）</div><div class="detail-wrap"><table class="cmp-detail"><thead><tr><th class="itemcol">項目</th>`;
+  let t=`<div class="cf-h">キャッシュフロー（CF）数値表（単位：${u}）</div><div class="detail-wrap"><table class="cmp-detail"><thead><tr><th class="itemcol">項目</th>`;
   for(let i=1;i<ds.length;i++) t+=`<th>${TLAB(ds[i-1].year)}→${TLAB(ds[i].year)}</th>`;
   t+=`</tr></thead><tbody>`;
   rows.forEach(([k,nm])=>{ t+=`<tr class="${k==='actual'?'grand':(k==='fcf'?'totrow':'')}"><td class="itemcol">${nm}</td>`;
