@@ -686,13 +686,14 @@ function comboSVG(ds, hi, showPL){
   // 正の最大値と負の最小値（債務超過・損失に対応）
   let posMax=0, negMin=0;
   ds.forEach(({d})=>{
-    posMax=Math.max(posMax, d.totalAssets, d.totalCapital, d.cl+d.fl+Math.max(d.na,0), d.cl+d.fl, showPL?d.sales:0, showPL?d.grossProfit:0);
-    negMin=Math.min(negMin, d.na, showPL?d.grossProfit:0, showPL?d.operatingProfit:0, showPL?d.ordinaryProfit:0, showPL?d.netIncome:0);
+    const R=d.sales+d.noi+d.exg, Cst=d.cogs+d.sga+d.noe+d.exl+d.tax; // 収益合計・費用合計（PLは費用列＋収益列＝同じ高さ）
+    posMax=Math.max(posMax, d.totalAssets, d.totalCapital, d.cl+d.fl+Math.max(d.na,0), d.cl+d.fl, showPL?Math.max(R,Cst):0);
+    negMin=Math.min(negMin, d.na);
   });
   if(posMax<=0) posMax=1;
   const AX=70, TOP=70, BOT=470, chH=BOT-TOP, span=posMax-negMin;
   const Y=v=> BOT-((v-negMin)/span)*chH;
-  const BW=74, PLGAP=38, GPAD=44, groupInner=(showPL?3*BW+PLGAP:2*BW), slot=groupInner+GPAD*2, x0=AX+24, W=2*x0+n*slot, H=560;
+  const BW=74, PLGAP=38, GPAD=44, groupInner=(showPL?4*BW+PLGAP:2*BW), slot=groupInner+GPAD*2, x0=AX+24, W=2*x0+n*slot, H=560;
   const y0=Y(0);
   const boxKeep=hi? new Set(hi.boxes||[]):null; if(boxKeep&&boxKeep.has('sales')) boxKeep.add('gp');
   const box=(x,w,yT,yB,fill,title)=> `<rect x="${x}" y="${yT}" width="${w}" height="${Math.max(0,yB-yT)}" fill="${fill}" stroke="#333" stroke-width="1">${title?`<title>${title}</title>`:''}</rect>`;
@@ -708,6 +709,12 @@ function comboSVG(ds, hi, showPL){
     if(bh>=12) g+=`<text x="${x+BW/2}" y="${by+bh/2+3}" font-size="9" fill="${col}" font-weight="bold" text-anchor="middle">${fmt(sub)}</text>`;
     return g;
   };
+  // PL比例縮尺（左＝費用列／右＝収益列）用のスタッカー
+  const plLabel=(x,yt,yb,nm,val)=>{ const h=yb-yt; if(h<15) return ''; const cy=(yt+yb)/2;
+    if(h>=30) return `<text x="${x+BW/2}" y="${cy-3}" font-size="10" fill="#fff" text-anchor="middle">${nm}</text><text x="${x+BW/2}" y="${cy+12}" font-size="12" fill="#fff" font-weight="bold" text-anchor="middle">${fmt(val)}</text>`;
+    return `<text x="${x+BW/2}" y="${cy+4}" font-size="10" fill="#fff" text-anchor="middle">${fmt(val)}</text>`; };
+  const plStack=(x, segs)=>{ let cum=0, out=''; segs.forEach(sg=>{ if(!(sg.val>0)) return; const yb=Y(cum), yt=Y(cum+sg.val);
+      out+=`<rect x="${x}" y="${yt}" width="${BW}" height="${Math.max(0,yb-yt)}" fill="${sg.col}" stroke="#fff" stroke-width="1"><title>${sg.name}：${fmt(sg.val)} ${unitStr()}</title></rect>`+plLabel(x,yt,yb,sg.name,sg.val); cum+=sg.val; }); return {svg:out, top:Y(cum)}; };
   let s=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="比較チャート" preserveAspectRatio="xMidYMid meet" style="display:block;width:100%;height:100%;margin:0 auto;">`;
   s+=`<line x1="${AX}" y1="${TOP}" x2="${AX}" y2="${BOT}" stroke="#333" stroke-width="1.5"/>`;
   s+=`<text x="${AX-30}" y="${TOP-12}" font-size="16" fill="#333">％</text>`;
@@ -717,7 +724,7 @@ function comboSVG(ds, hi, showPL){
   s+=`<text x="6" y="${TOP-12}" font-size="14" fill="#777">単位：${unitStr()}</text>`;
   s+=`<text x="${AX+18}" y="26" font-size="14" fill="#555">最大値 ${fmt(posMax)} ${unitStr()} を 100% として表示（左＝古い ／ 右＝新しい）</text>`;
   ds.forEach(({year,d},gi)=>{
-    const gx=x0+gi*slot+GPAD, bx=[gx,gx+BW,gx+2*BW+PLGAP];
+    const gx=x0+gi*slot+GPAD, bx=[gx,gx+BW,gx+2*BW+PLGAP,gx+3*BW+PLGAP];
     const tt=(nm,val,base)=>`${nm}：${fmt(val)} ${unitStr()}${base?`（${p1(val/base*100)}%）`:''}`;
     // 資産
     const yFa=Y(d.fa), yA=Y(d.fa+d.ca);
@@ -749,33 +756,35 @@ function comboSVG(ds, hi, showPL){
       else if(yNaNeg-y0>=12) s+=`<text x="${bx[1]+BW/2}" y="${(y0+yNaNeg)/2+4}" font-size="10" fill="#c53030" text-anchor="middle" font-weight="bold">${fmt(d.na)}</text>`;
       naTop=y0; naBot=yNaNeg; flTop=yFl; flBot=y0;
     }
-    // 売上（PL）粗利・利益はマイナス（損失）にも対応
-    const ySales=Y(d.sales), yGp=Y(d.grossProfit), yOp=Y(d.operatingProfit), yNi=Y(d.netIncome);
+    // PL（比例縮尺）：左＝費用列（売上原価→当期純利益）／右＝収益列（売上高等）※両列とも収益合計＝費用合計＋利益 で同じ高さ
+    let costTop=y0, revTop=y0;
     if(showPL){
-      s+=box(bx[2],BW,ySales,y0,'#ffffff',tt('売上高',d.sales,0));
-      const gpT=Y(Math.max(d.grossProfit,0)), gpB=Y(Math.min(d.grossProfit,0));
-      s+=box(bx[2],BW,gpT,gpB,C.gp,tt('粗利',d.grossProfit,d.sales))+segLabel(bx[2],gpT,gpB,d.grossProfit);
-      if(d.grossProfit>0) s+=uchiBand(bx[2],ySales,yGp,(d.sales-d.grossProfit),d.depcogs,'うち減価償却費(製造原価)','#1c4e80');
-      if(d.operatingProfit>0 && d.grossProfit>d.operatingProfit) s+=uchiBand(bx[2],yGp,yOp,(d.grossProfit-d.operatingProfit),d.depsga,'うち減価償却費(販管費)','#1c4e80');
-      s+=`<line x1="${bx[2]}" y1="${yOp}" x2="${bx[2]+BW}" y2="${yOp}" stroke="#333" stroke-width="1.5"><title>${tt('営業利益',d.operatingProfit,d.sales)}</title></line>`;
-      s+=`<line x1="${bx[2]}" y1="${yNi}" x2="${bx[2]+BW}" y2="${yNi}" stroke="#c53030" stroke-width="1.5"><title>${tt('当期純利益',d.netIncome,d.sales)}</title></line>`;
-      if(d.netIncome<0) s+=`<text x="${bx[2]+BW/2}" y="${yNi+13}" font-size="10" fill="#c53030" text-anchor="middle" font-weight="bold">当期純損失 ${fmt(d.netIncome)}</text>`;
+      const ni=d.netIncome;
+      const costSegs=[]; if(ni>=0) costSegs.push({name:'当期純利益',val:ni,col:'#2f855a'});
+      costSegs.push({name:'法人税等',val:d.tax,col:'#454b54'},{name:'特別損失',val:d.exl,col:'#565c66'},{name:'営業外費用',val:d.noe,col:'#69707a'},{name:'販管費',val:d.sga,col:'#CC6A1F'},{name:'売上原価',val:d.cogs,col:'#8a9199'});
+      const revSegs=[{name:'特別利益',val:d.exg,col:'#3a5f86'},{name:'営業外収益',val:d.noi,col:'#4E79A7'},{name:'売上高',val:d.sales,col:'#5b8fca'}];
+      if(ni<0) revSegs.push({name:'当期純損失',val:-ni,col:'#cc4a45'});
+      const cR=plStack(bx[2],costSegs), rR=plStack(bx[3],revSegs); s+=cR.svg+rR.svg; costTop=cR.top; revTop=rR.top;
     }
     s+=`<text x="${bx[0]+BW/2}" y="${yA-7}" font-size="12" fill="#333" text-anchor="middle" font-weight="bold">${fmt(d.totalAssets)}</text>`;
     s+=`<text x="${bx[1]+BW/2}" y="${yCl-7}" font-size="12" fill="#333" text-anchor="middle" font-weight="bold">${fmt(d.totalCapital)}</text>`;
-    if(showPL) s+=`<text x="${bx[2]+BW/2}" y="${ySales-7}" font-size="12" fill="#333" text-anchor="middle" font-weight="bold">${fmt(d.sales)}</text>`;
+    if(showPL){
+      s+=`<text x="${bx[2]+BW/2}" y="${costTop-7}" font-size="11" fill="#333" text-anchor="middle" font-weight="bold">${fmt(d.cogs+d.sga+d.noe+d.exl+d.tax+Math.max(d.netIncome,0))}</text>`;
+      s+=`<text x="${bx[3]+BW/2}" y="${revTop-7}" font-size="11" fill="#333" text-anchor="middle" font-weight="bold">${fmt(d.sales+d.noi+d.exg+Math.max(-d.netIncome,0))}</text>`;
+    }
     s+=`<text x="${gx+groupInner/2}" y="${BOT+26}" font-size="16" fill="#1a1a1a" text-anchor="middle" font-weight="bold">${TLAB(year)}</text>`;
     s+=`<text x="${bx[0]+BW/2}" y="${BOT+44}" font-size="11" fill="#666" text-anchor="middle">資産</text>`;
     s+=`<text x="${bx[1]+BW/2}" y="${BOT+44}" font-size="11" fill="#666" text-anchor="middle">負債・純資産</text>`;
-    if(showPL) s+=`<text x="${bx[2]+BW/2}" y="${BOT+44}" font-size="11" fill="#666" text-anchor="middle">売上</text>`;
+    if(showPL){ s+=`<text x="${bx[2]+BW/2}" y="${BOT+44}" font-size="11" fill="#666" text-anchor="middle">費用</text>`;
+      s+=`<text x="${bx[3]+BW/2}" y="${BOT+44}" font-size="11" fill="#666" text-anchor="middle">収益</text>`; }
     if(hi){
       const B={ca:[bx[0],yA,yFa],fa:[bx[0],yFa,y0],cl:[bx[1],yCl,flTop],fl:[bx[1],flTop,flBot],na:[bx[1],naTop,naBot]};
-      if(showPL){ B.sales=[bx[2],ySales,y0]; B.gp=[bx[2],Y(Math.max(d.grossProfit,0)),Y(Math.min(d.grossProfit,0))]; }
+      if(showPL){ B.sales=[bx[3],revTop,y0]; }
       for(const k in B){ if(!boxKeep.has(k)){ const b=B[k], t=Math.min(b[1],b[2]), bo=Math.max(b[1],b[2]); s+=`<rect x="${b[0]}" y="${t}" width="${BW}" height="${Math.max(0,bo-t)}" fill="#f4f5f7" fill-opacity="0.66"/>`; } }
       const groups={};
       (hi.boxes||[]).forEach(k=>{ const b=B[k]; if(!b) return; const col=b[0], t=Math.min(b[1],b[2]), bo=Math.max(b[1],b[2]); if(!groups[col]) groups[col]=[b[0],t,bo]; else{ const g=groups[col]; g[1]=Math.min(g[1],t); g[2]=Math.max(g[2],bo); } });
       Object.keys(groups).forEach(col=>{ const g=groups[col]; s+=`<rect x="${g[0]}" y="${g[1]}" width="${BW}" height="${Math.max(0,g[2]-g[1])}" fill="none" stroke="${GOLD}" stroke-width="4"/>`; });
-      if(showPL) (hi.lines||[]).forEach(k=>{ const y=(k==='op')?yOp:yNi; s+=`<line x1="${bx[2]}" y1="${y}" x2="${bx[2]+BW}" y2="${y}" stroke="${GOLD}" stroke-width="4"/>`; });
+      if(showPL && (hi.lines||[]).includes('ni')){ s+=`<rect x="${bx[2]}" y="${Y(Math.max(d.netIncome,0))}" width="${BW}" height="${Math.max(0,y0-Y(Math.max(d.netIncome,0)))}" fill="none" stroke="${GOLD}" stroke-width="4"/>`; }
     }
   });
   s+=`</svg>`; return s;
@@ -794,11 +803,12 @@ function comboDetailSVG(row, hi, showPL){
   showPL = showPL!==false;
   const d=row.d, u=unitStr();
   const BW=150,PLGAP=64,AX=95,TOP=82,BOT=560,chH=BOT-TOP,x0=135;
-  const bx=[x0,x0+BW,x0+2*BW+PLGAP];
-  const W = showPL ? 784 : (2*x0+2*BW), H=624;
-  const catX={ca:bx[0],fa:bx[0],cl:bx[1],fl:bx[1],na:bx[1],sales:bx[2],gp:bx[2]};
-  let posMax=Math.max(d.totalAssets,d.totalCapital,d.cl+d.fl+Math.max(d.na,0),d.cl+d.fl, showPL?d.sales:0, showPL?d.grossProfit:0);
-  let negMin=Math.min(0,d.na, showPL?d.grossProfit:0, showPL?d.operatingProfit:0, showPL?d.ordinaryProfit:0, showPL?d.netIncome:0);
+  const bx=[x0,x0+BW,x0+2*BW+PLGAP,x0+3*BW+PLGAP];
+  const W = showPL ? (2*x0+4*BW+PLGAP) : (2*x0+2*BW), H=624;
+  const catX={ca:bx[0],fa:bx[0],cl:bx[1],fl:bx[1],na:bx[1],plcost:bx[2],sales:bx[3]};
+  const R=d.sales+d.noi+d.exg, Cst=d.cogs+d.sga+d.noe+d.exl+d.tax;
+  let posMax=Math.max(d.totalAssets,d.totalCapital,d.cl+d.fl+Math.max(d.na,0),d.cl+d.fl, showPL?Math.max(R,Cst):0);
+  let negMin=Math.min(0,d.na);
   if(posMax<=0)posMax=1;
   const span=posMax-negMin, Y=v=>BOT-((v-negMin)/span)*chH, y0=Y(0);
   const boxKeep=hi?new Set(hi.boxes||[]):null; if(boxKeep&&boxKeep.has('sales'))boxKeep.add('gp');
@@ -833,24 +843,22 @@ function comboDetailSVG(row, hi, showPL){
     if(yNaNeg-y0>=24) s+=`<text x="${bx[1]+BW/2}" y="${(y0+yNaNeg)/2-2}" font-size="10.5" fill="#c53030" text-anchor="middle">純資産(債務超過)</text><text x="${bx[1]+BW/2}" y="${(y0+yNaNeg)/2+12}" font-size="11.5" fill="#c53030" text-anchor="middle" font-weight="bold">${fmt(d.na)}</text>`;
     note('na',y0,yNaNeg);
   }
-  // 売上（PL）※showPL時のみ
-  const ySales=Y(d.sales), yOp=Y(d.operatingProfit), yOrd=Y(d.ordinaryProfit), yNi=Y(d.netIncome);
+  // PL（比例縮尺）：左＝費用列（内訳あり）／右＝収益列。両列とも 収益合計＝費用合計＋利益 で同じ高さ
   if(showPL){
-    s+=`<rect x="${bx[2]}" y="${ySales}" width="${BW}" height="${Math.max(0,y0-ySales)}" fill="#ffffff" stroke="#333" stroke-width="1"><title>売上高：${fmt(d.sales)} ${u}</title></rect>`;
-    note('sales',ySales,y0);
-    if(d.grossProfit>=0){
-      const gpSeg={name:'粗利',val:d.grossProfit,col:C.gp,cat:'gp'};
-      const cogsSegs=d.detCogs?mapseg(cogsLeaves().map(l=>[l[1],d[l[0]]]),SHADES.cogs,'sales'):[{name:'売上原価',val:d.cogs,col:'#b9b9b9',cat:'sales'}];
-      s+=drawStack(bx[2],[gpSeg].concat(cogsSegs),0);
-    } else {
-      const gpT=Y(Math.max(d.grossProfit,0)),gpB=Y(Math.min(d.grossProfit,0));
-      s+=`<rect x="${bx[2]}" y="${gpT}" width="${BW}" height="${Math.max(0,gpB-gpT)}" fill="${C.gp}" stroke="#333"><title>粗利：${fmt(d.grossProfit)} ${u}</title></rect>`+seglabel(bx[2],gpT,gpB,'粗利',d.grossProfit); note('gp',gpT,gpB);
-    }
-    const lines=[{y:yOp,col:'#333',nm:'営業利益',val:d.operatingProfit},{y:yOrd,col:'#2b6cb0',nm:'経常利益',val:d.ordinaryProfit},{y:yNi,col:'#c53030',nm:(d.netIncome<0?'当期純損失':'当期純利益'),val:d.netIncome}];
-    lines.forEach(L=> s+=`<line x1="${bx[2]}" y1="${L.y}" x2="${bx[2]+BW}" y2="${L.y}" stroke="${L.col}" stroke-width="1.6"><title>${L.nm}：${fmt(L.val)} ${u}</title></line>`);
-    let prevLy=-99; lines.map((L,i)=>({...L,i})).sort((a,b)=>a.y-b.y).forEach(L=>{ const ly=Math.max(L.y+4, prevLy+13); prevLy=ly; s+=`<text x="${bx[2]+BW+4}" y="${ly}" font-size="10" fill="${L.col}">${L.nm} ${fmt(L.val)}</text>`; });
-    s+=`<text x="${bx[2]+BW/2}" y="${ySales-6}" font-size="12" fill="#333" text-anchor="middle" font-weight="bold">${fmt(d.sales)}</text>`;
-    s+=`<text x="${bx[2]+BW/2}" y="${BOT+20}" font-size="12" fill="#444" text-anchor="middle" font-weight="bold">売上・利益</text>`;
+    const ni=d.netIncome;
+    const sgaSegs = d.detSga ? SGA_LEAVES.map(([k,nm],i)=>({name:nm,val:d[k],col:['#d98f4f','#cf7a30','#CC6A1F','#b65d1b','#a05017','#8a4313','#75360f','#5f2c0c'][i%8],cat:'plcost'})) : [{name:'販管費',val:d.sga,col:'#CC6A1F',cat:'plcost'}];
+    const cogsSegs = d.detCogs ? cogsLeaves().map(([k,nm],i)=>({name:nm,val:d[k],col:SHADES.cogs[i%6],cat:'plcost'})) : [{name:'売上原価',val:d.cogs,col:'#8a9199',cat:'plcost'}];
+    let costSegs=[]; if(ni>=0) costSegs.push({name:'当期純利益',val:ni,col:'#2f855a',cat:'plcost'});
+    costSegs=costSegs.concat([{name:'法人税等',val:d.tax,col:'#454b54',cat:'plcost'},{name:'特別損失',val:d.exl,col:'#565c66',cat:'plcost'},{name:'営業外費用',val:d.noe,col:'#69707a',cat:'plcost'}], sgaSegs, cogsSegs);
+    s+=drawStack(bx[2],costSegs,0);
+    let revSegs=[{name:'特別利益',val:d.exg,col:'#3a5f86',cat:'sales'},{name:'営業外収益',val:d.noi,col:'#4E79A7',cat:'sales'},{name:'売上高',val:d.sales,col:'#5b8fca',cat:'sales'}];
+    if(ni<0) revSegs.push({name:'当期純損失',val:-ni,col:'#cc4a45',cat:'sales'});
+    s+=drawStack(bx[3],revSegs,0);
+    const cTot=d.cogs+d.sga+d.noe+d.exl+d.tax+Math.max(ni,0), rTot=d.sales+d.noi+d.exg+Math.max(-ni,0);
+    s+=`<text x="${bx[2]+BW/2}" y="${Y(cTot)-6}" font-size="12" fill="#333" text-anchor="middle" font-weight="bold">${fmt(cTot)}</text>`;
+    s+=`<text x="${bx[3]+BW/2}" y="${Y(rTot)-6}" font-size="12" fill="#333" text-anchor="middle" font-weight="bold">${fmt(rTot)}</text>`;
+    s+=`<text x="${bx[2]+BW/2}" y="${BOT+20}" font-size="12" fill="#444" text-anchor="middle" font-weight="bold">費用</text>`;
+    s+=`<text x="${bx[3]+BW/2}" y="${BOT+20}" font-size="12" fill="#444" text-anchor="middle" font-weight="bold">収益</text>`;
   }
   // 合計ラベル
   s+=`<text x="${bx[0]+BW/2}" y="${Y(d.totalAssets)-6}" font-size="12" fill="#333" text-anchor="middle" font-weight="bold">${fmt(d.totalAssets)}</text>`;
@@ -863,7 +871,7 @@ function comboDetailSVG(row, hi, showPL){
     const grp={};
     (hi.boxes||[]).forEach(cat=>{ if(!catR[cat])return; const col=catX[cat]; if(!grp[col])grp[col]=[catR[cat][0],catR[cat][1]]; else{grp[col][0]=Math.min(grp[col][0],catR[cat][0]);grp[col][1]=Math.max(grp[col][1],catR[cat][1]);} });
     Object.keys(grp).forEach(col=>{ const g=grp[col]; s+=`<rect x="${col}" y="${g[0]}" width="${BW}" height="${Math.max(0,g[1]-g[0])}" fill="none" stroke="${GOLD}" stroke-width="4"/>`; });
-    if(showPL) (hi.lines||[]).forEach(k=>{ const y=(k==='op')?yOp:yNi; s+=`<line x1="${bx[2]}" y1="${y}" x2="${bx[2]+BW}" y2="${y}" stroke="${GOLD}" stroke-width="4"/>`; });
+    if(showPL && (hi.lines||[]).includes('ni') && d.netIncome>0){ s+=`<rect x="${bx[2]}" y="${Y(d.netIncome)}" width="${BW}" height="${Math.max(0,y0-Y(d.netIncome))}" fill="none" stroke="${GOLD}" stroke-width="4"/>`; }
   }
   s+=`</svg>`; return s;
 }
