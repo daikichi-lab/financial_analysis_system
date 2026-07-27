@@ -443,7 +443,8 @@ function computeVals(v){
     de,ibdRatio,netDe,debtMonths,icr,debtYears,invTurnover,recvDays,ibdReady,quickReady,atoturn,faturn,debtRatio,fixedRatio,wc,
     matcost:g('matcost'),labcost:g('labcost'),subcon:g('subcon'),depcogs:g('depcogs'),othcogs,
     beginv:g('beginv'),purch:g('purch'),endinv:g('endinv'),execcomp:g('execcomp'),salary:g('salary'),welfare:g('welfare'),adv:g('adv'),rent:g('rent'),depsga:g('depsga'),outsourcing:g('outsourcing'),othsga,
-    laborCost,costRatio,sgaRatio,personnelRatio,laborShare,personnelReady,detCogs:!!v.det_cogs,detSga:!!v.det_sga};
+    laborCost,costRatio,sgaRatio,personnelRatio,laborShare,personnelReady,
+    detCa:!!v.det_ca,detFa:!!v.det_fa,detCl:!!v.det_cl,detFl:!!v.det_fl,detCogs:!!v.det_cogs,detSga:!!v.det_sga};
 }
 const derived = () => {
   const arr=periods.map(p=> ({year:p.year, d:computeVals(p.vals)}));
@@ -698,6 +699,88 @@ function comboSVG(ds, hi, showPL){
   s+=`</svg>`; return s;
 }
 function drawChart(ds){ $("chart").innerHTML = comboSVG(ds, currentHi(), true); }
+// 1期分の詳細図（内訳で設定した科目名・数値まで表示・横幅ワイド）
+const SHADES={
+  ca:['#6b93c9','#5b8bc4','#4E79A7','#436b93','#395d80','#2f4f6d'],
+  fa:['#74ad69','#5e9a52','#4E8A46','#437a3d','#396a34','#2f5a2b'],
+  cl:['#d47a77','#cc605c','#C4433F','#ad3b37','#96332f','#7f2b28'],
+  fl:['#db9459','#d2803a','#CC6A1F','#b65d1b','#a05017','#8a4313'],
+  na:['#a884b6','#9970a6','#8E5AA0','#7d4f8e','#6c447c','#5b396a'],
+  cogs:['#bdbdbd','#ababab','#999999','#878787','#757575','#636363'],
+};
+function comboDetailSVG(row, hi){
+  const d=row.d, u=unitStr();
+  const W=784,H=624,AX=95,TOP=82,BOT=560,chH=BOT-TOP,BW=150,PLGAP=64,x0=135;
+  const bx=[x0,x0+BW,x0+2*BW+PLGAP];
+  const catX={ca:bx[0],fa:bx[0],cl:bx[1],fl:bx[1],na:bx[1],sales:bx[2],gp:bx[2]};
+  let posMax=Math.max(d.totalAssets,d.totalCapital,d.cl+d.fl+Math.max(d.na,0),d.cl+d.fl,d.sales,d.grossProfit);
+  let negMin=Math.min(0,d.na,d.grossProfit,d.operatingProfit,d.ordinaryProfit,d.netIncome);
+  if(posMax<=0)posMax=1;
+  const span=posMax-negMin, Y=v=>BOT-((v-negMin)/span)*chH, y0=Y(0);
+  const boxKeep=hi?new Set(hi.boxes||[]):null; if(boxKeep&&boxKeep.has('sales'))boxKeep.add('gp');
+  const catR={};
+  const note=(cat,t,bo)=>{ if(!catR[cat])catR[cat]=[Math.min(t,bo),Math.max(t,bo)]; else{catR[cat][0]=Math.min(catR[cat][0],t,bo);catR[cat][1]=Math.max(catR[cat][1],t,bo);} };
+  let s=`<svg viewBox="0 0 ${W} ${H}" style="display:block;width:100%;height:auto;max-width:${W}px;margin:0 auto;font-family:inherit;">`;
+  s+=`<line x1="${AX}" y1="${TOP}" x2="${AX}" y2="${BOT}" stroke="#333" stroke-width="1.5"/>`;
+  s+=`<text x="${AX-28}" y="${TOP-16}" font-size="14" fill="#333">％</text>`;
+  const pMin=Math.floor((negMin/posMax*100)/20)*20;
+  for(let p=pMin;p<=100;p+=20){ const y=Y(p/100*posMax),emph=p===0;
+    s+=`<line x1="${AX}" y1="${y}" x2="${W-16}" y2="${y}" stroke="${emph?'#b8bcc2':'#eef1f4'}" stroke-width="${emph?1.2:1}"/><line x1="${AX-6}" y1="${y}" x2="${AX}" y2="${y}" stroke="#333"/><text x="${AX-10}" y="${y+5}" font-size="13" fill="#555" text-anchor="end">${p}</text>`; }
+  s+=`<text x="6" y="${TOP-16}" font-size="13" fill="#777">単位：${u}</text>`;
+  s+=`<text x="${AX+10}" y="${TOP-16}" font-size="13" fill="#555">${TLAB(row.year)}（最大値 ${fmt(posMax)} を100%）</text>`;
+  const seglabel=(x,t,bo,nm,val)=>{ const hh=bo-t; if(hh>=24) return `<text x="${x+BW/2}" y="${(t+bo)/2-2}" font-size="10.5" fill="#fff" text-anchor="middle">${nm}</text><text x="${x+BW/2}" y="${(t+bo)/2+13}" font-size="11.5" fill="#fff" text-anchor="middle" font-weight="bold">${fmt(val)}</text>`; if(hh>=13) return `<text x="${x+BW/2}" y="${(t+bo)/2+4}" font-size="10" fill="#fff" text-anchor="middle">${fmt(val)}</text>`; return ''; };
+  const drawStack=(x, segs, base)=>{ let cum=base, out=''; segs.forEach(sg=>{ if(!sg.val) return; const yb=Y(cum), yt=Y(cum+sg.val), t=Math.min(yt,yb), bo=Math.max(yt,yb);
+      out+=`<rect x="${x}" y="${t}" width="${BW}" height="${Math.max(0,bo-t)}" fill="${sg.col}" stroke="#fff" stroke-width="0.8"><title>${sg.name}：${fmt(sg.val)} ${u}</title></rect>`+seglabel(x,t,bo,sg.name,sg.val);
+      if(sg.cat) note(sg.cat,t,bo); cum+=sg.val; }); return out; };
+  const mapseg=(arr,shades,cat)=> arr.map((l,i)=>({name:l[0],val:l[1],col:shades[i%shades.length],cat}));
+  // 資産（固定→流動）
+  const faSegs=d.detFa?mapseg([['建物・設備',d.building],['車両・器具備品',d.vehicle],['土地',d.land],['ソフト・無形',d.software],['投資有価証券・保険',d.invsec],['長期貸付・その他',d.iota]],SHADES.fa,'fa'):[{name:'固定資産',val:d.fa,col:C.fa,cat:'fa'}];
+  const caSegs=d.detCa?mapseg([['現預金',d.cash],['売上債権',d.recv],['棚卸資産',d.inv],['短期貸付金',d.stloanto],['前払・仮払',d.prepaid],['その他流動資産',d.oca]],SHADES.ca,'ca'):[{name:'流動資産',val:d.ca,col:C.ca,cat:'ca'}];
+  s+=drawStack(bx[0], faSegs.concat(caSegs), 0);
+  // 負債・純資産（純資産→固定負債→流動負債）
+  const flSegs=d.detFl?mapseg([['長期借入金',d.ltloan],['社債',d.bond],['役員・関係者借入',d.execloan],['リース・引当金',d.lease],['その他長期負債',d.ofl]],SHADES.fl,'fl'):[{name:'固定負債',val:d.fl,col:C.fl,cat:'fl'}];
+  const clSegs=d.detCl?mapseg([['買掛金・支払手形',d.payb],['短期借入金',d.stloan],['1年内返済長期借入',d.cpltd],['未払金・未払費用',d.payables],['未払税金',d.taxpay],['その他短期負債',d.ocl]],SHADES.cl,'cl'):[{name:'流動負債',val:d.cl,col:C.cl,cat:'cl'}];
+  if(d.na>=0){
+    const naSegs=mapseg([['資本金',d.cap],['資本剰余金',d.csurp],['利益剰余金',d.re],['その他純資産',d.ona]],SHADES.na,'na');
+    s+=drawStack(bx[1], naSegs.concat(flSegs).concat(clSegs), 0);
+  } else {
+    s+=drawStack(bx[1], flSegs.concat(clSegs), 0);
+    const yNaNeg=Y(d.na); s+=`<rect x="${bx[1]}" y="${y0}" width="${BW}" height="${Math.max(0,yNaNeg-y0)}" fill="#f5c6c3" stroke="#c53030" stroke-width="1"><title>純資産（債務超過）：${fmt(d.na)} ${u}</title></rect>`;
+    if(yNaNeg-y0>=24) s+=`<text x="${bx[1]+BW/2}" y="${(y0+yNaNeg)/2-2}" font-size="10.5" fill="#c53030" text-anchor="middle">純資産(債務超過)</text><text x="${bx[1]+BW/2}" y="${(y0+yNaNeg)/2+12}" font-size="11.5" fill="#c53030" text-anchor="middle" font-weight="bold">${fmt(d.na)}</text>`;
+    note('na',y0,yNaNeg);
+  }
+  // 売上（PL）
+  const ySales=Y(d.sales), yOp=Y(d.operatingProfit), yOrd=Y(d.ordinaryProfit), yNi=Y(d.netIncome);
+  s+=`<rect x="${bx[2]}" y="${ySales}" width="${BW}" height="${Math.max(0,y0-ySales)}" fill="#ffffff" stroke="#333" stroke-width="1"><title>売上高：${fmt(d.sales)} ${u}</title></rect>`;
+  note('sales',ySales,y0);
+  if(d.grossProfit>=0){
+    const gpSeg={name:'粗利',val:d.grossProfit,col:C.gp,cat:'gp'};
+    const cogsSegs=d.detCogs?mapseg(cogsLeaves().map(l=>[l[1],d[l[0]]]),SHADES.cogs,'sales'):[{name:'売上原価',val:d.cogs,col:'#b9b9b9',cat:'sales'}];
+    s+=drawStack(bx[2],[gpSeg].concat(cogsSegs),0);
+  } else {
+    const gpT=Y(Math.max(d.grossProfit,0)),gpB=Y(Math.min(d.grossProfit,0));
+    s+=`<rect x="${bx[2]}" y="${gpT}" width="${BW}" height="${Math.max(0,gpB-gpT)}" fill="${C.gp}" stroke="#333"><title>粗利：${fmt(d.grossProfit)} ${u}</title></rect>`+seglabel(bx[2],gpT,gpB,'粗利',d.grossProfit); note('gp',gpT,gpB);
+  }
+  // 利益ライン
+  const pline=(y,col,nm,val)=> `<line x1="${bx[2]}" y1="${y}" x2="${bx[2]+BW}" y2="${y}" stroke="${col}" stroke-width="1.6"><title>${nm}：${fmt(val)} ${u}</title></line><text x="${bx[2]+BW+4}" y="${y+4}" font-size="10" fill="${col}">${nm} ${fmt(val)}</text>`;
+  s+=pline(yOp,'#333','営業利益',d.operatingProfit)+pline(yOrd,'#2b6cb0','経常利益',d.ordinaryProfit)+pline(yNi,'#c53030',(d.netIncome<0?'当期純損失':'当期純利益'),d.netIncome);
+  // 合計ラベル
+  s+=`<text x="${bx[0]+BW/2}" y="${Y(d.totalAssets)-6}" font-size="12" fill="#333" text-anchor="middle" font-weight="bold">${fmt(d.totalAssets)}</text>`;
+  s+=`<text x="${bx[1]+BW/2}" y="${Y(Math.max(d.cl+d.fl+Math.max(d.na,0),d.totalCapital))-6}" font-size="12" fill="#333" text-anchor="middle" font-weight="bold">${fmt(d.totalCapital)}</text>`;
+  s+=`<text x="${bx[2]+BW/2}" y="${ySales-6}" font-size="12" fill="#333" text-anchor="middle" font-weight="bold">${fmt(d.sales)}</text>`;
+  s+=`<text x="${bx[0]+BW/2}" y="${BOT+20}" font-size="12" fill="#444" text-anchor="middle" font-weight="bold">資産</text>`;
+  s+=`<text x="${bx[1]+BW/2}" y="${BOT+20}" font-size="12" fill="#444" text-anchor="middle" font-weight="bold">負債・純資産</text>`;
+  s+=`<text x="${bx[2]+BW/2}" y="${BOT+20}" font-size="12" fill="#444" text-anchor="middle" font-weight="bold">売上・利益</text>`;
+  // 強調（指標ボタン）
+  if(hi){
+    Object.keys(catR).forEach(cat=>{ if(!boxKeep.has(cat)){ const r=catR[cat]; s+=`<rect x="${catX[cat]}" y="${r[0]}" width="${BW}" height="${Math.max(0,r[1]-r[0])}" fill="#f4f5f7" fill-opacity="0.66"/>`; } });
+    const grp={};
+    (hi.boxes||[]).forEach(cat=>{ if(!catR[cat])return; const col=catX[cat]; if(!grp[col])grp[col]=[catR[cat][0],catR[cat][1]]; else{grp[col][0]=Math.min(grp[col][0],catR[cat][0]);grp[col][1]=Math.max(grp[col][1],catR[cat][1]);} });
+    Object.keys(grp).forEach(col=>{ const g=grp[col]; s+=`<rect x="${col}" y="${g[0]}" width="${BW}" height="${Math.max(0,g[1]-g[0])}" fill="none" stroke="${GOLD}" stroke-width="4"/>`; });
+    (hi.lines||[]).forEach(k=>{ const y=(k==='op')?yOp:yNi; s+=`<line x1="${bx[2]}" y1="${y}" x2="${bx[2]+BW}" y2="${y}" stroke="${GOLD}" stroke-width="4"/>`; });
+  }
+  s+=`</svg>`; return s;
+}
 function drawIBDDiverge(ds){
   const items=ds.map(({year,d})=>({year, st:d.ibdShort, lt:d.ibdLong, cap:d.totalCapital, ibd:d.ibd}));
   let mx=1; items.forEach(x=>{ mx=Math.max(mx,x.st,x.lt); });
@@ -1209,8 +1292,8 @@ const BS_LEGEND=`<span class="lg"><i style="background:${C.ca}"></i>流動資産
 function dAll(ds){
   const idx = allIdx<0? ds.length-1 : Math.min(allIdx, ds.length-1);
   const one=[ds[idx]], m=ALL_METRICS[allMetricKey];
-  $("dControls").innerHTML=`<div class="ctl-row"><span class="ctl-lbl">対象期（1期のみ）：</span><select id="allPeriod">`+ds.map((r,i)=>`<option value="${i}" ${i===idx?'selected':''}>${TLAB(r.year)}</option>`).join('')+`</select></div><p class="note" style="margin:4px 0 6px;">BS・PLを1期で図解。負債の点線枠＝うち有利子負債。指標ボタンで該当箇所を強調。</p>`;
-  $("dChart").innerHTML = `<div class="fig50">`+comboSVG(one, m?m.hi:null, true)+`</div>`;
+  $("dControls").innerHTML=`<div class="ctl-row"><span class="ctl-lbl">対象期（1期のみ）：</span><select id="allPeriod">`+ds.map((r,i)=>`<option value="${i}" ${i===idx?'selected':''}>${TLAB(r.year)}</option>`).join('')+`</select></div><p class="note" style="margin:4px 0 6px;">BS・PLを1期で図解。③で内訳を入力すると科目名・数値まで表示します。指標ボタンで該当箇所を強調。</p>`;
+  $("dChart").innerHTML = comboDetailSVG(ds[idx], m?m.hi:null);
   $("dLegend").innerHTML = BS_LEGEND+`<span class="lg"><i style="background:${C.gp}"></i>粗利</span>`;
   allMetricKey=renderMetricPanel(ds,['roe','finlev','roa','turnover','roic','icr','debty','recvdays','invturn'],allMetricKey);
 }
