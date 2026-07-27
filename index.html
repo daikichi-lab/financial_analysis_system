@@ -351,13 +351,21 @@ const OTHER_LEAF = {ca:'oca', fa:'iota', cl:'ocl', fl:'ofl', sga:'othsga'};
 const leavesOf = big => big==='cogs' ? cogsLeaves().map(x=>x[0]) : LEAF_MAP[big];
 const otherOf  = big => big==='cogs' ? (costType==='B'?'purch':'othcogs') : OTHER_LEAF[big];
 
-const DEFAULTS = (()=>{ const o={}; NUM_KEYS.forEach(k=> o[k]=0); DET_KEYS.forEach(k=> o[k]=false);
-  Object.assign(o,{ca:5712,fa:19890,cl:5305,fl:9607,cap:5181,re:5509,sales:19742,cogs:15834,sga:3300,noi:100,noe:200,exg:0,exl:50,tax:181});
-  return o; })();
 const zeros = ()=>{ const o={}; NUM_KEYS.forEach(k=> o[k]=0); DET_KEYS.forEach(k=> o[k]=false); return o; };
+const mk = obj => Object.assign(zeros(), obj);
+const DEFAULTS = mk({ca:5712,fa:19890,cl:5305,fl:9607,cap:5181,re:5509,sales:19742,cogs:15834,sga:3300,noi:100,noe:200,exg:0,exl:50,tax:181});
+// デモ用の3期分データ（貸借一致・成長ケース。有利子負債・減価償却費は直接入力欄に投入）
+const DEMO = [
+  {year:1, vals:mk({ca:5712,fa:19890,cl:5305,fl:9607,cap:5181,re:5509,ibds:2300,ibdl:8000,
+    sales:19742,cogs:15834,sga:3300,noi:100,recint:30,noe:200,intexp:150,exl:50,tax:181,depcogs:2500,depsga:600})},
+  {year:2, vals:mk({ca:6100,fa:20800,cl:5600,fl:9800,cap:5181,re:6319,ibds:2200,ibdl:7800,
+    sales:21500,cogs:17050,sga:3550,noi:110,recint:35,noe:210,intexp:160,exl:40,tax:300,depcogs:2600,depsga:620})},
+  {year:3, vals:mk({ca:6500,fa:21500,cl:5800,fl:9600,cap:5181,re:7419,ibds:2100,ibdl:7500,
+    sales:23000,cogs:18000,sga:3700,noi:120,recint:40,noe:220,intexp:170,exg:0,exl:30,tax:450,depcogs:2700,depsga:640})},
+];
 
 /* ---------- state ---------- */
-let periods = [ {year:1, vals:Object.assign({}, DEFAULTS)} ];
+let periods = DEMO.map(p=> ({year:p.year, vals:Object.assign({}, p.vals)}));
 let curIdx = 0, curCat='prof', curKey='gm', cmpN=3, cmpSeg='all';
 const sortPeriods = () => periods.sort((a,b)=> a.year-b.year);
 
@@ -592,11 +600,17 @@ const GOLD='#e8a11a';
 function comboSVG(ds, hi, showPL){
   showPL = showPL!==false;
   const n=ds.length;
-  let gmax=0; ds.forEach(({d})=>{ gmax=Math.max(gmax,d.totalCapital,d.totalAssets, showPL?d.sales:0); });
-  if(gmax<=0) gmax=1;
-  const AX=70, TOP=70, BOT=470, chH=BOT-TOP;
-  const Y=p=> BOT-(p/100)*chH, PV=v=> v/gmax*100;
+  // 正の最大値と負の最小値（債務超過・損失に対応）
+  let posMax=0, negMin=0;
+  ds.forEach(({d})=>{
+    posMax=Math.max(posMax, d.totalAssets, d.totalCapital, d.cl+d.fl+Math.max(d.na,0), d.cl+d.fl, showPL?d.sales:0, showPL?d.grossProfit:0);
+    negMin=Math.min(negMin, d.na, showPL?d.grossProfit:0, showPL?d.operatingProfit:0, showPL?d.ordinaryProfit:0, showPL?d.netIncome:0);
+  });
+  if(posMax<=0) posMax=1;
+  const AX=70, TOP=70, BOT=470, chH=BOT-TOP, span=posMax-negMin;
+  const Y=v=> BOT-((v-negMin)/span)*chH;
   const BW=74, PLGAP=38, GPAD=44, groupInner=(showPL?3*BW+PLGAP:2*BW), slot=groupInner+GPAD*2, x0=AX+24, W=2*x0+n*slot, H=560;
+  const y0=Y(0);
   const boxKeep=hi? new Set(hi.boxes||[]):null; if(boxKeep&&boxKeep.has('sales')) boxKeep.add('gp');
   const box=(x,w,yT,yB,fill,title)=> `<rect x="${x}" y="${yT}" width="${w}" height="${Math.max(0,yB-yT)}" fill="${fill}" stroke="#333" stroke-width="1">${title?`<title>${title}</title>`:''}</rect>`;
   const segLabel=(x,yT,yB,val)=> (yB-yT>=20)? `<text x="${x+BW/2}" y="${(yT+yB)/2+4}" font-size="13" fill="#fff" text-anchor="middle">${fmt(val)}</text>`:'';
@@ -614,39 +628,55 @@ function comboSVG(ds, hi, showPL){
   let s=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="比較チャート" preserveAspectRatio="xMidYMid meet" style="display:block;width:100%;height:100%;margin:0 auto;">`;
   s+=`<line x1="${AX}" y1="${TOP}" x2="${AX}" y2="${BOT}" stroke="#333" stroke-width="1.5"/>`;
   s+=`<text x="${AX-30}" y="${TOP-12}" font-size="16" fill="#333">％</text>`;
-  for(let p=0;p<=100;p+=20){ const y=Y(p);
-    s+=`<line x1="${AX}" y1="${y}" x2="${W-16}" y2="${y}" stroke="#eef1f4"/><line x1="${AX-6}" y1="${y}" x2="${AX}" y2="${y}" stroke="#333"/><text x="${AX-10}" y="${y+5}" font-size="15" fill="#555" text-anchor="end">${p}</text>`; }
+  const pMin=Math.floor((negMin/posMax*100)/20)*20;
+  for(let p=pMin;p<=100;p+=20){ const y=Y(p/100*posMax), emph=(p===0);
+    s+=`<line x1="${AX}" y1="${y}" x2="${W-16}" y2="${y}" stroke="${emph?'#b8bcc2':'#eef1f4'}" stroke-width="${emph?1.2:1}"/><line x1="${AX-6}" y1="${y}" x2="${AX}" y2="${y}" stroke="#333"/><text x="${AX-10}" y="${y+5}" font-size="15" fill="#555" text-anchor="end">${p}</text>`; }
   s+=`<text x="6" y="${TOP-12}" font-size="14" fill="#777">単位：${unitStr()}</text>`;
-  s+=`<text x="${AX+18}" y="26" font-size="14" fill="#555">最大値 ${fmt(gmax)} ${unitStr()} を 100% として表示（左＝古い ／ 右＝新しい）</text>`;
+  s+=`<text x="${AX+18}" y="26" font-size="14" fill="#555">最大値 ${fmt(posMax)} ${unitStr()} を 100% として表示（左＝古い ／ 右＝新しい）</text>`;
   ds.forEach(({year,d},gi)=>{
     const gx=x0+gi*slot+GPAD, bx=[gx,gx+BW,gx+2*BW+PLGAP];
-    const yFa=Y(PV(d.fa)), yA=Y(PV(d.fa+d.ca));
     const tt=(nm,val,base)=>`${nm}：${fmt(val)} ${unitStr()}${base?`（${p1(val/base*100)}%）`:''}`;
     // 資産
-    s+=box(bx[0],BW,yFa,Y(0),C.fa,tt('固定資産',d.fa,d.totalAssets))+segLabel(bx[0],yFa,Y(0),d.fa);
+    const yFa=Y(d.fa), yA=Y(d.fa+d.ca);
+    s+=box(bx[0],BW,yFa,y0,C.fa,tt('固定資産',d.fa,d.totalAssets))+segLabel(bx[0],yFa,y0,d.fa);
     s+=box(bx[0],BW,yA,yFa,C.ca,tt('流動資産',d.ca,d.totalAssets))+segLabel(bx[0],yA,yFa,d.ca);
-    // 負債・純資産（純資産は資本金／利益剰余金に分割・点線で区切り）
-    const yNa=Y(PV(d.na)), yFl=Y(PV(d.na+d.fl)), yCl=Y(PV(d.na+d.fl+d.cl)), yRe=Y(PV(d.re)), capEq=d.na-d.re;
-    s+=box(bx[1],BW,yNa,Y(0),C.na);
-    s+=segLabel2(bx[1],yNa,yRe,'資本金',capEq)+segLabel2(bx[1],yRe,Y(0),'利益剰余金',d.re);
-    if(d.re>0&&d.na>0) s+=`<line x1="${bx[1]}" y1="${yRe}" x2="${bx[1]+BW}" y2="${yRe}" stroke="#fff" stroke-width="1.5" stroke-dasharray="6 4"/>`;
-    s+=`<rect x="${bx[1]}" y="${yNa}" width="${BW}" height="${Math.max(0,yRe-yNa)}" fill="transparent"><title>${tt('資本金',capEq,d.totalCapital)}</title></rect>`;
-    s+=`<rect x="${bx[1]}" y="${yRe}" width="${BW}" height="${Math.max(0,Y(0)-yRe)}" fill="transparent"><title>${tt('利益剰余金',d.re,d.totalCapital)}</title></rect>`;
-    s+=box(bx[1],BW,yFl,yNa,C.fl,tt('固定負債',d.fl,d.totalCapital))+segLabel(bx[1],yFl,yNa,d.fl);
-    s+=box(bx[1],BW,yCl,yFl,C.cl,tt('流動負債',d.cl,d.totalCapital))+segLabel(bx[1],yCl,yFl,d.cl);
-    // うち有利子負債（流動負債＝短期／固定負債＝長期）を各ボックス内に点線枠で表示
-    s+=uchiBand(bx[1],yCl,yFl,d.cl,d.ibdShort,'うち有利子負債(短期)','#3a0d0b');
-    s+=uchiBand(bx[1],yFl,yNa,d.fl,d.ibdLong,'うち有利子負債(長期)','#3a0d0b');
-    // 売上（PL）
-    const ySales=Y(PV(d.sales)), yGp=Y(PV(d.grossProfit)), yOp=Y(PV(d.operatingProfit)), yNi=Y(PV(d.netIncome));
+    // 負債・純資産（純資産マイナス＝債務超過にも対応）
+    let naTop,naBot,flTop,flBot,yCl;
+    if(d.na>=0){
+      const yNa=Y(d.na), yFl=Y(d.na+d.fl), yRe=Y(d.re), capEq=d.na-d.re; yCl=Y(d.na+d.fl+d.cl);
+      s+=box(bx[1],BW,yNa,y0,C.na);
+      s+=segLabel2(bx[1],yNa,yRe,'資本金',capEq)+segLabel2(bx[1],yRe,y0,'利益剰余金',d.re);
+      if(d.re>0&&d.na>0) s+=`<line x1="${bx[1]}" y1="${yRe}" x2="${bx[1]+BW}" y2="${yRe}" stroke="#fff" stroke-width="1.5" stroke-dasharray="6 4"/>`;
+      s+=`<rect x="${bx[1]}" y="${yNa}" width="${BW}" height="${Math.max(0,yRe-yNa)}" fill="transparent"><title>${tt('資本金',capEq,d.totalCapital)}</title></rect>`;
+      s+=`<rect x="${bx[1]}" y="${yRe}" width="${BW}" height="${Math.max(0,y0-yRe)}" fill="transparent"><title>${tt('利益剰余金',d.re,d.totalCapital)}</title></rect>`;
+      s+=box(bx[1],BW,yFl,yNa,C.fl,tt('固定負債',d.fl,d.totalCapital))+segLabel(bx[1],yFl,yNa,d.fl);
+      s+=box(bx[1],BW,yCl,yFl,C.cl,tt('流動負債',d.cl,d.totalCapital))+segLabel(bx[1],yCl,yFl,d.cl);
+      s+=uchiBand(bx[1],yCl,yFl,d.cl,d.ibdShort,'うち有利子負債(短期)','#3a0d0b');
+      s+=uchiBand(bx[1],yFl,yNa,d.fl,d.ibdLong,'うち有利子負債(長期)','#3a0d0b');
+      naTop=yNa; naBot=y0; flTop=yFl; flBot=yNa;
+    } else {
+      const yFl=Y(d.fl), yNaNeg=Y(d.na); yCl=Y(d.fl+d.cl);
+      s+=box(bx[1],BW,yFl,y0,C.fl,tt('固定負債',d.fl,d.totalCapital))+segLabel(bx[1],yFl,y0,d.fl);
+      s+=box(bx[1],BW,yCl,yFl,C.cl,tt('流動負債',d.cl,d.totalCapital))+segLabel(bx[1],yCl,yFl,d.cl);
+      s+=uchiBand(bx[1],yCl,yFl,d.cl,d.ibdShort,'うち有利子負債(短期)','#3a0d0b');
+      s+=uchiBand(bx[1],yFl,y0,d.fl,d.ibdLong,'うち有利子負債(長期)','#3a0d0b');
+      // 純資産マイナス（債務超過）＝baselineから下へ赤で表示
+      s+=`<rect x="${bx[1]}" y="${y0}" width="${BW}" height="${Math.max(0,yNaNeg-y0)}" fill="#f5c6c3" stroke="#c53030" stroke-width="1"><title>${tt('純資産（債務超過）',d.na,d.totalCapital)}</title></rect>`;
+      if(yNaNeg-y0>=26) s+=`<text x="${bx[1]+BW/2}" y="${(y0+yNaNeg)/2-3}" font-size="10" fill="#c53030" text-anchor="middle">債務超過</text><text x="${bx[1]+BW/2}" y="${(y0+yNaNeg)/2+11}" font-size="12" fill="#c53030" text-anchor="middle" font-weight="bold">${fmt(d.na)}</text>`;
+      else if(yNaNeg-y0>=12) s+=`<text x="${bx[1]+BW/2}" y="${(y0+yNaNeg)/2+4}" font-size="10" fill="#c53030" text-anchor="middle" font-weight="bold">${fmt(d.na)}</text>`;
+      naTop=y0; naBot=yNaNeg; flTop=yFl; flBot=y0;
+    }
+    // 売上（PL）粗利・利益はマイナス（損失）にも対応
+    const ySales=Y(d.sales), yGp=Y(d.grossProfit), yOp=Y(d.operatingProfit), yNi=Y(d.netIncome);
     if(showPL){
-      s+=box(bx[2],BW,ySales,Y(0),'#ffffff',tt('売上高',d.sales,0));
-      s+=box(bx[2],BW,yGp,Y(0),C.gp,tt('粗利',d.grossProfit,d.sales))+segLabel(bx[2],yGp,Y(0),d.grossProfit);
-      // 売上原価（ySales〜yGp）・販管費（yGp〜yOp）内の うち減価償却費
-      s+=uchiBand(bx[2],ySales,yGp,(d.sales-d.grossProfit),d.depcogs,'うち減価償却費(製造原価)','#1c4e80');
-      s+=uchiBand(bx[2],yGp,yOp,(d.grossProfit-d.operatingProfit),d.depsga,'うち減価償却費(販管費)','#1c4e80');
+      s+=box(bx[2],BW,ySales,y0,'#ffffff',tt('売上高',d.sales,0));
+      const gpT=Y(Math.max(d.grossProfit,0)), gpB=Y(Math.min(d.grossProfit,0));
+      s+=box(bx[2],BW,gpT,gpB,C.gp,tt('粗利',d.grossProfit,d.sales))+segLabel(bx[2],gpT,gpB,d.grossProfit);
+      if(d.grossProfit>0) s+=uchiBand(bx[2],ySales,yGp,(d.sales-d.grossProfit),d.depcogs,'うち減価償却費(製造原価)','#1c4e80');
+      if(d.operatingProfit>0 && d.grossProfit>d.operatingProfit) s+=uchiBand(bx[2],yGp,yOp,(d.grossProfit-d.operatingProfit),d.depsga,'うち減価償却費(販管費)','#1c4e80');
       s+=`<line x1="${bx[2]}" y1="${yOp}" x2="${bx[2]+BW}" y2="${yOp}" stroke="#333" stroke-width="1.5"><title>${tt('営業利益',d.operatingProfit,d.sales)}</title></line>`;
       s+=`<line x1="${bx[2]}" y1="${yNi}" x2="${bx[2]+BW}" y2="${yNi}" stroke="#c53030" stroke-width="1.5"><title>${tt('当期純利益',d.netIncome,d.sales)}</title></line>`;
+      if(d.netIncome<0) s+=`<text x="${bx[2]+BW/2}" y="${yNi+13}" font-size="10" fill="#c53030" text-anchor="middle" font-weight="bold">当期純損失 ${fmt(d.netIncome)}</text>`;
     }
     s+=`<text x="${bx[0]+BW/2}" y="${yA-7}" font-size="12" fill="#333" text-anchor="middle" font-weight="bold">${fmt(d.totalAssets)}</text>`;
     s+=`<text x="${bx[1]+BW/2}" y="${yCl-7}" font-size="12" fill="#333" text-anchor="middle" font-weight="bold">${fmt(d.totalCapital)}</text>`;
@@ -656,11 +686,11 @@ function comboSVG(ds, hi, showPL){
     s+=`<text x="${bx[1]+BW/2}" y="${BOT+44}" font-size="11" fill="#666" text-anchor="middle">負債・純資産</text>`;
     if(showPL) s+=`<text x="${bx[2]+BW/2}" y="${BOT+44}" font-size="11" fill="#666" text-anchor="middle">売上</text>`;
     if(hi){
-      const B={ca:[bx[0],yA,yFa],fa:[bx[0],yFa,Y(0)],cl:[bx[1],yCl,yFl],fl:[bx[1],yFl,yNa],na:[bx[1],yNa,Y(0)]};
-      if(showPL){ B.sales=[bx[2],ySales,Y(0)]; B.gp=[bx[2],yGp,Y(0)]; }
-      for(const k in B){ if(!boxKeep.has(k)){ const b=B[k]; s+=`<rect x="${b[0]}" y="${b[1]}" width="${BW}" height="${Math.max(0,b[2]-b[1])}" fill="#f4f5f7" fill-opacity="0.66"/>`; } }
+      const B={ca:[bx[0],yA,yFa],fa:[bx[0],yFa,y0],cl:[bx[1],yCl,flTop],fl:[bx[1],flTop,flBot],na:[bx[1],naTop,naBot]};
+      if(showPL){ B.sales=[bx[2],ySales,y0]; B.gp=[bx[2],Y(Math.max(d.grossProfit,0)),Y(Math.min(d.grossProfit,0))]; }
+      for(const k in B){ if(!boxKeep.has(k)){ const b=B[k], t=Math.min(b[1],b[2]), bo=Math.max(b[1],b[2]); s+=`<rect x="${b[0]}" y="${t}" width="${BW}" height="${Math.max(0,bo-t)}" fill="#f4f5f7" fill-opacity="0.66"/>`; } }
       const groups={};
-      (hi.boxes||[]).forEach(k=>{ const b=B[k]; if(!b) return; const col=b[0]; if(!groups[col]) groups[col]=[b[0],b[1],b[2]]; else{ const g=groups[col]; g[1]=Math.min(g[1],b[1]); g[2]=Math.max(g[2],b[2]); } });
+      (hi.boxes||[]).forEach(k=>{ const b=B[k]; if(!b) return; const col=b[0], t=Math.min(b[1],b[2]), bo=Math.max(b[1],b[2]); if(!groups[col]) groups[col]=[b[0],t,bo]; else{ const g=groups[col]; g[1]=Math.min(g[1],t); g[2]=Math.max(g[2],bo); } });
       Object.keys(groups).forEach(col=>{ const g=groups[col]; s+=`<rect x="${g[0]}" y="${g[1]}" width="${BW}" height="${Math.max(0,g[2]-g[1])}" fill="none" stroke="${GOLD}" stroke-width="4"/>`; });
       if(showPL) (hi.lines||[]).forEach(k=>{ const y=(k==='op')?yOp:yNi; s+=`<line x1="${bx[2]}" y1="${y}" x2="${bx[2]+BW}" y2="${y}" stroke="${GOLD}" stroke-width="4"/>`; });
     }
