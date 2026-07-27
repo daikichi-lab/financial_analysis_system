@@ -1209,8 +1209,8 @@ const BS_LEGEND=`<span class="lg"><i style="background:${C.ca}"></i>流動資産
 function dAll(ds){
   const idx = allIdx<0? ds.length-1 : Math.min(allIdx, ds.length-1);
   const one=[ds[idx]], m=ALL_METRICS[allMetricKey];
-  $("dControls").innerHTML=`<div class="ctl-row"><span class="ctl-lbl">対象期（1期のみ）：</span><select id="allPeriod">`+ds.map((r,i)=>`<option value="${i}" ${i===idx?'selected':''}>${TLAB(r.year)}</option>`).join('')+`</select></div><p class="note" style="margin:4px 0 6px;">BS・PLを1期で図解。負債の点線枠＝うち有利子負債、下段＝短期(＋)／長期(−)。指標ボタンで該当箇所を強調。</p>`;
-  $("dChart").innerHTML = `<div class="fig50">`+comboSVG(one, m?m.hi:null, true)+`</div>` + drawIBDDiverge(one);
+  $("dControls").innerHTML=`<div class="ctl-row"><span class="ctl-lbl">対象期（1期のみ）：</span><select id="allPeriod">`+ds.map((r,i)=>`<option value="${i}" ${i===idx?'selected':''}>${TLAB(r.year)}</option>`).join('')+`</select></div><p class="note" style="margin:4px 0 6px;">BS・PLを1期で図解。負債の点線枠＝うち有利子負債。指標ボタンで該当箇所を強調。</p>`;
+  $("dChart").innerHTML = `<div class="fig50">`+comboSVG(one, m?m.hi:null, true)+`</div>`;
   $("dLegend").innerHTML = BS_LEGEND+`<span class="lg"><i style="background:${C.gp}"></i>粗利</span>`;
   allMetricKey=renderMetricPanel(ds,['roe','finlev','roa','turnover','roic','icr','debty','recvdays','invturn'],allMetricKey);
 }
