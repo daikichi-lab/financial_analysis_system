@@ -250,6 +250,17 @@
   .cf-card.cur{border-color:var(--accent);box-shadow:0 0 0 2px rgba(43,108,176,.15);background:#eef5fc;}
   .cf-card .cf-ct .nm{font-weight:700;font-size:12.5px;}
   .cf-card .cf-ct .ds{color:#475569;font-size:11px;margin-top:3px;line-height:1.5;}
+  /* CF 間接法の計算式 */
+  .cff-lead{font-size:11.5px;color:#475569;line-height:1.6;margin:0 0 10px;background:#f6f8fb;border:1px solid #e2e8f0;border-left:3px solid var(--accent);border-radius:6px;padding:8px 10px;}
+  .cf-formwrap{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px;}
+  table.cf-form{width:100%;border-collapse:collapse;font-size:11.5px;border:1px solid #e2e8f0;border-radius:8px;overflow:hidden;background:#fff;}
+  table.cf-form th{background:#f1f5f9;text-align:left;padding:7px 9px;font-size:11px;font-weight:700;color:#334155;border-bottom:1px solid #e2e8f0;vertical-align:top;}
+  table.cf-form th.num,table.cf-form td.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap;}
+  table.cf-form td{padding:6px 9px;border-bottom:1px solid #eef2f6;vertical-align:top;line-height:1.5;}
+  table.cf-form td.itemcol{color:#334155;}
+  table.cf-form tr.cff-tot td{border-top:1px solid #cbd5e1;border-bottom:none;font-weight:800;background:#f8fafc;}
+  .cff-note{display:block;font-weight:400;color:var(--muted);font-size:10px;margin-top:2px;}
+  .cff-sub{display:block;color:var(--muted);font-size:10px;margin-top:2px;line-height:1.45;}
 
   /* modal */
   .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;z-index:100;padding:16px;}
@@ -1602,6 +1613,45 @@ function renderMainChart(ds){
     else { const r=drawItemTrend(ds, plBreak==='cogs'?cogsLeaves():SGA_LEAVES, plBreak==='cogs'?'売上原価の内訳':'販管費の内訳'); $("chart").innerHTML=r.svg; $("legend").innerHTML=r.legend; }
   }
 }
+// 間接法キャッシュフローの計算式（選択期：a=前期, c=当期）を実数入りで表示
+function cfFormulaHTML(a,c,cf,u,plabel){
+  const sg=v=>`<b style="color:${v>=0?'#2f855a':'#c53030'}">${v>=0?'+':'−'}${fmt(Math.abs(v))}</b>`;
+  const dlt=(cur,prev)=>cur-prev;
+  const Drecv=dlt(c.recv,a.recv), Dinv=dlt(c.inv,a.inv), Dpayb=dlt(c.payb,a.payb);
+  const Dfa=dlt(c.fa,a.fa), Dibd=dlt(c.ibd,a.ibd), Dcap=dlt(c.cap,a.cap), Dcsurp=dlt(c.csurp,a.csurp);
+  const chg=(prev,cur)=>`前期 ${fmt(prev)} → 当期 ${fmt(cur)}`;
+  const tbl=(title,note,rows,total,totalLabel)=>{
+    let h=`<table class="cf-form"><thead><tr><th class="itemcol">${title}<span class="cff-note">${note}</span></th><th class="num">CFへの影響</th></tr></thead><tbody>`;
+    rows.forEach(([nm,sub,val])=>{ h+=`<tr><td class="itemcol">${nm}${sub?`<span class="cff-sub">${sub}</span>`:''}</td><td class="num">${sg(val)}</td></tr>`; });
+    h+=`<tr class="cff-tot"><td class="itemcol">＝ ${totalLabel}</td><td class="num">${sg(total)}</td></tr></tbody></table>`;
+    return h;
+  };
+  const opT=tbl('営業CF（間接法）','税引前利益に非現金費用を戻し、運転資本の増減を調整',[
+    ['税引前当期純利益','', c.pretaxProfit],
+    ['＋ 減価償却費','非現金費用のため加算', c.dep],
+    ['− 法人税等','実際の納税額を控除', -c.tax],
+    ['− 売上債権の増加', chg(a.recv,c.recv)+'（増加＝未回収で現金減）', -Drecv],
+    ['− 棚卸資産の増加', chg(a.inv,c.inv)+'（増加＝在庫に資金滞留）', -Dinv],
+    ['＋ 仕入債務の増加', chg(a.payb,c.payb)+'（増加＝支払猶予で現金温存）', Dpayb],
+  ], cf.opCF, '営業CF');
+  const ivT=tbl('投資CF（間接法）','設備投資＝固定資産の増加＋当期減価償却費（取得ベースに戻す）',[
+    ['− 設備投資（capex）', chg(a.fa,c.fa)+`　固定資産の増減 ${fmt(Dfa)} ＋ 減価償却費 ${fmt(c.dep)} ＝ ${fmt(cf.capex)}`, -cf.capex],
+  ], cf.invCF, '投資CF');
+  const fiT=tbl('財務CF（間接法）','資金調達（借入・増資）と株主還元（配当）',[
+    ['有利子負債の増減', chg(a.ibd,c.ibd), Dibd],
+    ['＋ 資本金の増減', chg(a.cap,c.cap), Dcap],
+    ['＋ 資本剰余金の増減', chg(a.csurp,c.csurp), Dcsurp],
+    ['− 配当金', `max(0, 前期利益剰余金 ${fmt(a.re)} ＋ 当期純利益 ${fmt(c.netIncome)} − 当期利益剰余金 ${fmt(c.re)}) ＝ ${fmt(cf.dividend)}`, -cf.dividend],
+  ], cf.finCF, '財務CF');
+  const adjT=tbl('その他調整・検算','推定値とBS実績の差を調整して期末現金に一致させる',[
+    ['営業CF ＋ 投資CF ＋ 財務CF','（計算値）', cf.calc],
+    ['その他調整', `実際の現金増減 ${fmt(cf.actual)} − 計算値 ${fmt(cf.calc)}`, cf.adj],
+    ['現金の増減（実績）', chg(a.cash,c.cash), cf.actual],
+  ], cf.actual, '現金増減（BS一致）');
+  return `<div class="cf-h">計算式（間接法）｜${plabel}・単位：${u}</div>
+    <p class="cff-lead">このCF計算書は<b>間接法</b>で、貸借対照表（BS）と損益計算書（PL）の2期の差分から<b>推定</b>したものです。厳密な会計上のCF計算書とは一致しないことがあり、推定の端数は「その他調整」で吸収して期末現金に合わせています。</p>
+    <div class="cf-formwrap">${opT}${ivT}${fiT}${adjT}</div>`;
+}
 function renderCS(ds){
   const modeChips=`<span class="ctl-lbl">期間：</span><button class="chip ${pmode==='multi'?'on':''}" data-pmode="multi">3期比較</button><button class="chip ${pmode==='single'?'on':''}" data-pmode="single">2期比較（1期分）</button>`;
   if(ds.length<2){ $("mainControls").innerHTML=`<div class="ctl-row">${modeChips}</div>`; $("chart").innerHTML='<p class="ph">キャッシュフロー（CF）には2期以上の入力が必要です。「② 数値入力」で期を追加してください。</p>'; $("legend").innerHTML=''; return; }
@@ -1626,7 +1676,8 @@ function renderCS(ds){
   rows.forEach(([k,nm])=>{ t+=`<tr class="${k==='actual'?'grand':(k==='fcf'?'totrow':'')}"><td class="itemcol">${nm}</td>`;
     for(let i=1;i<ds.length;i++){ const cf2=computeCF(ds[i-1].d,ds[i].d); t+=`<td class="num">${fmt(cf2[k])}</td>`; } t+=`</tr>`; });
   t+=`</tbody></table></div>`;
-  $("mainExtra").innerHTML=mh+t;
+  const fh=cfFormulaHTML(a,c,cf,u,`${TLAB(ds[idx-1].year)}→${TLAB(ds[idx].year)}`);
+  $("mainExtra").innerHTML=mh+t+fh;
 }
 
 
