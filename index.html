@@ -520,6 +520,7 @@ function computeVals(v){
   const grossProfit=sales-cogs, operatingProfit=grossProfit-sga, ordinaryProfit=operatingProfit+noi-noe, pretaxProfit=ordinaryProfit+exg-exl, netIncome=pretaxProfit-tax;
   const busProfit=operatingProfit+recint;
   const costRatio=sales? cogs/sales*100:0, sgaRatio=sales? sga/sales*100:0, personnelRatio=sales? laborCost/sales*100:0, laborShare=grossProfit>0? laborCost/grossProfit*100:0;
+  const advRatio=sales? g('adv')/sales*100:0;
   const ibdReady=!!(v.det_cl||v.det_fl||(+v.ibds||0)!==0||(+v.ibdl||0)!==0), quickReady=!!v.det_ca;
   const currentRatio=cl? ca/cl*100:0;
   const quickRatio=cl? quick/cl*100:0;
@@ -529,7 +530,6 @@ function computeVals(v){
   const netMargin=sales? netIncome/sales*100:0;
   const opMargin=sales? operatingProfit/sales*100:0;
   const grossMargin=sales? grossProfit/sales*100:0;
-  const fmRatio=grossProfit>0? sga/grossProfit*100:0; // F/M比率（簡易）＝固定費(≒販管費)÷限界利益(≒粗利)
   const assetTurnover=totalCapital? sales/totalCapital:0;
   const finLeverage=na? totalCapital/na:0;
   const ordMargin=sales? ordinaryProfit/sales*100:0;
@@ -567,12 +567,12 @@ function computeVals(v){
     cap,csurp,re,ona,na,totalAssets,totalCapital,bsDiff,bsBalanced,insolvent,negResiduals,ibd,ibdShort,ibdLong,quick,
     sales,cogs,sga,noi,recint,noe,intexp,exg,exl,tax,dep,
     grossProfit,operatingProfit,ordinaryProfit,pretaxProfit,netIncome,busProfit,
-    currentRatio,quickRatio,fixedLTRatio,roe,equityRatio,netMargin,opMargin,grossMargin,fmRatio,assetTurnover,finLeverage,ordMargin,roa,roic,nopat,investedCap,
+    currentRatio,quickRatio,fixedLTRatio,roe,equityRatio,netMargin,opMargin,grossMargin,assetTurnover,finLeverage,ordMargin,roa,roic,nopat,investedCap,
     de,ibdRatio,netDe,debtMonths,icr,invTurnover,recvDays,ibdReady,quickReady,atoturn,faturn,debtRatio,fixedRatio,wc,
     emp,empReady,valueAdded,salesPerEmp,vaPerEmp,laborPerEmp,
     matcost:g('matcost'),labcost:g('labcost'),subcon:g('subcon'),depcogs:g('depcogs'),othcogs,
     beginv:g('beginv'),purch:g('purch'),endinv:g('endinv'),execcomp:g('execcomp'),salary:g('salary'),welfare:g('welfare'),adv:g('adv'),rent:g('rent'),depsga:g('depsga'),outsourcing:g('outsourcing'),othsga,
-    laborCost,costRatio,sgaRatio,personnelRatio,laborShare,personnelReady,
+    laborCost,costRatio,sgaRatio,advRatio,personnelRatio,laborShare,personnelReady,
     detCa:!!v.det_ca,detFa:!!v.det_fa,detCl:!!v.det_cl,detFl:!!v.det_fl,detCogs:!!v.det_cogs,detSga:!!v.det_sga};
 }
 const derived = () => {
@@ -1013,36 +1013,31 @@ const CATS = {
         meaning:'売上のうち最終的に何％が利益として残るか。事業全体の総合採算性。',
         rows:[{lv:'good',name:'良好',range:'5% 以上',note:'高採算'},{lv:'warn',name:'普通',range:'0〜5%',note:'一般的な水準'},{lv:'bad',name:'赤字',range:'0% 未満',note:'最終赤字'}],
         judge:d=>{const v=d.netMargin; return v>=5?'good':v>=0?'warn':'bad';} },
-      { key:'gm', label:'粗利率（売上総利益率）', v:d=>d.grossMargin, unit:'%', dec:1, hi:{plRange:d=>[0,d.grossProfit],plName:'粗利'},
-        formula:d=>`粗利 <b>${fmt(d.grossProfit)}</b> ÷ 売上高 <b>${fmt(d.sales)}</b> × 100 ＝ <b>${p1(d.grossMargin)}</b>%`,
-        meaning:'売上に対する粗利の割合。商品・サービスの基礎的な収益力（100%−売上原価率）。',
-        rows:[{lv:'good',name:'高い',range:'30% 以上',note:'付加価値が高い'},{lv:'warn',name:'普通',range:'15〜30%',note:'標準的'},{lv:'bad',name:'低い',range:'15% 未満',note:'薄利'}],
-        judge:d=>{const v=d.grossMargin; return v>=30?'good':v>=15?'warn':'bad';} },
-      { key:'opm', label:'営業利益率', v:d=>d.opMargin, unit:'%', dec:1, hi:{plRange:d=>[0,d.operatingProfit],plName:'営業利益'},
+      { key:'ordm', label:'売上高経常利益率', v:d=>d.ordMargin, unit:'%', dec:1, hi:{plRange:d=>[0,d.ordinaryProfit],plName:'経常利益'},
+        formula:d=>`経常利益 <b>${fmt(d.ordinaryProfit)}</b> ÷ 売上高 <b>${fmt(d.sales)}</b> × 100 ＝ <b>${p1(d.ordMargin)}</b>%`,
+        meaning:'本業＋財務活動を含む経常的な採算性。支払利息などの影響も反映した総合的な収益力。',
+        rows:[{lv:'good',name:'良好',range:'5% 以上',note:'経常的な採算が高い'},{lv:'warn',name:'普通',range:'2〜5%',note:'一般的な水準'},{lv:'bad',name:'低い',range:'2% 未満',note:'採算が弱い'}],
+        judge:d=>{const v=d.ordMargin; return v>=5?'good':v>=2?'warn':'bad';} },
+      { key:'opm', label:'売上高営業利益率', v:d=>d.opMargin, unit:'%', dec:1, hi:{plRange:d=>[0,d.operatingProfit],plName:'営業利益'},
         formula:d=>`営業利益 <b>${fmt(d.operatingProfit)}</b> ÷ 売上高 <b>${fmt(d.sales)}</b> × 100 ＝ <b>${p1(d.opMargin)}</b>%`,
         meaning:'本業でどれだけ効率的に利益を出せているか。企業の稼ぐ力の中核。',
         rows:[{lv:'good',name:'良好',range:'10% 以上',note:'本業の収益力が高い'},{lv:'warn',name:'普通',range:'2〜10%',note:'一般的な水準'},{lv:'bad',name:'低い',range:'2% 未満',note:'本業の採算が弱い'}],
         judge:d=>{const v=d.opMargin; return v>=10?'good':v>=2?'warn':'bad';} },
-      { key:'fmratio', label:'F/M比率（損益分岐点・簡易）', v:d=>d.fmRatio, unit:'%', dec:1, hi:{plRange:d=>[d.operatingProfit,d.grossProfit],plName:'販管費(固定費)'}, ready:d=>d.grossProfit>0,
-        formula:d=>`固定費≒販管費 <b>${fmt(d.sga)}</b> ÷ 限界利益≒粗利 <b>${fmt(d.grossProfit)}</b> × 100 ＝ <b>${p1(d.fmRatio)}</b>%`,
-        meaning:'固定費（≒販管費）が限界利益（≒粗利）の何％かを示す簡易の損益分岐点比率。100%未満なら営業黒字で、低いほど余裕があり、100%超は営業赤字。※厳密な変動費/固定費分解ではなく、粗利＝限界利益・販管費＝固定費とみなした簡易値です。',
-        rows:[{lv:'good',name:'余裕あり',range:'80% 以下',note:'損益分岐点に余裕'},{lv:'warn',name:'普通',range:'80〜100%',note:'黒字だが余裕小'},{lv:'bad',name:'赤字',range:'100% 超',note:'固定費が粗利超＝営業赤字'}],
-        judge:d=>{const v=d.fmRatio; return v<=80?'good':v<=100?'warn':'bad';} },
-      { key:'costr', label:'売上原価率', v:d=>d.costRatio, unit:'%', dec:1, hi:{plRange:d=>[d.grossProfit,d.sales],plName:'売上原価'}, detailOnly:true,
-        formula:d=>`売上原価 <b>${fmt(d.cogs)}</b> ÷ 売上高 <b>${fmt(d.sales)}</b> × 100 ＝ <b>${p1(d.costRatio)}</b>%`,
-        meaning:'売上に対する売上原価の割合。低いほど粗利率が高い。',
-        rows:[{lv:'good',name:'低い',range:'70% 以下',note:'粗利率が高い'},{lv:'warn',name:'普通',range:'70〜85%',note:'標準的'},{lv:'bad',name:'高い',range:'85% 超',note:'粗利が薄い'}],
-        judge:d=>{const v=d.costRatio; return v<=70?'good':v<=85?'warn':'bad';} },
+      { key:'gm', label:'粗利率（売上総利益率）', v:d=>d.grossMargin, unit:'%', dec:1, hi:{plRange:d=>[0,d.grossProfit],plName:'粗利'}, detailOnly:true,
+        formula:d=>`粗利 <b>${fmt(d.grossProfit)}</b> ÷ 売上高 <b>${fmt(d.sales)}</b> × 100 ＝ <b>${p1(d.grossMargin)}</b>%`,
+        meaning:'売上に対する粗利の割合。商品・サービスの基礎的な収益力（100%−売上原価率）。',
+        rows:[{lv:'good',name:'高い',range:'30% 以上',note:'付加価値が高い'},{lv:'warn',name:'普通',range:'15〜30%',note:'標準的'},{lv:'bad',name:'低い',range:'15% 未満',note:'薄利'}],
+        judge:d=>{const v=d.grossMargin; return v>=30?'good':v>=15?'warn':'bad';} },
       { key:'sgar', label:'販管費率', v:d=>d.sgaRatio, unit:'%', dec:1, hi:{plRange:d=>[d.operatingProfit,d.grossProfit],plName:'販管費'}, detailOnly:true,
         formula:d=>`販管費 <b>${fmt(d.sga)}</b> ÷ 売上高 <b>${fmt(d.sales)}</b> × 100 ＝ <b>${p1(d.sgaRatio)}</b>%`,
         meaning:'売上に対する販管費の割合。低いほど固定費負担が軽い。',
         rows:[{lv:'good',name:'低い',range:'15% 以下',note:'費用効率が良い'},{lv:'warn',name:'普通',range:'15〜30%',note:'標準的'},{lv:'bad',name:'高い',range:'30% 超',note:'固定費負担が重い'}],
         judge:d=>{const v=d.sgaRatio; return v<=15?'good':v<=30?'warn':'bad';} },
-      { key:'ordm', label:'経常利益率', v:d=>d.ordMargin, unit:'%', dec:1, hi:{plRange:d=>[0,d.ordinaryProfit],plName:'経常利益'}, detailOnly:true,
-        formula:d=>`経常利益 <b>${fmt(d.ordinaryProfit)}</b> ÷ 売上高 <b>${fmt(d.sales)}</b> × 100 ＝ <b>${p1(d.ordMargin)}</b>%`,
-        meaning:'本業＋財務活動を含む経常的な採算性。支払利息などの影響も反映した総合的な収益力。',
-        rows:[{lv:'good',name:'良好',range:'5% 以上',note:'経常的な採算が高い'},{lv:'warn',name:'普通',range:'2〜5%',note:'一般的な水準'},{lv:'bad',name:'低い',range:'2% 未満',note:'採算が弱い'}],
-        judge:d=>{const v=d.ordMargin; return v>=5?'good':v>=2?'warn':'bad';} },
+      { key:'advr', label:'広告宣伝比率', v:d=>d.advRatio, unit:'%', dec:1, hi:{plRange:d=>[d.operatingProfit,d.grossProfit],plName:'販管費'}, ready:d=>d.detSga, detailOnly:true,
+        formula:d=>`広告宣伝費 <b>${fmt(d.adv)}</b> ÷ 売上高 <b>${fmt(d.sales)}</b> × 100 ＝ <b>${p1(d.advRatio)}</b>%`,
+        meaning:'売上に対する広告宣伝費の割合。販管費の内訳入力が必要です。適正水準は業種により大きく異なります。',
+        rows:[{lv:'good',name:'低い',range:'3% 以下',note:'販促負担が軽い'},{lv:'warn',name:'普通',range:'3〜10%',note:'標準的な範囲'},{lv:'bad',name:'高い',range:'10% 超',note:'広告依存が大きい'}],
+        judge:d=>{const v=d.advRatio; return v<=3?'good':v<=10?'warn':'bad';} },
       { key:'persr', label:'人件費率', v:d=>d.personnelRatio, unit:'%', dec:1, hi:{boxes:['sales']}, ready:d=>d.personnelReady, detailOnly:true,
         formula:d=>`人件費 <b>${fmt(d.laborCost)}</b>（労務費＋販管人件費）÷ 売上高 <b>${fmt(d.sales)}</b> × 100 ＝ <b>${p1(d.personnelRatio)}</b>%`,
         meaning:'売上に対する人件費の割合。原価/販管費の内訳から算出。',
@@ -1193,7 +1188,7 @@ const ALL_METRICS={}; Object.values(CATS).forEach(c=>c.metrics.forEach(m=>{ALL_M
 const findMetric=(cat,key)=> CATS[cat].metrics.find(m=>m.key===key);
 const metricReady=(m,d)=> m.ready? m.ready(d): true;
 // PL項目だけで完結する指標（貸借対照表の値を使わない＝貸借不一致でも判定OK）
-const PL_ONLY_KEYS=new Set(['gsales','ggross','gop','npm','gm','opm','fmratio','costr','sgar','ordm','persr','labshare','npmeff']);
+const PL_ONLY_KEYS=new Set(['gsales','ggross','gop','npm','gm','opm','advr','sgar','ordm','persr','labshare','npmeff']);
 const metricUsesBS=m=> !PL_ONLY_KEYS.has(m.key);
 // 純資産マイナス（債務超過）で意味をなさない指標（分母が自己資本）
 const metricNaBroken=(m,d)=> !!m.naDenom && d.insolvent;
@@ -1318,7 +1313,7 @@ const FLOW=[
    warn:'黒字だが利益率は薄め。粗利・固定費のどちらが原因か下で確認',
    bad:'本業が低採算・赤字。粗利／固定費を分解して原因を特定',
    drill:[{k:'gm',why:'粗利が薄い？'},{k:'sgar',why:'固定費（販管費）が重い？'}],
-   drill2:[{k:'costr',why:'原価のどこが重い（材料/労務/外注/減価償却）'},{k:'persr',why:'人件費・労働分配率は適正か'}]},
+   drill2:[{k:'advr',why:'広告宣伝費の負担は重くないか'},{k:'persr',why:'人件費・労働分配率は適正か'}]},
   {step:'STEP 2', cat:'効率性 ― 資産・人を活かせているか', main:'atoturn',
    q:'総資産回転率は十分か？（目安：1.0回以上=良好／0.5〜1.0回=普通／0.5回未満=低い）',
    good:'資産を効率よく売上に変えている。次のSTEPへ',
