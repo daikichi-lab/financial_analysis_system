@@ -3,47 +3,21 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>決算書 財務分析（簡易版・1期）</title>
+<title>決算書 財務分析（簡易版・最大3期）</title>
 <style>
   :root{
-    --bg:#f4f5f7;
-    --panel:#ffffff;
-    --line:#333;
-    --ink:#1a1a1a;
-    --muted:#666;
-    --accent:#2b6cb0;
-    --good:#2f855a;
-    --warn:#b7791f;
-    --bad:#c53030;
-    --grid:#e2e8f0;
-    --fillCA:#ffffff;   /* 流動資産 */
-    --fillFA:#f0f0f0;   /* 固定資産 */
-    --fillCL:#ffffff;   /* 流動負債 */
-    --fillFL:#f0f0f0;   /* 固定負債 */
-    --fillNA:#d9d9d9;   /* 純資産 */
-    --fillRE:#bdbdbd;   /* 利益剰余金 */
-    --fillGP:#c8c8c8;   /* 粗利 */
-    --fillPL:#ffffff;   /* 売上高 */
+    --bg:#f4f5f7;--panel:#ffffff;--line:#333;--ink:#1a1a1a;--muted:#666;
+    --accent:#2b6cb0;--good:#2f855a;--warn:#b7791f;--bad:#c53030;--grid:#e2e8f0;
   }
   *{box-sizing:border-box;}
-  body{
-    margin:0;font-family:"Hiragino Kaku Gothic ProN","Meiryo","Yu Gothic",system-ui,sans-serif;
-    background:var(--bg);color:var(--ink);line-height:1.5;
-  }
-  header{
-    background:#1f2937;color:#fff;padding:14px 20px;
-  }
+  body{margin:0;font-family:"Hiragino Kaku Gothic ProN","Meiryo","Yu Gothic",system-ui,sans-serif;background:var(--bg);color:var(--ink);line-height:1.5;}
+  header{background:#1f2937;color:#fff;padding:14px 20px;}
   header h1{margin:0;font-size:18px;font-weight:600;}
   header p{margin:4px 0 0;font-size:12px;color:#cbd5e0;}
   .wrap{max-width:1200px;margin:0 auto;padding:18px;}
 
-  /* Tabs */
   .tabs{display:flex;gap:4px;border-bottom:2px solid #cbd5e0;margin-bottom:16px;}
-  .tab{
-    padding:10px 22px;border:none;background:transparent;font-size:14px;font-weight:600;
-    color:#64748b;cursor:pointer;border-radius:8px 8px 0 0;flex:0 0 auto;
-    border-bottom:3px solid transparent;margin-bottom:-2px;
-  }
+  .tab{padding:10px 22px;border:none;background:transparent;font-size:14px;font-weight:600;color:#64748b;cursor:pointer;border-radius:8px 8px 0 0;flex:0 0 auto;border-bottom:3px solid transparent;margin-bottom:-2px;}
   .tab:hover{color:#334155;background:#eef2f6;}
   .tab.active{color:var(--accent);border-bottom-color:var(--accent);background:#fff;}
   .tabpane{display:none;}
@@ -55,412 +29,1766 @@
 
   .field{display:flex;align-items:center;justify-content:space-between;margin:5px 0;gap:8px;}
   .field label{font-size:12px;flex:1;}
-  .field input{
-    width:120px;text-align:right;padding:4px 6px;font-size:13px;
-    border:1px solid #bbb;border-radius:4px;font-variant-numeric:tabular-nums;
-  }
-  .field input:focus{outline:2px solid var(--accent);border-color:var(--accent);}
-  .unit{font-size:11px;color:var(--muted);width:26px;text-align:left;}
+  .field select{width:130px;padding:4px 6px;font-size:13px;border:1px solid #bbb;border-radius:4px;background:#fff;}
+  .field select:focus{outline:2px solid var(--accent);border-color:var(--accent);}
   .btnrow{display:flex;gap:8px;margin-top:12px;}
-  button{
-    flex:1;padding:8px;border:none;border-radius:6px;font-size:13px;cursor:pointer;font-weight:600;
-  }
+  button{flex:1;padding:8px;border:none;border-radius:6px;font-size:13px;cursor:pointer;font-weight:600;}
   .btn-primary{background:var(--accent);color:#fff;}
   .btn-ghost{background:#e2e8f0;color:#333;}
   .note{font-size:11px;color:var(--muted);margin-top:8px;}
+  .unit{font-size:11px;color:var(--muted);min-width:44px;text-align:left;}
 
-  /* Chart */
-  .chart-card{overflow:auto;}
-  svg{font-family:inherit;}
-  #chart svg{display:block;height:50vh;width:auto;max-width:100%;margin:0 auto;}
+  /* company + period bar */
+  .companytabs{display:flex;gap:6px;margin-bottom:10px;}
+  .periodbar{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:12px;padding:8px;background:#f1f5f9;border:1px solid #e2e8f0;border-radius:8px;}
+  .ptab{flex:0 0 auto;padding:6px 14px;border:1px solid #cbd5e0;background:#fff;color:#334155;font-size:12px;font-weight:700;border-radius:6px;cursor:pointer;}
+  .ptab.active{background:var(--accent);color:#fff;border-color:transparent;}
+  .addper{display:inline-flex;gap:4px;align-items:center;margin-left:auto;}
+  .btn-add{flex:0 0 auto;padding:6px 12px;font-size:12px;font-weight:700;border-radius:6px;background:var(--good);color:#fff;border:none;cursor:pointer;}
+  .btn-add:disabled{opacity:.4;cursor:not-allowed;}
 
-  /* BS balance-sheet input (T-account, photo-like) */
+  /* ledger input form */
   .bs-title{background:#8a8f96;color:#fff;text-align:center;font-weight:700;padding:6px;border-radius:4px 4px 0 0;position:relative;font-size:13px;}
   .bs-unit{position:absolute;right:10px;top:7px;font-size:10px;font-weight:400;}
-  .bs-sheet{border-collapse:collapse;width:100%;font-size:12px;table-layout:fixed;}
-  .bs-sheet td{border:1px solid #cfd4da;padding:4px 6px;height:30px;}
-  .bs-sheet .nm{background:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-  .bs-sheet .amt{text-align:right;font-variant-numeric:tabular-nums;}
-  .bs-sheet .amt input{width:100%;border:1px solid #bcc3cc;border-radius:3px;text-align:right;padding:3px 4px;font-size:12px;font-variant-numeric:tabular-nums;}
-  .bs-sheet .amt input:focus{outline:2px solid var(--accent);border-color:var(--accent);}
-  .bs-sheet .tot{background:#eef1f4;font-weight:700;}
-  .bs-sheet .sec-asset{background:#5b6670;color:#fff;font-weight:700;text-align:center;}
-  .bs-sheet .sec-liab{background:#2f6fb0;color:#fff;font-weight:700;text-align:center;}
-  .bs-sheet .sec-na{background:#2f9e6f;color:#fff;font-weight:700;text-align:center;}
-  .bs-sheet .grand td{background:#dfe4ea;font-weight:700;}
-  .bs-sheet .blankcell{background:#f6f7f9;text-align:center;vertical-align:middle;}
-  .bs-sheet .vlabel{writing-mode:vertical-rl;color:#9aa1a8;font-size:11px;letter-spacing:3px;}
+  .ledger{border:1px solid #e2e8f0;border-radius:6px;overflow:hidden;}
+  .frow{display:flex;align-items:center;gap:8px;padding:5px 10px;border-bottom:1px solid #eef1f4;}
+  .frow:last-child{border-bottom:none;}
+  .frow label{flex:1;font-size:12.5px;}
+  .frow input{width:130px;text-align:right;padding:4px 6px;font-size:13px;border:1px solid #bbb;border-radius:4px;font-variant-numeric:tabular-nums;}
+  .frow input:focus{outline:2px solid var(--accent);border-color:var(--accent);}
+  .frow input[readonly]{background:#f1f5f9;color:#334155;border-color:#e2e8f0;font-weight:700;}
+  .frow .autoval{width:130px;text-align:right;font-size:13px;font-weight:700;font-variant-numeric:tabular-nums;color:#334155;}
+  .frow.fbig{background:#fafbfc;}
+  .frow.fbig label{font-weight:700;}
+  .frow.fauto{background:#eef1f4;}
+  .frow.fauto label{font-weight:700;}
+  .frow.fleaf label{padding-left:18px;font-size:12px;color:#475569;}
+  .frow.fsub label{padding-left:18px;color:#64748b;font-size:12px;}
+  .fsec{background:#5b6670;color:#fff;font-weight:700;font-size:12px;padding:5px 10px;}
+  .fsec.liab{background:#2f6fb0;}
+  .fsec.na{background:#2f9e6f;}
+  .det-toggle{flex:0 0 auto;font-size:11px;padding:3px 8px;border:1px solid #cbd5e0;background:#fff;color:#475569;border-radius:5px;cursor:pointer;font-weight:600;}
+  .det-toggle:hover{background:#eef2f6;}
+  .det-toggle.on{background:var(--accent);color:#fff;border-color:transparent;}
+  .bs-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;align-items:start;}
+  @media(max-width:700px){.bs-grid{grid-template-columns:1fr;}}
+  .bs-balance{margin-top:8px;padding:8px 12px;border-radius:6px;font-size:13px;font-weight:700;text-align:center;}
+  .bs-balance.ok{background:#e6f4ea;color:var(--good);border:1px solid #a7d7b8;}
+  .bs-balance.ng{background:#fde8e8;color:var(--bad);border:1px solid #f0b4b4;}
+  .input-warn{margin:10px 0 0;padding:10px 12px;border-radius:6px;font-size:12.5px;line-height:1.6;background:#fff4e5;color:#8a4b00;border:1px solid #f2c58a;}
+  .input-warn b{color:#c53030;}
+  .in-neg{color:#c53030 !important;font-weight:800;}
+  .warn-banner{margin:0 0 12px;padding:10px 14px;border-radius:8px;font-size:12.5px;line-height:1.65;}
+  .warn-banner.bs{background:#fff4e5;color:#8a4b00;border:1px solid #f2c58a;}
+  .warn-banner.ins{background:#fde8e8;color:#8a1c1c;border:1px solid #f0b4b4;}
+  .warn-banner b{font-weight:800;}
+  .md-na{color:#94a3b8;font-weight:700;}
+  .gq-panel{margin:0 0 12px;padding:12px 14px;border:1px solid #e2e8f0;border-radius:8px;background:#fbfcfd;}
+  .gq-head{font-size:13px;font-weight:800;color:#334155;display:flex;align-items:center;gap:4px;}
+  .gq-tag{color:#fff;font-size:12px;font-weight:800;padding:3px 12px;border-radius:999px;}
+  .gq-body{font-size:14px;margin-top:8px;font-variant-numeric:tabular-nums;}
+  .gq-note{font-size:12px;color:#475569;margin-top:6px;line-height:1.6;}
+  .fl2-arm.dim{opacity:.4;}
+  .cashconv{margin:6px 0 2px;padding:12px 14px;border:1px dashed #94a3b8;border-radius:8px;background:#f8fafc;}
+  .cashconv .cc-head{font-size:13px;font-weight:800;color:#334155;}
+  .cashconv .cc-row{font-size:13px;margin-top:8px;font-variant-numeric:tabular-nums;display:flex;flex-wrap:wrap;gap:14px;}
+  .cashconv .cc-note{font-size:12px;margin-top:8px;line-height:1.65;padding:8px 10px;border-radius:6px;}
 
-  /* DuPont table */
-  .dupont{border-collapse:collapse;font-size:12px;margin-bottom:6px;}
-  .dupont td{border:1px solid #444;padding:3px 8px;}
-  .dupont td:first-child{background:#f1f1f1;}
-  .dupont td:last-child{text-align:right;font-variant-numeric:tabular-nums;width:80px;}
+  /* chart */
+  .chart-card{overflow:hidden;}
+  svg{font-family:inherit;}
+  #chart{width:100%;}
+  .fig60{height:60vh;width:100%;}
+  .fig60 svg{display:block;width:100%;height:100%;margin:0 auto;}
+  #mainExtra{margin-top:10px;}
+  .mbtn.detmet{background:#eef2f6;color:#475569;border-style:dashed;}
+  .mbtn.detmet.active{background:#64748b;color:#fff;}
+  .legend{display:flex;flex-wrap:wrap;gap:14px;justify-content:center;margin-top:10px;font-size:12px;color:#444;}
+  .legend .lg{display:inline-flex;align-items:center;gap:5px;}
+  .legend .lg i{width:14px;height:12px;border:1px solid #333;display:inline-block;}
+  .legend .lg i.lgline{width:16px;height:0;border:none;border-top:2px solid #333;}
+  .legend .lg i.lgline.red{border-top-color:#c53030;}
 
-  /* Analysis cards */
-  .cats{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:18px;}
-  @media(max-width:620px){.cats{grid-template-columns:1fr;}}
-  .cat{border:1px solid #d7dbe0;border-radius:8px;overflow:hidden;background:#fff;}
-  .cat-head{padding:8px 12px;color:#fff;font-weight:600;font-size:13px;display:flex;justify-content:space-between;align-items:center;}
-  .cat-growth .cat-head{background:#5b8def;}
-  .cat-eff .cat-head{background:#8b5cf6;}
-  .cat-prof .cat-head{background:#e0873a;}
-  .cat-safe .cat-head{background:#2f9e6f;}
-  .cat-body{padding:10px 12px;}
-  .metric{display:flex;justify-content:space-between;align-items:baseline;padding:6px 0;border-bottom:1px dashed #e2e8f0;}
-  .metric:last-child{border-bottom:none;}
-  .metric .name{font-size:12px;}
-  .metric .name small{display:block;color:var(--muted);font-size:10px;}
-  .metric .val{font-size:16px;font-weight:700;font-variant-numeric:tabular-nums;}
-  .metric .val span{font-size:11px;font-weight:400;margin-left:2px;}
+  /* analysis */
+  .analysis{margin-top:16px;}
+  .subtabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;}
+  .subtab{flex:0 0 auto;padding:8px 18px;border:1px solid #cbd5e0;background:#eef2f6;color:#475569;font-size:13px;font-weight:700;border-radius:999px;cursor:pointer;transition:.15s;}
+  .subtab:hover{background:#e2e8f0;}
+  .subtab.active{color:#fff;border-color:transparent;}
+  .subtab[data-cat="growth"].active{background:#5b8def;}
+  .subtab[data-cat="eff"].active{background:#8b5cf6;}
+  .subtab[data-cat="prof"].active{background:#e0873a;}
+  .subtab[data-cat="cost"].active{background:#0d9488;}
+  .subtab[data-cat="safe"].active{background:#2f9e6f;}
+  .companytabs .subtab.active{background:var(--accent);}
+  .metricbtns{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;}
+  .mbtn{flex:0 0 auto;padding:8px 14px;border:1.5px solid #cbd5e0;background:#fff;color:#334155;font-size:13px;font-weight:600;border-radius:8px;cursor:pointer;display:flex;gap:8px;align-items:baseline;}
+  .mbtn:hover{border-color:#94a3b8;background:#f8fafc;}
+  .mbtn.active{border-color:var(--accent);background:#eef5fc;color:var(--accent);box-shadow:0 0 0 2px rgba(43,108,176,.15);}
+  .mbtn .mbv{font-size:13px;font-weight:800;font-variant-numeric:tabular-nums;}
+  .mbtn .mbv small{font-size:10px;font-weight:600;margin-left:1px;}
+  /* 信号色（左ボーダー） */
+  .mbtn.j-good{border-left:6px solid #2f9e6f;}
+  .mbtn.j-warn{border-left:6px solid #d9a13a;}
+  .mbtn.j-bad{border-left:6px solid #d1453f;}
+  /* 業種セレクタ・読み方フロー */
+  .subtab.flowtab{background:#fdf2e0;border-color:#e6c47a;color:#8a5a12;}
+  .subtab.flowtab.active{background:#e8a11a;color:#fff;border-color:transparent;}
+  .ind-wrap{margin-left:auto;font-size:12px;color:#475569;display:flex;align-items:center;gap:6px;}
+  .ind-wrap select{padding:5px 8px;border:1px solid #cbd5e0;border-radius:6px;font-size:12px;}
+  .flow-intro{font-size:13px;line-height:1.7;color:#334155;background:#f6f8fb;border:1px solid #e2e8f0;border-radius:8px;padding:10px 14px;margin-bottom:14px;}
+  .flow2{display:flex;flex-direction:column;align-items:stretch;gap:0;max-width:820px;margin:0 auto;}
+  .fl2-step{border:1px solid #d7dee6;border-radius:12px;padding:14px 16px;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.04);}
+  .fl2-head{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
+  .fl2-badge{background:#2b6cb0;color:#fff;font-weight:800;font-size:12px;padding:3px 10px;border-radius:999px;}
+  .fl2-cat{font-weight:800;color:#1a2733;font-size:15px;}
+  .fl2-mainrow{display:flex;align-items:center;gap:10px;margin-bottom:8px;}
+  .fl2-lead{font-size:12px;color:#64748b;font-weight:700;background:#eef2f6;padding:3px 8px;border-radius:6px;}
+  .fl2-q{font-size:13.5px;font-weight:800;color:#243b53;margin:8px 0;padding:8px 12px;background:#f0f6ff;border-left:4px solid #2b6cb0;border-radius:0 6px 6px 0;}
+  .fl2-branch{display:flex;flex-direction:column;gap:6px;margin:6px 0 4px;}
+  .fl2-arm{font-size:12.5px;padding:6px 12px;border-radius:8px;background:#f8fafc;border:1px dashed #cbd5e0;color:#64748b;}
+  .fl2-arm.on-yes,.fl2-arm.on-good{background:#eaf7f0;border:1.5px solid #2f9e6f;color:#1c6b48;font-weight:700;}
+  .fl2-arm.on-no,.fl2-arm.on-bad{background:#fdecea;border:1.5px solid #d1453f;color:#a3302b;font-weight:700;}
+  .fl2-arm.on-warn{background:#fdf3e2;border:1.5px solid #d9a13a;color:#8a5a10;font-weight:700;}
+  .fl2-drilllabel{font-size:12px;color:#b45309;font-weight:800;margin:10px 0 4px;}
+  .fl2-drill{display:flex;flex-wrap:wrap;gap:10px;margin:4px 0;}
+  .fl2-item{display:flex;flex-direction:column;gap:2px;}
+  .fl2-why{font-size:10.5px;color:#94a3b8;padding-left:2px;}
+  .fl2-down{text-align:center;color:#94a3b8;font-size:20px;line-height:1;padding:4px 0;}
+  .fl2-summary{margin-top:6px;font-size:13px;line-height:1.7;color:#334155;background:#fffdf5;border:1px solid #efe0b8;border-radius:10px;padding:12px 16px;}
+  .fl-node{display:inline-flex;flex-direction:column;align-items:flex-start;gap:1px;padding:7px 12px;border:1.5px solid #cbd5e0;border-left-width:6px;border-left-color:#cbd5e0;background:#fff;color:#243b53;font-size:12.5px;font-weight:700;border-radius:8px;cursor:pointer;transition:.12s;}
+  .fl-node:hover{border-color:#2b6cb0;background:#eef5fc;}
+  .fl-node.cur{background:#fff7e8;box-shadow:0 0 0 2px rgba(232,161,26,.4);}
+  .fl-node.j-good{border-left-color:#2f9e6f;} .fl-node.j-warn{border-left-color:#d9a13a;} .fl-node.j-bad{border-left-color:#d1453f;}
+  .fl-node .fl-val{font-size:13px;font-weight:800;font-variant-numeric:tabular-nums;color:#1a2733;}
+  .fl-node .fl-val small{font-size:9px;font-weight:600;}
+  .fl2-mainrow .fl-node{border-color:#2b6cb0;font-size:13.5px;}
+  /* 業種ベンチマーク行 */
+  .bm-row{font-size:13px;color:#334155;padding:8px 10px;background:#f6f8fb;border:1px solid #e2e8f0;border-radius:8px;}
+  .bm-row b{font-variant-numeric:tabular-nums;}
+  .bm-up{color:#2f9e6f;} .bm-down{color:#d1453f;}
+  .bm-note{font-size:11px;color:#94a3b8;margin-top:4px;font-weight:400;}
+  .metricdetail{border:1px solid #e2e8f0;border-radius:8px;background:#fbfcfd;overflow:hidden;}
+  .md-head{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:12px 16px;background:#f1f5f9;border-bottom:1px solid #e2e8f0;flex-wrap:wrap;}
+  .md-title{font-size:15px;font-weight:700;}
+  .md-value{font-size:24px;font-weight:800;font-variant-numeric:tabular-nums;}
+  .md-value small{font-size:13px;font-weight:600;margin-left:2px;}
+  .md-body{padding:14px 16px;display:grid;gap:14px;}
+  .md-label{font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;margin-bottom:5px;}
+  .md-formula{font-size:14px;font-variant-numeric:tabular-nums;background:#fff;border:1px solid #e2e8f0;border-radius:6px;padding:9px 12px;line-height:1.8;}
+  .md-formula b{color:var(--accent);}
+  .md-meaning{font-size:12.5px;line-height:1.75;color:#374151;}
+  .md-table{grid-column:1/-1;}
+  .cmp-toggle{display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap;}
+  .cbtn{flex:0 0 auto;padding:5px 14px;font-size:12px;font-weight:700;border:1px solid #cbd5e0;background:#fff;color:#475569;border-radius:999px;cursor:pointer;}
+  .cbtn.active{background:var(--accent);color:#fff;border-color:transparent;}
+  .cbtn:disabled{opacity:.4;cursor:not-allowed;}
+  table.judge{border-collapse:collapse;width:100%;font-size:12.5px;}
+  table.judge th,table.judge td{border:1px solid #e2e8f0;padding:6px 10px;text-align:left;}
+  table.judge th{background:#f1f5f9;font-size:11px;color:var(--muted);font-weight:700;}
+  table.judge td.lv{width:64px;font-weight:700;text-align:center;color:#fff;}
+  table.judge td.lv.good{background:var(--good);}
+  table.judge td.lv.warn{background:var(--warn);}
+  table.judge td.lv.bad{background:var(--bad);}
+  table.judge td.num{text-align:right;font-variant-numeric:tabular-nums;}
+  table.judge td.num small{font-size:10px;color:var(--muted);margin-left:1px;}
+  table.judge tr.cur td{background:#fff8e6;}
+  table.judge tr.cur td.lv.good{background:var(--good);}
+  table.judge tr.cur td.lv.warn{background:var(--warn);}
+  table.judge tr.cur td.lv.bad{background:var(--bad);}
+  .cur-tag{display:inline-block;margin-left:6px;font-size:10px;color:var(--accent);font-weight:700;}
+  .md-note{grid-column:1/-1;font-size:11px;color:var(--muted);}
   .badge{display:inline-block;font-size:10px;padding:1px 7px;border-radius:10px;color:#fff;margin-left:6px;vertical-align:middle;}
-  .b-good{background:var(--good);}
-  .b-warn{background:var(--warn);}
-  .b-bad{background:var(--bad);}
-  .b-na{background:#94a3b8;}
-  .placeholder{font-size:12px;color:var(--muted);padding:8px 0;}
+  .b-good{background:var(--good);}.b-warn{background:var(--warn);}.b-bad{background:var(--bad);}.b-na{background:#94a3b8;}
+
+  /* detail comparison table */
+  .detail-wrap{overflow-x:auto;}
+  table.cmp-detail{border-collapse:collapse;width:100%;font-size:12.5px;min-width:540px;}
+  table.cmp-detail th,table.cmp-detail td{border:1px solid #e2e8f0;padding:6px 10px;}
+  table.cmp-detail thead th{background:#1f2937;color:#fff;font-weight:700;text-align:right;font-size:11px;white-space:nowrap;}
+  table.cmp-detail thead th.itemcol{text-align:left;}
+  table.cmp-detail td.itemcol{text-align:left;white-space:nowrap;}
+  table.cmp-detail td.num{text-align:right;font-variant-numeric:tabular-nums;}
+  table.cmp-detail td.delta{color:var(--muted);}
+  table.cmp-detail tr.grp td{background:#eef2f6;font-weight:700;color:#334155;}
+  table.cmp-detail tr.grp .u{font-weight:400;font-size:11px;color:var(--muted);margin-left:8px;}
+  table.cmp-detail tr.totrow td{background:#f6f8fa;font-weight:700;}
+  table.cmp-detail tr.grand td{background:#dfe4ea;font-weight:700;}
+  table.cmp-detail td.leaf{color:#475569;padding-left:22px;}
+  table.cmp-detail tr.ibd td{background:#fdf1e7;color:#b45309;font-weight:700;}
+
+  /* detail figures */
+  .view-controls{margin-bottom:10px;}
+  .ctl-row{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:6px;}
+  .ctl-lbl{font-size:12px;color:#555;font-weight:700;}
+  .chip{flex:0 0 auto;padding:5px 12px;font-size:12px;font-weight:700;border:1px solid #cbd5e0;background:#fff;color:#475569;border-radius:999px;cursor:pointer;}
+  .chip:hover{background:#f1f5f9;}
+  .chip.on{background:var(--accent);color:#fff;border-color:transparent;}
+  .view-controls select{padding:5px 8px;font-size:12px;border:1px solid #bbb;border-radius:6px;background:#fff;}
+  .itemchecks{display:flex;gap:20px;flex-wrap:wrap;border:1px solid #e2e8f0;border-radius:6px;padding:10px;margin-top:6px;max-height:220px;overflow:auto;}
+  .itemchecks[hidden]{display:none;}
+  .ic-col{min-width:150px;}
+  .ic-h{font-size:11px;font-weight:700;color:#94a3b8;margin-bottom:4px;}
+  .ic-i{display:flex;gap:6px;align-items:center;font-size:12px;padding:2px 0;cursor:pointer;}
+  .ph{color:#94a3b8;font-size:13px;padding:24px;text-align:center;}
+  #dChart{overflow-x:auto;width:100%;}
+  #dChart svg{display:block;width:100%;height:auto;margin:0 auto;}
+  .fig50{height:50vh;width:100%;}
+  .fig50 svg{height:100%;}
+  .cf-pattern{border:1px solid #e2e8f0;border-radius:8px;padding:14px 16px;background:#fff;margin-bottom:12px;}
+  .cf-badge{display:inline-block;background:var(--accent);color:#fff;font-weight:800;font-size:14px;padding:4px 14px;border-radius:999px;}
+  .cf-desc{font-size:12.5px;color:#374151;margin-top:8px;line-height:1.7;}
+  .cf-signs{margin-top:8px;font-size:12.5px;color:#334155;}
+  .cf-signs b{font-variant-numeric:tabular-nums;}
+  .cf-tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin-bottom:14px;}
+  .cf-tile{border:1px solid #e2e8f0;border-radius:8px;padding:8px 10px;background:#fbfcfd;}
+  .cf-tile .t{font-size:11px;color:var(--muted);}
+  .cf-tile .v{font-size:16px;font-weight:800;font-variant-numeric:tabular-nums;}
+  .cf-h{font-size:12px;font-weight:700;color:var(--muted);margin:14px 0 6px;}
+  .cf-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;}
+  .cf-card{border:1px solid #e2e8f0;border-radius:8px;padding:10px;background:#fff;display:flex;gap:10px;align-items:flex-start;}
+  .cf-card.cur{border-color:var(--accent);box-shadow:0 0 0 2px rgba(43,108,176,.15);background:#eef5fc;}
+  .cf-card .cf-ct .nm{font-weight:700;font-size:12.5px;}
+  .cf-card .cf-ct .ds{color:#475569;font-size:11px;margin-top:3px;line-height:1.5;}
+  /* CF 間接法の計算式 */
+  .cff-lead{font-size:11.5px;color:#475569;line-height:1.6;margin:0 0 10px;background:#f6f8fb;border:1px solid #e2e8f0;border-left:3px solid var(--accent);border-radius:6px;padding:8px 10px;}
+  .cf-formwrap{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px;}
+  table.cf-form{width:100%;border-collapse:collapse;font-size:11.5px;border:1px solid #e2e8f0;border-radius:8px;overflow:hidden;background:#fff;}
+  table.cf-form th{background:#f1f5f9;text-align:left;padding:7px 9px;font-size:11px;font-weight:700;color:#334155;border-bottom:1px solid #e2e8f0;vertical-align:top;}
+  table.cf-form th.num,table.cf-form td.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap;}
+  table.cf-form td{padding:6px 9px;border-bottom:1px solid #eef2f6;vertical-align:top;line-height:1.5;}
+  table.cf-form td.itemcol{color:#334155;}
+  table.cf-form tr.cff-tot td{border-top:1px solid #cbd5e1;border-bottom:none;font-weight:800;background:#f8fafc;}
+  .cff-note{display:block;font-weight:400;color:var(--muted);font-size:10px;margin-top:2px;}
+  .cff-sub{display:block;color:var(--muted);font-size:10px;margin-top:2px;line-height:1.45;}
+
+  /* modal */
+  .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;z-index:100;padding:16px;}
+  .modal-overlay[hidden]{display:none;}
+  .modal{background:#fff;border-radius:10px;max-width:360px;width:100%;box-shadow:0 10px 40px rgba(0,0,0,.25);overflow:hidden;}
+  .modal-title{font-size:15px;font-weight:700;padding:14px 18px;background:#f1f5f9;border-bottom:1px solid #e2e8f0;}
+  .modal-body{padding:18px;font-size:13px;}
+  .modal-body .modal-label{display:block;font-size:12px;color:var(--muted);margin-bottom:6px;font-weight:700;}
+  .modal-body input[type=number]{width:100%;padding:8px;font-size:15px;border:1px solid #bbb;border-radius:6px;text-align:right;font-variant-numeric:tabular-nums;}
+  .modal-body input[type=number]:focus{outline:2px solid var(--accent);border-color:var(--accent);}
+  .modal-msg{line-height:1.7;}
+  .modal-err{color:var(--bad);font-size:12px;margin-top:8px;min-height:16px;}
+  .modal-actions{display:flex;gap:8px;padding:0 18px 18px;}
+  .modal-actions button{padding:9px;border-radius:6px;font-size:13px;font-weight:700;}
+  .btn-danger{background:var(--bad);color:#fff;}
+
   footer{text-align:center;font-size:11px;color:var(--muted);padding:16px;}
 </style>
 </head>
 <body>
 <header>
   <h1>決算書 財務分析ツール（簡易版）</h1>
-  <p>1期分を入力 → 百分率チャートで可視化し、成長性・効率性・収益性・安全性を確認</p>
+  <p>最大3期を入力（中分類の内訳入力）→ 全体／PL／BS／CS と指標分析を1画面で比較</p>
 </header>
 
 <div class="wrap">
   <div class="tabs">
-    <button class="tab active" data-tab="view">① 図・分析を見る</button>
+    <button class="tab active" data-tab="view">① 財務分析</button>
     <button class="tab" data-tab="input">② 数値入力</button>
+    <button class="tab" data-tab="flow">③ 読み方フロー</button>
+  </div>
+
+  <!-- ============ TAB: VIEW ============ -->
+  <div class="tabpane active" id="tab-view">
+    <section class="panel chart-card">
+      <h2>財務分析（最大3期）</h2>
+      <div class="cmp-toggle" id="scopeToggle">
+        <button class="cbtn active" data-scope="all">全体（BS＋PL）</button>
+        <button class="cbtn" data-scope="pl">PLのみ</button>
+        <button class="cbtn" data-scope="bs">BSのみ</button>
+        <button class="cbtn" data-scope="cs">CS（簡易）</button>
+      </div>
+      <div id="mainControls" class="view-controls"></div>
+      <div id="chart"></div>
+      <div class="legend" id="legend"></div>
+      <div id="mainExtra"></div>
+    </section>
+    <div class="analysis">
+      <div class="subtabs" id="subtabs">
+        <button class="subtab active" data-cat="eff">効率性</button>
+        <button class="subtab" data-cat="prof">収益性</button>
+        <button class="subtab" data-cat="safe">安全性</button>
+        <button class="subtab" data-cat="growth">成長性</button>
+        <span class="ind-wrap">業種：<select id="indSel">
+          <option value="manuf">製造業</option>
+          <option value="wholesale">卸売業</option>
+          <option value="retail">小売業</option>
+          <option value="construct">建設業</option>
+          <option value="service">サービス業</option>
+          <option value="it">情報通信業</option>
+          <option value="food">飲食・宿泊業</option>
+        </select></span>
+      </div>
+      <div id="analysisWarn"></div>
+      <div class="metricbtns" id="metricbtns"></div>
+      <div class="metricdetail" id="metricdetail"></div>
+    </div>
   </div>
 
   <!-- ============ TAB: INPUT ============ -->
   <div class="tabpane" id="tab-input">
     <section class="panel">
       <h2>決算書の入力</h2>
+      <div class="companytabs"><button class="subtab active">自社</button></div>
+      <div class="periodbar" id="periodbar"></div>
+      <div class="field"><label>金額の単位</label>
+        <select id="unit">
+          <option value="10億円">10億円</option>
+          <option value="億円" selected>億円</option>
+          <option value="100万円">100万円</option>
+          <option value="万円">万円</option>
+          <option value="円">円</option>
+        </select>
+      </div>
+      <div class="field"><label>従業員数（任意）</label>
+        <input type="number" id="in_emp" value="0"><span class="unit-fixed">人</span>
+        <span class="note" style="margin:0 0 0 8px;">※労働生産性の算出に使用（不明なら空欄でOK）</span>
+      </div>
 
       <h3>貸借対照表（BS）</h3>
       <div class="bs-title">貸借対照表<span class="bs-unit">単位：億円</span></div>
-      <table class="bs-sheet">
-        <colgroup>
-          <col style="width:29%"><col style="width:21%"><col style="width:29%"><col style="width:21%">
-        </colgroup>
-        <tr>
-          <td colspan="2" class="sec-asset">資産の部</td>
-          <td colspan="2" class="sec-liab">負債の部</td>
-        </tr>
-        <tr>
-          <td class="nm">流動資産</td><td class="amt"><input type="number" id="ca" value="5712"></td>
-          <td class="nm">流動負債（短期）</td><td class="amt"><input type="number" id="cl" value="5305"></td>
-        </tr>
-        <tr>
-          <td class="nm">固定資産</td><td class="amt"><input type="number" id="fa" value="19890"></td>
-          <td class="nm">固定負債（長期）</td><td class="amt"><input type="number" id="fl" value="9607"></td>
-        </tr>
-        <tr>
-          <td class="blankcell" colspan="2" rowspan="5"><span class="vlabel">会社が持っている財産</span></td>
-          <td class="nm tot">負債合計</td><td class="amt tot" id="totLiab">0</td>
-        </tr>
-        <tr>
-          <td colspan="2" class="sec-na">純資産の部</td>
-        </tr>
-        <tr>
-          <td class="nm">資本金</td><td class="amt"><input type="number" id="cap" value="5181"></td>
-        </tr>
-        <tr>
-          <td class="nm">利益剰余金</td><td class="amt"><input type="number" id="re" value="5508"></td>
-        </tr>
-        <tr>
-          <td class="nm tot">純資産合計</td><td class="amt tot" id="totNA">0</td>
-        </tr>
-        <tr class="grand">
-          <td class="nm tot">資産合計</td><td class="amt tot" id="totAssets">0</td>
-          <td class="nm tot">負債・純資産合計</td><td class="amt tot" id="totLNA">0</td>
-        </tr>
-      </table>
+      <div class="bs-grid">
+        <div id="bsLeft" class="ledger"></div>
+        <div id="bsRight" class="ledger"></div>
+      </div>
+      <div class="bs-balance" id="bsBalance"></div>
 
       <h3>損益計算書（PL）</h3>
-      <div class="field"><label>売上高</label><input type="number" id="sales" value="19742"><span class="unit">億円</span></div>
-      <div class="field"><label>売上原価</label><input type="number" id="cogs" value="15834"><span class="unit">億円</span></div>
-      <div class="field"><label>販管費</label><input type="number" id="sga" value="3300"><span class="unit">億円</span></div>
-      <div class="field"><label>営業外収益</label><input type="number" id="noi" value="100"><span class="unit">億円</span></div>
-      <div class="field"><label>営業外費用</label><input type="number" id="noe" value="200"><span class="unit">億円</span></div>
-      <div class="field"><label>特別利益</label><input type="number" id="exg" value="0"><span class="unit">億円</span></div>
-      <div class="field"><label>特別損失</label><input type="number" id="exl" value="50"><span class="unit">億円</span></div>
-      <div class="field"><label>法人税等</label><input type="number" id="tax" value="181"><span class="unit">億円</span></div>
+      <div class="field"><label>売上原価の型（業種）</label>
+        <select id="costType">
+          <option value="A" selected>製造業（材料費・労務費・外注費…）</option>
+          <option value="B">商業・小売（仕入・棚卸）</option>
+          <option value="C">サービス業（労務費・外注費…）</option>
+        </select>
+      </div>
+      <div id="plForm" class="ledger"></div>
 
+      <div id="inputWarn" class="input-warn" hidden></div>
       <div class="btnrow">
         <button class="btn-primary" id="calcBtn">分析する</button>
-        <button class="btn-ghost" id="resetBtn">初期値に戻す</button>
+        <button class="btn-ghost" id="resetBtn">この期をリセット（0）</button>
+        <button class="btn-ghost" id="delBtn">この期を削除</button>
+        <button class="btn-ghost" id="saveBtn">💾 この内容でHTML保存</button>
       </div>
-      <p class="note">入力を変更すると自動で再計算されます。単位は任意（すべて同一単位で入力）。入力後「① 図・分析を見る」タブへ。合計欄は自動計算されます。</p>
+      <p class="note">各大項目の内訳（中分類）を常時入力できます。合計は入力可で、「その他」は 合計−主要内訳 の差額を自動表示します。有利子負債（★）・減価償却費は内訳から自動集計。「＋ 期を追加」で最大3期まで比較できます。<br>💾 <b>この内容でHTML保存</b>：入力データをこのHTML自体に埋め込んで保存します。ダウンロードしたHTMLを次に開くと、保存した内容が自動で復元されます。</p>
     </section>
   </div>
 
-  <!-- ============ TAB: VIEW ============ -->
-  <div class="tabpane active" id="tab-view">
-    <section class="panel chart-card">
-      <h2>百分率財務諸表チャート</h2>
-      <div id="chart"></div>
+  <!-- ============ TAB: FLOW ============ -->
+  <div class="tabpane" id="tab-flow">
+    <section class="panel">
+      <h2>指標の読み方フロー</h2>
+      <div id="flowArea"></div>
     </section>
-
-    <!-- ============ ANALYSIS ============ -->
-    <div class="cats">
-    <div class="cat cat-growth">
-      <div class="cat-head"><span>成長性</span></div>
-      <div class="cat-body" id="cat-growth"></div>
-    </div>
-    <div class="cat cat-eff">
-      <div class="cat-head"><span>効率性</span></div>
-      <div class="cat-body" id="cat-eff"></div>
-    </div>
-    <div class="cat cat-prof">
-      <div class="cat-head"><span>収益性</span></div>
-      <div class="cat-body" id="cat-prof"></div>
-    </div>
-    <div class="cat cat-safe">
-      <div class="cat-head"><span>安全性</span></div>
-      <div class="cat-body" id="cat-safe"></div>
-    </div>
-    </div>
   </div>
 
-  <footer>簡易版：使用指標＝流動比率／固定長期適合率／ROE／純資産比率（1期分のみ対応）</footer>
+  <footer>簡易版：収益性・効率性・安全性（有利子負債・ICR・債務償還年数ほか）・成長性を最大3期で比較</footer>
+</div>
+
+<!-- ============ SAVED STATE (保存ボタンで自動書き込み) ============ -->
+<script type="application/json" id="appState"></script>
+
+<!-- ============ MODAL ============ -->
+<div class="modal-overlay" id="modal" hidden>
+  <div class="modal" role="dialog" aria-modal="true">
+    <div class="modal-title" id="modalTitle"></div>
+    <div class="modal-body" id="modalBody"></div>
+    <div class="modal-actions">
+      <button class="btn-ghost" id="modalCancel">キャンセル</button>
+      <button class="btn-primary" id="modalOk">OK</button>
+    </div>
+  </div>
 </div>
 
 <script>
 "use strict";
 
-const IDS = ["ca","fa","cl","fl","cap","re","sales","cogs","sga","noi","noe","exg","exl","tax"];
-const DEFAULTS = {ca:5712,fa:19890,cl:5305,fl:9607,cap:5181,re:5508,
-  sales:19742,cogs:15834,sga:3300,noi:100,noe:200,exg:0,exl:50,tax:181};
-
+/* ---------- helpers ---------- */
 const $ = id => document.getElementById(id);
-const num = id => { const v = parseFloat($(id).value); return isFinite(v) ? v : 0; };
 const fmt = n => Math.round(n).toLocaleString("ja-JP");
-const pct = (n, base) => base ? (n / base * 100) : 0;
-const p1 = n => (Math.round(n * 10) / 10).toFixed(1);
-const p2 = n => (Math.round(n * 100) / 100).toFixed(2);
-
-function compute(){
-  const ca=num("ca"), fa=num("fa"), cl=num("cl"), fl=num("fl"), cap=num("cap"), re=num("re");
-  const sales=num("sales"), cogs=num("cogs"), sga=num("sga"),
-        noi=num("noi"), noe=num("noe"), exg=num("exg"), exl=num("exl"), tax=num("tax");
-
-  // --- BS ---
-  const na = cap + re;                 // 純資産
-  const totalAssets = ca + fa;         // 総資産
-  const totalCapital = cl + fl + na;   // 総資本（負債+純資産）
-  const cap100 = totalCapital || 1;    // 図のスケール基準（総資本=100%）
-
-  // --- PL ---
-  const grossProfit = sales - cogs;                    // 売上総利益（粗利）
-  const operatingProfit = grossProfit - sga;           // 営業利益
-  const ordinaryProfit = operatingProfit + noi - noe;  // 経常利益
-  const pretaxProfit = ordinaryProfit + exg - exl;     // 税引前当期純利益
-  const netIncome = pretaxProfit - tax;                // 当期純利益
-
-  // --- Ratios (4) ---
-  const currentRatio = cl ? ca / cl * 100 : 0;                 // 流動比率
-  const fixedLTRatio = (na + fl) ? fa / (na + fl) * 100 : 0;   // 固定長期適合率
-  const roe = na ? netIncome / na * 100 : 0;                   // ROE
-  const equityRatio = totalCapital ? na / totalCapital * 100 : 0; // 純資産比率
-
-  // --- DuPont ---
-  const netMargin = sales ? netIncome / sales * 100 : 0;   // 当期純利益率
-  const assetTurnover = totalCapital ? sales / totalCapital : 0; // 総資本回転率(回)
-  const finLeverage = na ? totalCapital / na : 0;          // 財務レバレッジ(倍)
-
-  return {ca,fa,cl,fl,cap,re,na,totalAssets,totalCapital,cap100,
-    sales,cogs,sga,grossProfit,operatingProfit,ordinaryProfit,pretaxProfit,netIncome,
-    currentRatio,fixedLTRatio,roe,equityRatio,netMargin,assetTurnover,finLeverage};
+const p1 = n => (Math.round(n*10)/10).toFixed(1);
+const p2 = n => (Math.round(n*100)/100).toFixed(2);
+const unitStr = () => { const el=$("unit"); return el ? el.value : "億円"; };
+const TLAB = v => '第'+v+'期';
+function applyUnitLabels(){
+  const u=unitStr();
+  document.querySelectorAll(".unit").forEach(s=> s.textContent=u);
+  const bu=document.querySelector(".bs-unit"); if(bu) bu.textContent="単位："+u;
 }
 
-/* ---------- Chart (SVG) ---------- */
-function drawChart(d){
-  // ---- design params ----
-  const BAR_W = 280;                                   // グラフ（各バー）の幅
-  const F_NAME=40, F_VAL=34, F_PCT=28, F_AXIS=26, F_HEAD=44, F_LEAD=28, F_BR=40;
+const MAXP = 3;
+const NUM_KEYS = ['ca','cash','sec','recv','inv','oca','stloanto','prepaid','fa','tfa','ifa','iota','building','vehicle','land','software','invsec',
+  'cl','payb','stloan','cpltd','ocl','payables','taxpay','fl','ltloan','bond','ofl','execloan','lease','ibds','ibdl',
+  'cap','csurp','re','ona','sales','cogs','sga','noi','recint','noe','intexp','exg','exl','tax','dep',
+  'matcost','labcost','subcon','depcogs','othcogs','beginv','purch','endinv',
+  'perscost','execcomp','salary','welfare','adv','rent','depsga','outsourcing','othsga','emp'];
+const DET_KEYS = ['det_ca','det_fa','det_cl','det_fl','det_cogs','det_sga'];
+let costType = 'A';   // A:製造業 / B:商業・小売 / C:サービス業
+const SGA_LEAVES = [['execcomp','役員報酬'],['salary','給与・賞与'],['welfare','法定福利費・福利厚生費'],['adv','広告宣伝・販売促進費'],['rent','地代家賃'],['depsga','減価償却費'],['outsourcing','業務委託費・支払報酬'],['othsga','その他販管費']];
+function cogsLeaves(){
+  if(costType==='A') return [['matcost','材料費'],['labcost','労務費'],['subcon','外注費'],['depcogs','減価償却費(製造)'],['othcogs','その他製造経費']];
+  if(costType==='B') return [['beginv','期首商品棚卸高'],['purch','当期商品仕入高'],['endinv','期末商品棚卸高(△控除)']];
+  return [['labcost','労務費'],['subcon','外注費'],['othcogs','その他直接経費']];
+}
+const LEAF_MAP = {ca:['cash','recv','inv','stloanto','prepaid','oca'], fa:['building','vehicle','land','software','invsec','iota'], cl:['payb','stloan','cpltd','payables','taxpay','ocl'], fl:['ltloan','bond','execloan','lease','ofl'], sga:['execcomp','salary','welfare','adv','rent','depsga','outsourcing','othsga']};
+const OTHER_LEAF = {ca:'oca', fa:'iota', cl:'ocl', fl:'ofl', sga:'othsga'};
+const leavesOf = big => big==='cogs' ? cogsLeaves().map(x=>x[0]) : LEAF_MAP[big];
+const otherOf  = big => big==='cogs' ? (costType==='B'?'purch':'othcogs') : OTHER_LEAF[big];
 
-  // ---- BS colors (5色) ----
-  const C_CA='#4E79A7', C_FA='#4E8A46', C_CL='#C4433F', C_FL='#CC6A1F', C_NA='#8E5AA0', C_RE='#6E4480';
-  const C_GP='#c8c8c8', C_PL='#ffffff', WT='#ffffff';
+const zeros = ()=>{ const o={}; NUM_KEYS.forEach(k=> o[k]=0); DET_KEYS.forEach(k=> o[k]=true); return o; };
+const mk = obj => Object.assign(zeros(), obj);
+const DEFAULTS = mk({ca:5712,fa:19890,cl:5305,fl:9607,cap:5181,re:5509,sales:19742,cogs:15834,sga:3300,noi:100,noe:200,exg:0,exl:50,tax:181});
+// デモ用の3期分データ（貸借一致・成長ケース。内訳まで入力済み＝各明細を表示）
+const DET_ON = {det_ca:true,det_fa:true,det_cl:true,det_fl:true,det_cogs:true,det_sga:true};
+const DEMO = [
+  {year:1, vals:mk(Object.assign({},DET_ON,{emp:1200,ca:5712,fa:19890,cl:5305,fl:9607,cap:5181,re:5509,
+    cash:1600,recv:2100,inv:1300,stloanto:200,prepaid:150,
+    building:13000,vehicle:1500,land:3500,software:600,invsec:900,
+    payb:1900,stloan:1500,cpltd:800,payables:600,taxpay:300, ltloan:6500,bond:1500,execloan:600,lease:400,
+    sales:19742,cogs:15834,sga:3300,noi:100,recint:30,noe:200,intexp:150,exl:50,tax:181,
+    matcost:9000,labcost:3000,subcon:800,depcogs:2500, execcomp:300,salary:1200,welfare:200,adv:350,rent:250,depsga:600,outsourcing:150}))},
+  {year:2, vals:mk(Object.assign({},DET_ON,{emp:1240,ca:6100,fa:20800,cl:5600,fl:9800,cap:5181,re:6319,
+    cash:1800,recv:2300,inv:1350,stloanto:200,prepaid:150,
+    building:13800,vehicle:1500,land:3500,software:650,invsec:950,
+    payb:2000,stloan:1400,cpltd:800,payables:650,taxpay:350, ltloan:6300,bond:1500,execloan:600,lease:450,
+    sales:21500,cogs:17050,sga:3550,noi:110,recint:35,noe:210,intexp:160,exl:40,tax:300,
+    matcost:9700,labcost:3200,subcon:850,depcogs:2600, execcomp:320,salary:1300,welfare:220,adv:380,rent:260,depsga:620,outsourcing:170}))},
+  {year:3, vals:mk(Object.assign({},DET_ON,{emp:1280,ca:6500,fa:21500,cl:5800,fl:9600,cap:5181,re:7419,
+    cash:2000,recv:2400,inv:1400,stloanto:250,prepaid:150,
+    building:14200,vehicle:1600,land:3500,software:700,invsec:1000,
+    payb:2100,stloan:1300,cpltd:800,payables:700,taxpay:380, ltloan:6100,bond:1400,execloan:600,lease:450,
+    sales:23000,cogs:18000,sga:3700,noi:120,recint:40,noe:220,intexp:170,exg:0,exl:30,tax:450,
+    matcost:10200,labcost:3400,subcon:900,depcogs:2700, execcomp:340,salary:1400,welfare:240,adv:400,rent:270,depsga:640,outsourcing:180}))},
+];
 
-  // ---- geometry ----
-  const axisX=100;
-  const c1x0=125, c1x1=c1x0+BAR_W;                     // 資産
-  const c2x0=c1x1+40, c2x1=c2x0+BAR_W;                 // 負債・純資産
-  const brX=c2x1+18;                                   // 括弧
-  const c3x0=c2x1+300, c3x1=c3x0+BAR_W;                // PL
-  const W=c3x1+40;
-  const top=150, bottom=1160, chartH=bottom-top, H=bottom+60;
-  const Y = p => bottom - (p/100)*chartH;
-  const cap=d.cap100;
-  const P = v => v / cap * 100;
+/* ---------- state ---------- */
+let periods = DEMO.map(p=> ({year:p.year, vals:Object.assign({}, p.vals)}));
+let curIdx = 0, curCat='eff', curKey='roe', cmpN=3, cmpSeg='all', showDetail=false, industry='manuf', flowKey='opm';
+const INDUSTRIES={manuf:'製造業',wholesale:'卸売業',retail:'小売業',construct:'建設業',service:'サービス業',it:'情報通信業',food:'飲食・宿泊業'};
+// 業種平均の目安（中小企業の概算値・単位は各指標に準拠）
+const BENCH={
+  manuf:{gm:22,costr:78,sgar:18,opm:3.5,ordm:4.0,npm:2.5,equity:40,current:180,fixedlt:85,fixedratio:120,debtratio:150,atoturn:1.0,faturn:1.6,roa:3.5,roe:8,labshare:50,persr:15,de:1.2,debty:8,icr:4},
+  wholesale:{gm:15,costr:85,sgar:12,opm:2.0,ordm:2.5,npm:1.5,equity:35,current:160,fixedlt:80,fixedratio:110,debtratio:180,atoturn:1.8,faturn:4.0,roa:3.0,roe:8,labshare:45,persr:10,de:1.5,debty:8,icr:4},
+  retail:{gm:30,costr:70,sgar:27,opm:2.5,ordm:3.0,npm:1.8,equity:30,current:140,fixedlt:90,fixedratio:140,debtratio:200,atoturn:1.8,faturn:3.0,roa:4.0,roe:9,labshare:50,persr:18,de:1.6,debty:9,icr:3.5},
+  construct:{gm:20,costr:80,sgar:15,opm:4.0,ordm:4.5,npm:3.0,equity:38,current:150,fixedlt:80,fixedratio:110,debtratio:160,atoturn:1.2,faturn:5.0,roa:4.5,roe:10,labshare:48,persr:18,de:1.0,debty:6,icr:5},
+  service:{gm:45,costr:55,sgar:40,opm:4.0,ordm:4.5,npm:3.0,equity:40,current:170,fixedlt:85,fixedratio:120,debtratio:150,atoturn:1.1,faturn:2.5,roa:4.0,roe:9,labshare:55,persr:35,de:1.1,debty:7,icr:4.5},
+  it:{gm:45,costr:55,sgar:38,opm:6.0,ordm:6.5,npm:4.5,equity:45,current:190,fixedlt:75,fixedratio:100,debtratio:120,atoturn:1.0,faturn:3.0,roa:6.0,roe:11,labshare:55,persr:38,de:0.8,debty:5,icr:8},
+  food:{gm:60,costr:40,sgar:56,opm:3.0,ordm:3.0,npm:1.5,equity:20,current:110,fixedlt:100,fixedratio:180,debtratio:300,atoturn:1.5,faturn:2.0,roa:3.0,roe:8,labshare:40,persr:30,de:2.5,debty:12,icr:2.5},
+};
+const sortPeriods = () => periods.sort((a,b)=> a.year-b.year);
 
-  // ---- percents ----
-  const caP=P(d.ca), faP=P(d.fa), clP=P(d.cl), flP=P(d.fl), naP=P(d.na), reP=P(d.re);
-  const salesP=P(d.sales), gpP=P(d.grossProfit), opP=P(d.operatingProfit), niP=P(d.netIncome);
+/* ---------- compute ---------- */
+function computeVals(v){
+  const g=k=> +v[k]||0;
+  // 大項目（合計）が主。内訳を開いた場合、その他＝合計−主要内訳 の残差とする
+  const ca=g('ca'), fa=g('fa'), cl=g('cl'), fl=g('fl');
+  const cash=g('cash'), sec=g('sec'), recv=g('recv'), inv=g('inv'), stloanto=g('stloanto'), prepaid=g('prepaid');
+  const oca = v.det_ca ? ca-(cash+recv+inv+stloanto+prepaid) : g('oca');
+  const building=g('building'), vehicle=g('vehicle'), land=g('land'), software=g('software'), invsec=g('invsec');
+  const iota = v.det_fa ? fa-(building+vehicle+land+software+invsec) : g('iota');
+  const payb=g('payb'), stloan=g('stloan'), cpltd=g('cpltd'), payables=g('payables'), taxpay=g('taxpay');
+  const ocl = v.det_cl ? cl-(payb+stloan+cpltd+payables+taxpay) : g('ocl');
+  const ltloan=g('ltloan'), bond=g('bond'), execloan=g('execloan'), lease=g('lease');
+  const ofl = v.det_fl ? fl-(ltloan+bond+execloan+lease) : g('ofl');
+  const cap=g('cap'), csurp=g('csurp'), re=g('re'), ona=g('ona');
+  const na=cap+csurp+re+ona, totalAssets=ca+fa, totalCapital=cl+fl+na;
+  const bsDiff=totalAssets-totalCapital, bsBalanced=Math.round(bsDiff)===0, insolvent=na<=0;
+  // 「その他（残差）」がマイナス＝内訳合計が大項目を超過（入力ミスの可能性）
+  const negResiduals=[];
+  // 有利子負債：内訳を開けば ★項目の合計、閉じていれば直接入力（短期/長期）
+  const ibdShort = v.det_cl ? (stloan+cpltd) : g('ibds');
+  const ibdLong  = v.det_fl ? (ltloan+bond) : g('ibdl');
+  const ibd = ibdShort + ibdLong;
+  const quick=cash+sec+recv;
+  const sales=g('sales'),noi=g('noi'),recint=g('recint'),noe=g('noe'),intexp=g('intexp'),exg=g('exg'),exl=g('exl'),tax=g('tax');
+  let cogs, othcogs=g('othcogs');
+  if(v.det_cogs){
+    if(costType==='B'){ cogs=g('beginv')+g('purch')-g('endinv'); }
+    else { cogs=g('cogs'); othcogs = cogs-(costType==='A' ? g('matcost')+g('labcost')+g('subcon')+g('depcogs') : g('labcost')+g('subcon')); }
+  } else cogs=g('cogs');
+  const sga = g('sga');
+  const othsga = v.det_sga ? sga-(g('execcomp')+g('salary')+g('welfare')+g('adv')+g('rent')+g('depsga')+g('outsourcing')) : g('othsga');
+  // 減価償却費：内訳を開けば内訳の値、閉じていれば直接入力（製造原価分・販管費分）
+  const dep = g('depcogs') + g('depsga');
+  const laborCost = (v.det_cogs&&costType!=='B'?g('labcost'):0) + (v.det_sga?(g('execcomp')+g('salary')+g('welfare')):0);
+  const personnelReady = !!(v.det_sga || (v.det_cogs&&costType!=='B'));
+  const grossProfit=sales-cogs, operatingProfit=grossProfit-sga, ordinaryProfit=operatingProfit+noi-noe, pretaxProfit=ordinaryProfit+exg-exl, netIncome=pretaxProfit-tax;
+  const busProfit=operatingProfit+recint;
+  const costRatio=sales? cogs/sales*100:0, sgaRatio=sales? sga/sales*100:0, personnelRatio=sales? laborCost/sales*100:0, laborShare=grossProfit>0? laborCost/grossProfit*100:0;
+  const advRatio=sales? g('adv')/sales*100:0;
+  const ibdReady=!!(v.det_cl||v.det_fl||(+v.ibds||0)!==0||(+v.ibdl||0)!==0), quickReady=!!v.det_ca;
+  const currentRatio=cl? ca/cl*100:0;
+  const quickRatio=cl? quick/cl*100:0;
+  const fixedLTRatio=(na+fl)? fa/(na+fl)*100:0;
+  const roe=na? netIncome/na*100:0;
+  const equityRatio=totalCapital? na/totalCapital*100:0;
+  const netMargin=sales? netIncome/sales*100:0;
+  const opMargin=sales? operatingProfit/sales*100:0;
+  const grossMargin=sales? grossProfit/sales*100:0;
+  const assetTurnover=totalCapital? sales/totalCapital:0;
+  const finLeverage=na? totalCapital/na:0;
+  const ordMargin=sales? ordinaryProfit/sales*100:0;
+  const roa=totalAssets? netIncome/totalAssets*100:0;
+  const taxRate=pretaxProfit>0? tax/pretaxProfit:0;
+  const nopat=operatingProfit*(1-taxRate);
+  const investedCap=ibd+na;
+  const roic=investedCap>0? nopat/investedCap*100:0;
+  const atoturn=totalAssets? sales/totalAssets:0;
+  const faturn=fa? sales/fa:0;
+  const debtRatio=na? (cl+fl)/na*100:0;
+  const fixedRatio=na? fa/na*100:0;
+  const wc=ca-cl;
+  const de=na? ibd/na:0;
+  const ibdRatio=totalCapital? ibd/totalCapital*100:0;
+  const netDe=na? (ibd-cash)/na:0;
+  const debtMonths=sales? ibd/(sales/12):0;
+  const icr=intexp>0? busProfit/intexp:0;
+  // 債務償還年数は詳細CF（実際の営業CF）で算出するため derived() で前期と突き合わせて計算する
+  const invTurnover=inv>0? cogs/inv:0;
+  const recvDays=sales>0? recv/(sales/365):0;
+  // 従業員数・労働生産性（従業員数は任意）
+  // 残差（その他）のマイナス検出：内訳合計が大項目合計を超えている＝入力ミスの可能性
+  if(v.det_ca && oca<0) negResiduals.push(['流動資産','その他流動資産',oca]);
+  if(v.det_fa && iota<0) negResiduals.push(['固定資産','長期貸付金・その他投資',iota]);
+  if(v.det_cl && ocl<0) negResiduals.push(['流動負債','その他短期負債',ocl]);
+  if(v.det_fl && ofl<0) negResiduals.push(['固定負債','その他長期負債',ofl]);
+  if(v.det_cogs && costType!=='B' && othcogs<0) negResiduals.push(['売上原価','その他製造経費',othcogs]);
+  if(v.det_sga && othsga<0) negResiduals.push(['販管費','その他販管費',othsga]);
+  const emp=g('emp'), empReady=emp>0;
+  const valueAdded=operatingProfit+laborCost+dep+g('rent')+intexp; // 簡易付加価値（中小企業庁方式の簡易版）
+  const salesPerEmp=empReady? sales/emp:0, vaPerEmp=empReady? valueAdded/emp:0, laborPerEmp=empReady? laborCost/emp:0;
+  return {ca,fa,cl,fl,cash,sec,recv,inv,oca,stloanto,prepaid,iota,building,vehicle,land,software,invsec,
+    payb,stloan,cpltd,ocl,payables,taxpay,ltloan,bond,ofl,execloan,lease,
+    cap,csurp,re,ona,na,totalAssets,totalCapital,bsDiff,bsBalanced,insolvent,negResiduals,ibd,ibdShort,ibdLong,quick,
+    sales,cogs,sga,noi,recint,noe,intexp,exg,exl,tax,dep,
+    grossProfit,operatingProfit,ordinaryProfit,pretaxProfit,netIncome,busProfit,
+    currentRatio,quickRatio,fixedLTRatio,roe,equityRatio,netMargin,opMargin,grossMargin,assetTurnover,finLeverage,ordMargin,roa,roic,nopat,investedCap,
+    de,ibdRatio,netDe,debtMonths,icr,invTurnover,recvDays,ibdReady,quickReady,atoturn,faturn,debtRatio,fixedRatio,wc,
+    emp,empReady,valueAdded,salesPerEmp,vaPerEmp,laborPerEmp,
+    matcost:g('matcost'),labcost:g('labcost'),subcon:g('subcon'),depcogs:g('depcogs'),othcogs,
+    beginv:g('beginv'),purch:g('purch'),endinv:g('endinv'),execcomp:g('execcomp'),salary:g('salary'),welfare:g('welfare'),adv:g('adv'),rent:g('rent'),depsga:g('depsga'),outsourcing:g('outsourcing'),othsga,
+    laborCost,costRatio,sgaRatio,advRatio,personnelRatio,laborShare,personnelReady,
+    detCa:!!v.det_ca,detFa:!!v.det_fa,detCl:!!v.det_cl,detFl:!!v.det_fl,detCogs:!!v.det_cogs,detSga:!!v.det_sga};
+}
+const derived = () => {
+  const arr=periods.map(p=> ({year:p.year, d:computeVals(p.vals)}));
+  const g=(cur,prev)=> (prev!=null && prev!==0) ? (cur-prev)/Math.abs(prev)*100 : null;
+  arr.forEach((r,i)=>{ const pv=i>0?arr[i-1].d:null;
+    r.d.gSales = pv? g(r.d.sales,pv.sales):null;
+    r.d.gGross = pv? g(r.d.grossProfit,pv.grossProfit):null;
+    r.d.gOp    = pv? g(r.d.operatingProfit,pv.operatingProfit):null;
+    r.d.gNa    = pv? g(r.d.na,pv.na):null;
+    // 詳細CF（実際の営業CF）と、それに基づく債務償還年数（前期がある期のみ算出）
+    const cf = pv? computeCF(pv, r.d) : null;
+    r.d.opCF = cf? cf.opCF : null;
+    r.d.opCFReady = cf!=null;
+    r.d.debtYears = (cf==null) ? null : (r.d.ibd<=0 ? 0 : (cf.opCF>0 ? r.d.ibd/cf.opCF : Infinity));
+  });
+  return arr;
+};
 
-  // ---- helpers ----
-  const box=(x0,x1,yTop,yBot,fill,stroke='#333',sw=2,dash='')=>
-    `<rect x="${x0}" y="${yTop}" width="${x1-x0}" height="${Math.max(0,yBot-yTop)}" fill="${fill}" stroke="${stroke}" stroke-width="${sw}" ${dash?`stroke-dasharray="${dash}"`:''}/>`;
-  const txt=(x,y,s,o={})=>
-    `<text x="${x}" y="${y}" font-size="${o.size||F_NAME}" fill="${o.fill||'#1a1a1a'}" text-anchor="${o.anchor||'start'}" font-weight="${o.weight||'normal'}">${s}</text>`;
-  const label3=(cx,yTop,yBot,name,val,pctStr,col=WT)=>{
-    const m=(yTop+yBot)/2;
-    return txt(cx,m-28,name,{anchor:'middle',size:F_NAME,weight:'bold',fill:col})
-         + txt(cx,m+16,val,{anchor:'middle',size:F_VAL,fill:col})
-         + txt(cx,m+56,pctStr,{anchor:'middle',size:F_PCT,fill:col});
-  };
-
-  let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="百分率財務諸表チャート">`;
-
-  // axis + gridlines
-  s += `<line x1="${axisX}" y1="${top}" x2="${axisX}" y2="${bottom}" stroke="#333" stroke-width="2"/>`;
-  s += txt(axisX-48, top-18, "％", {size:F_AXIS});
-  for(let p=0;p<=100;p+=10){
-    const y=Y(p);
-    s += `<line x1="${axisX-8}" y1="${y}" x2="${axisX}" y2="${y}" stroke="#333"/>`;
-    s += `<line x1="${axisX}" y1="${y}" x2="${W-20}" y2="${y}" stroke="#eef1f4"/>`;
-    s += txt(axisX-16, y+9, p, {anchor:'end', size:F_AXIS, fill:'#555'});
+/* ---------- input form (BS/PL) ---------- */
+const BS_LEFT = [
+  {sec:'資産の部'},
+  {big:'ca', label:'流動資産', leaves:[['cash','現預金'],['recv','売上債権'],['inv','棚卸資産'],['stloanto','短期貸付金・役員貸付金'],['prepaid','前払・仮払・立替金'],['oca','その他流動資産']]},
+  {big:'fa', label:'固定資産', leaves:[['building','建物・設備'],['vehicle','車両・工具器具備品'],['land','土地'],['software','ソフトウェア・無形資産'],['invsec','投資有価証券・保険積立金'],['iota','長期貸付金・その他投資']]},
+  {auto:'totalAssets', label:'資産合計'},
+];
+const BS_RIGHT = [
+  {sec:'負債の部', cls:'liab'},
+  {big:'cl', label:'流動負債（短期負債）', leaves:[['payb','買掛金・支払手形'],['stloan','短期借入金 ★'],['cpltd','1年以内返済予定長期借入金 ★'],['payables','未払金・未払費用'],['taxpay','未払税金'],['ocl','その他短期負債']], uchi:{key:'ibds', label:'└ うち有利子負債（短期）★'}},
+  {big:'fl', label:'固定負債（長期負債）', leaves:[['ltloan','長期借入金 ★'],['bond','社債 ★'],['execloan','役員・関係者借入金'],['lease','リース債務・引当金'],['ofl','その他長期負債']], uchi:{key:'ibdl', label:'└ うち有利子負債（長期）★'}},
+  {auto:'liab', label:'負債合計'},
+  {auto:'ibd', label:'（有利子負債 合計 ★）', sub:true},
+  {sec:'純資産の部', cls:'na'},
+  {plain:'cap', label:'資本金'},
+  {plain:'csurp', label:'資本剰余金'},
+  {plain:'re', label:'利益剰余金'},
+  {plain:'ona', label:'その他純資産'},
+  {auto:'na', label:'純資産合計'},
+  {auto:'totalCapital', label:'負債・純資産合計'},
+];
+const PL_STRUCT = [
+  {plain:'sales', label:'売上高'},
+  {big:'cogs', label:'売上原価', leavesFn:cogsLeaves, uchi:{key:'depcogs', label:'└ うち減価償却費（製造原価）'}},
+  {auto:'grossProfit', label:'売上総利益（粗利）'},
+  {big:'sga', label:'販管費', leaves:SGA_LEAVES, uchi:{key:'depsga', label:'└ うち減価償却費（販管費）'}},
+  {auto:'operatingProfit', label:'営業利益'},
+  {plain:'noi', label:'営業外収益'},
+  {plain:'recint', label:'うち受取利息・配当金', sub:true},
+  {plain:'noe', label:'営業外費用'},
+  {plain:'intexp', label:'うち支払利息', sub:true},
+  {auto:'ordinaryProfit', label:'経常利益'},
+  {plain:'exg', label:'特別利益'},
+  {plain:'exl', label:'特別損失'},
+  {auto:'pretaxProfit', label:'税引前当期純利益'},
+  {plain:'tax', label:'法人税等'},
+  {auto:'netIncome', label:'当期純利益'},
+];
+function buildInputForm(){
+  const v=periods[curIdx].vals, u=unitStr();
+  const g=k=> (v[k]!=null? v[k]:0);
+  const numRow=(key,label,cls='')=> `<div class="frow ${cls}"><label>${label}</label><input type="number" id="in_${key}" value="${g(key)}"><span class="unit">${u}</span></div>`;
+  const autoRow=(key,label,cls='')=> `<div class="frow fauto ${cls}"><label>${label}</label><span class="autoval" id="in_${key}">0</span><span class="unit">${u}</span></div>`;
+  function bigRow(item){
+    const cogsIdentity = (item.big==='cogs' && costType==='B'); // 商業の原価は期首+仕入−期末の計算式
+    let h=`<div class="frow fbig"><label>${item.label}</label>`;
+    if(cogsIdentity) h+=`<input type="number" id="in_${item.big}" value="0" readonly>`;
+    else h+=`<input type="number" id="in_${item.big}" value="${g(item.big)}">`; // 合計は入力可（「その他」は差額を自動計算）
+    h+=`<span class="unit">${u}</span></div>`;
+    const lv=item.leavesFn? item.leavesFn(): item.leaves, resid=cogsIdentity?null:otherOf(item.big); // 内訳は常時表示
+    h+=lv.map(([k,lb])=> k===resid ? autoRow(k,lb,'fleaf') : numRow(k,lb,'fleaf')).join('');
+    return h;
   }
-
-  // headers
-  s += txt(16, top-18, "単位：億円", {size:F_AXIS, fill:'#777'});
-  s += txt((c1x0+c2x1)/2, top-56, "総資本", {anchor:'middle', size:F_HEAD, weight:'bold'});
-  s += txt((c1x0+c2x1)/2, top-12, fmt(d.totalCapital), {anchor:'middle', size:F_HEAD, weight:'bold'});
-
-  // ----- assets column -----
-  s += box(c1x0,c1x1, Y(faP), Y(0), C_FA);
-  s += label3((c1x0+c1x1)/2, Y(faP), Y(0), "固定資産", fmt(d.fa), p1(faP)+"%");
-  s += box(c1x0,c1x1, Y(100), Y(faP), C_CA);
-  s += label3((c1x0+c1x1)/2, Y(100), Y(faP), "流動資産", fmt(d.ca), p1(caP)+"%");
-
-  // ----- liabilities + equity column -----
-  // 純資産 (E) with 利益剰余金 (darker) as bottom subset
-  s += box(c2x0,c2x1, Y(naP), Y(0), C_NA);
-  s += box(c2x0,c2x1, Y(reP), Y(0), C_RE);
-  s += label3((c2x0+c2x1)/2, Y(naP), Y(reP), "純資産", fmt(d.na), p1(naP)+"%");
-  {
-    const m=(Y(reP)+Y(0))/2;
-    s += txt((c2x0+c2x1)/2, m-6, "（利益剰余金）", {anchor:'middle', size:F_PCT, fill:WT});
-    s += txt((c2x0+c2x1)/2, m+34, fmt(d.re)+"  "+p1(reP)+"%", {anchor:'middle', size:F_PCT, fill:WT});
+  function render(struct){
+    return struct.map(item=>{
+      if(item.sec) return `<div class="fsec ${item.cls||''}">${item.sec}</div>`;
+      if(item.big) return bigRow(item);
+      if(item.auto) return autoRow(item.auto, item.label, item.sub?'fsub':'');
+      if(item.plain) return numRow(item.plain, item.label, item.sub?'fsub':'');
+      return '';
+    }).join('');
   }
-  // 固定負債 (D)
-  s += box(c2x0,c2x1, Y(naP+flP), Y(naP), C_FL);
-  s += label3((c2x0+c2x1)/2, Y(naP+flP), Y(naP), "固定負債", fmt(d.fl), p1(flP)+"%");
-  // 流動負債 (C)
-  s += box(c2x0,c2x1, Y(100), Y(naP+flP), C_CL);
-  s += label3((c2x0+c2x1)/2, Y(100), Y(naP+flP), "流動負債", fmt(d.cl), p1(clP)+"%");
+  $("bsLeft").innerHTML = render(BS_LEFT);
+  $("bsRight").innerHTML = render(BS_RIGHT);
+  $("plForm").innerHTML = render(PL_STRUCT);
+  const empEl=$('in_emp'); if(empEl) empEl.value=g('emp');
+  updateComputedInputs();
+}
+function updateComputedInputs(){
+  const v=periods[curIdx].vals, d=computeVals(v);
+  const setNum=(id,val)=>{ const el=$('in_'+id); if(el&&el.tagName==='INPUT') el.value=Math.round(val); };
+  const setTxt=(id,val)=>{ const el=$('in_'+id); if(el&&el.tagName!=='INPUT'){ el.textContent=fmt(val); el.classList.toggle('in-neg', val<0); } };
+  if(v.det_ca) setTxt('oca',d.oca);
+  if(v.det_fa) setTxt('iota',d.iota);
+  if(v.det_cl) setTxt('ocl',d.ocl);
+  if(v.det_fl) setTxt('ofl',d.ofl);
+  if(v.det_cogs && costType==='B') setNum('cogs',d.cogs);       // 商業の原価は計算式のため合計を自動表示
+  if(v.det_cogs && costType!=='B') setTxt('othcogs',d.othcogs); // その他＝合計−主要内訳
+  if(v.det_sga) setTxt('othsga',d.othsga);
+  setTxt('totalAssets',d.totalAssets); setTxt('liab',d.cl+d.fl); setTxt('ibd',d.ibd);
+  setTxt('na',d.na); setTxt('totalCapital',d.totalCapital);
+  setTxt('grossProfit',d.grossProfit); setTxt('operatingProfit',d.operatingProfit);
+  setTxt('ordinaryProfit',d.ordinaryProfit); setTxt('pretaxProfit',d.pretaxProfit); setTxt('netIncome',d.netIncome);
+  const bal=$("bsBalance");
+  if(bal){ const diff=d.totalAssets-d.totalCapital, u=unitStr();
+    if(Math.round(diff)===0){ bal.className='bs-balance ok'; bal.textContent=`貸借一致（差額 0 ${u}）`; }
+    else { bal.className='bs-balance ng'; bal.textContent=`貸借差 ${diff>0?'+':''}${fmt(diff)} ${u}（資産合計 − 負債・純資産合計）— 一致するよう入力してください`; } }
+  // 「その他（残差）」マイナス警告
+  const iw=$("inputWarn"), u=unitStr();
+  if(iw){
+    if(d.negResiduals && d.negResiduals.length){
+      iw.hidden=false;
+      iw.innerHTML=`⚠ <b>内訳の合計が大項目の合計を超えています</b>（「その他」がマイナス）。入力を見直してください。<br>`+
+        d.negResiduals.map(r=>`・${r[0]}：${r[1]} <b>${fmt(r[2])} ${u}</b>`).join('<br>');
+    } else iw.hidden=true;
+  }
+}
 
-  // ----- brackets 他人資本 / 自己資本 -----
-  const brace=(yA,yB,label)=>{
-    const xm=brX;
-    let g=`<path d="M ${xm} ${yA} q 12 0 12 14 L ${xm+12} ${(yA+yB)/2-14} q 0 14 14 14 q -14 0 -14 14 L ${xm+12} ${yB-14} q 0 14 -12 14" fill="none" stroke="#333" stroke-width="2"/>`;
-    g+=txt(xm+34,(yA+yB)/2+14,label,{size:F_BR,weight:'bold'});
+/* ---------- period bar ---------- */
+function renderPeriodBar(){
+  let h='';
+  periods.forEach((p,i)=>{ h+=`<button class="ptab ${i===curIdx?'active':''}" data-i="${i}">${TLAB(p.year)}</button>`; });
+  h+=`<span class="addper"><button class="btn-add" id="addBtn" ${periods.length>=MAXP?'disabled':''}>＋ 期を追加</button>`;
+  if(periods.length>=MAXP) h+=`<span style="font-size:11px;color:#94a3b8;">最大3期</span>`;
+  h+='</span>';
+  $("periodbar").innerHTML=h;
+}
+
+/* ---------- modal ---------- */
+let modalOnOk=null;
+function openModal(o){
+  $("modalTitle").textContent=o.title||'';
+  $("modalBody").innerHTML=o.bodyHTML||'';
+  const ok=$("modalOk"); ok.textContent=o.okLabel||'OK'; ok.className=o.okClass||'btn-primary';
+  modalOnOk=o.onOk||null; $("modal").hidden=false;
+  if(o.focus){ const el=$(o.focus); if(el){ el.focus(); if(el.select) el.select(); } }
+}
+function closeModal(){ $("modal").hidden=true; modalOnOk=null; }
+function openAddModal(){
+  if(periods.length>=MAXP) return;
+  const last=periods[periods.length-1];
+  const suggest=(last? last.year:0)+1;
+  openModal({ title:'期を追加', okLabel:'追加',
+    bodyHTML:`<label class="modal-label">追加する期（数字）　例：10 → 第10期</label><input type="number" id="modalYear" value="${suggest}" step="1" min="1"><div class="modal-err" id="modalErr"></div>`,
+    focus:'modalYear',
+    onOk:()=>{ const y=parseInt($("modalYear").value,10); const err=$("modalErr");
+      if(!Number.isFinite(y)){ err.textContent='期（数字）を入力してください。'; return false; }
+      if(periods.some(p=>p.year===y)){ err.textContent='その期は既に存在します。'; return false; }
+      periods.push({year:y, vals:Object.assign({}, periods[curIdx].vals)});
+      sortPeriods(); curIdx=periods.findIndex(p=>p.year===y); buildInputForm(); run(); } });
+}
+function openResetModal(){
+  const y=periods[curIdx].year;
+  openModal({ title:'数値のリセット', okLabel:'リセットする', okClass:'btn-danger',
+    bodyHTML:`<div class="modal-msg"><b>${TLAB(y)}</b> の入力数値（内訳含む）をすべて <b>0</b> にします。よろしいですか？</div>`,
+    onOk:()=>{ periods[curIdx].vals=zeros(); buildInputForm(); run(); } });
+}
+function openDeleteModal(){
+  if(periods.length<=1){ openModal({title:'削除できません', okLabel:'OK', bodyHTML:`<div class="modal-msg">最後の1期は削除できません。<br>先に別の期を追加してください。</div>`, onOk:()=>{}}); return; }
+  const y=periods[curIdx].year;
+  openModal({ title:'期の削除', okLabel:'削除する', okClass:'btn-danger',
+    bodyHTML:`<div class="modal-msg"><b>${TLAB(y)}</b> のタブを削除します。よろしいですか？</div>`,
+    onOk:()=>{ periods.splice(curIdx,1); if(curIdx>=periods.length) curIdx=periods.length-1; buildInputForm(); run(); } });
+}
+
+/* ---------- chart ---------- */
+const C = {ca:'#4E79A7', fa:'#4E8A46', cl:'#C4433F', fl:'#CC6A1F', na:'#8E5AA0', gp:'#c8c8c8'};
+const GOLD='#e8a11a';
+function comboSVG(ds, hi, showPL){
+  showPL = showPL!==false;
+  const n=ds.length;
+  // 正の最大値と負の最小値（債務超過・損失に対応）
+  let posMax=0, negMin=0;
+  ds.forEach(({d})=>{
+    const R=d.sales+d.noi+d.exg, Cst=d.cogs+d.sga+d.noe+d.exl+d.tax; // 収益合計・費用合計（PLは費用列＋収益列＝同じ高さ）
+    posMax=Math.max(posMax, d.totalAssets, d.totalCapital, d.cl+d.fl+Math.max(d.na,0), d.cl+d.fl, showPL?Math.max(R,Cst):0);
+    negMin=Math.min(negMin, d.na);
+  });
+  if(posMax<=0) posMax=1;
+  const AX=70, TOP=70, BOT=470, chH=BOT-TOP, span=posMax-negMin;
+  const Y=v=> BOT-((v-negMin)/span)*chH;
+  const BW=74, PLGAP=38, GPAD=44, groupInner=(showPL?4*BW+PLGAP:2*BW), slot=groupInner+GPAD*2, x0=AX+24, W=2*x0+n*slot, H=560;
+  const y0=Y(0);
+  const boxKeep=hi? new Set(hi.boxes||[]):null; if(boxKeep&&boxKeep.has('sales')) boxKeep.add('gp');
+  const box=(x,w,yT,yB,fill,title)=> `<rect x="${x}" y="${yT}" width="${w}" height="${Math.max(0,yB-yT)}" fill="${fill}" stroke="#333" stroke-width="1">${title?`<title>${title}</title>`:''}</rect>`;
+  const segLabel=(x,yT,yB,val)=> (yB-yT>=20)? `<text x="${x+BW/2}" y="${(yT+yB)/2+4}" font-size="13" fill="#fff" text-anchor="middle">${fmt(val)}</text>`:'';
+  const segLabel2=(x,yT,yB,nm,val)=>{ const h=yB-yT; if(h<16) return ''; const cy=(yT+yB)/2;
+    return h>=32 ? `<text x="${x+BW/2}" y="${cy-3}" font-size="11" fill="#fff" text-anchor="middle">${nm}</text><text x="${x+BW/2}" y="${cy+13}" font-size="13" fill="#fff" text-anchor="middle">${fmt(val)}</text>`
+                 : `<text x="${x+BW/2}" y="${cy+4}" font-size="12" fill="#fff" text-anchor="middle">${fmt(val)}</text>`; };
+  // 「うち〜」の内訳バンド（親ボックスの下部に点線枠で表示）
+  const uchiBand=(x,yTop,yBot,total,sub,full,col)=>{
+    if(!(sub>0)||!(total>0)) return '';
+    const frac=Math.min(1,sub/total), bh=(yBot-yTop)*frac, by=yBot-bh;
+    let g=`<rect x="${x+7}" y="${by}" width="${BW-14}" height="${Math.max(0,bh)}" fill="none" stroke="${col}" stroke-width="1.6" stroke-dasharray="4 2"><title>${full}：${fmt(sub)} ${unitStr()}</title></rect>`;
+    if(bh>=12) g+=`<text x="${x+BW/2}" y="${by+bh/2+3}" font-size="9" fill="${col}" font-weight="bold" text-anchor="middle">${fmt(sub)}</text>`;
     return g;
   };
-  s += brace(Y(100), Y(naP), "他人資本");
-  s += brace(Y(naP), Y(0), "自己資本");
-
-  // ----- turnover diagonal (総資本 top -> 売上高 top) -----
-  s += `<line x1="${c2x1}" y1="${Y(100)}" x2="${c3x0}" y2="${Y(salesP)}" stroke="#333" stroke-width="1.5" stroke-dasharray="8 5"/>`;
-
-  // ----- PL column -----
-  s += box(c3x0,c3x1, Y(salesP), Y(0), C_PL);
-  s += txt(c3x1, Y(salesP)-58, "売上高", {anchor:'end', size:F_HEAD, weight:'bold'});
-  s += txt(c3x1, Y(salesP)-12, fmt(d.sales), {anchor:'end', size:F_HEAD, weight:'bold'});
-  // 粗利 (bottom fill)
-  s += box(c3x0,c3x1, Y(gpP), Y(0), C_GP);
-  s += label3((c3x0+c3x1)/2, Y(gpP), Y(0), "粗利", fmt(d.grossProfit), p1(d.sales? d.grossProfit/d.sales*100:0)+"%", '#1a1a1a');
-  // 営業利益 marker line + label (left)
-  s += `<line x1="${c3x0}" y1="${Y(opP)}" x2="${c3x1}" y2="${Y(opP)}" stroke="#333" stroke-width="2"/>`;
-  s += txt(c3x0-14, Y(opP)-10, "営業利益 "+fmt(d.operatingProfit)+" "+p1(d.sales? d.operatingProfit/d.sales*100:0)+"%", {anchor:'end', size:F_LEAD, fill:'#333'});
-  // 当期純利益 marker line + label (left, red)
-  s += `<line x1="${c3x0}" y1="${Y(niP)}" x2="${c3x1}" y2="${Y(niP)}" stroke="#c53030" stroke-width="2"/>`;
-  s += txt(c3x0-14, Y(niP)+34, "当期純利益 "+fmt(d.netIncome)+" "+p1(d.sales? d.netIncome/d.sales*100:0)+"%", {anchor:'end', size:F_LEAD, fill:'#c53030'});
-
-  s += `</svg>`;
-
-  // DuPont table (HTML above svg)
-  const table = `
-    <table class="dupont">
-      <tr><td>ROE</td><td>${p2(d.roe)}%</td></tr>
-      <tr><td>当期純利益率</td><td>${p1(d.netMargin)}%</td></tr>
-      <tr><td>総資本回転率</td><td>${p2(d.assetTurnover)} 回</td></tr>
-      <tr><td>財務レバレッジ</td><td>${p2(d.finLeverage)} 倍</td></tr>
-    </table>`;
-
-  $("chart").innerHTML = table + s;
+  // PL比例縮尺（左＝費用列／右＝収益列）用のスタッカー
+  const plLabel=(x,yt,yb,nm,val)=>{ const h=yb-yt; if(h<15) return ''; const cy=(yt+yb)/2;
+    if(h>=30) return `<text x="${x+BW/2}" y="${cy-3}" font-size="10" fill="#fff" text-anchor="middle">${nm}</text><text x="${x+BW/2}" y="${cy+12}" font-size="12" fill="#fff" font-weight="bold" text-anchor="middle">${fmt(val)}</text>`;
+    return `<text x="${x+BW/2}" y="${cy+4}" font-size="10" fill="#fff" text-anchor="middle">${fmt(val)}</text>`; };
+  const plStack=(x, segs)=>{ let cum=0, out=''; segs.forEach(sg=>{ if(!(sg.val>0)) return; const yb=Y(cum), yt=Y(cum+sg.val);
+      out+=`<rect x="${x}" y="${yt}" width="${BW}" height="${Math.max(0,yb-yt)}" fill="${sg.col}" stroke="#fff" stroke-width="1"><title>${sg.name}：${fmt(sg.val)} ${unitStr()}</title></rect>`+plLabel(x,yt,yb,sg.name,sg.val); cum+=sg.val; }); return {svg:out, top:Y(cum)}; };
+  let s=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="比較チャート" preserveAspectRatio="xMidYMid meet" style="display:block;width:100%;height:100%;margin:0 auto;">`;
+  s+=`<line x1="${AX}" y1="${TOP}" x2="${AX}" y2="${BOT}" stroke="#333" stroke-width="1.5"/>`;
+  s+=`<text x="${AX-30}" y="${TOP-12}" font-size="16" fill="#333">％</text>`;
+  const pMin=Math.floor((negMin/posMax*100)/20)*20;
+  for(let p=pMin;p<=100;p+=20){ const y=Y(p/100*posMax), emph=(p===0);
+    s+=`<line x1="${AX}" y1="${y}" x2="${W-16}" y2="${y}" stroke="${emph?'#b8bcc2':'#eef1f4'}" stroke-width="${emph?1.2:1}"/><line x1="${AX-6}" y1="${y}" x2="${AX}" y2="${y}" stroke="#333"/><text x="${AX-10}" y="${y+5}" font-size="15" fill="#555" text-anchor="end">${p}</text>`; }
+  s+=`<text x="6" y="${TOP-12}" font-size="14" fill="#777">単位：${unitStr()}</text>`;
+  s+=`<text x="${AX+18}" y="26" font-size="14" fill="#555">最大値 ${fmt(posMax)} ${unitStr()} を 100% として表示（左＝古い ／ 右＝新しい）</text>`;
+  ds.forEach(({year,d},gi)=>{
+    const gx=x0+gi*slot+GPAD, bx=[gx,gx+BW,gx+2*BW+PLGAP,gx+3*BW+PLGAP];
+    const tt=(nm,val,base)=>`${nm}：${fmt(val)} ${unitStr()}${base?`（${p1(val/base*100)}%）`:''}`;
+    // 資産
+    const yFa=Y(d.fa), yA=Y(d.fa+d.ca);
+    s+=box(bx[0],BW,yFa,y0,C.fa,tt('固定資産',d.fa,d.totalAssets))+segLabel(bx[0],yFa,y0,d.fa);
+    s+=box(bx[0],BW,yA,yFa,C.ca,tt('流動資産',d.ca,d.totalAssets))+segLabel(bx[0],yA,yFa,d.ca);
+    // 負債・純資産（純資産マイナス＝債務超過にも対応）
+    let naTop,naBot,flTop,flBot,yCl;
+    if(d.na>=0){
+      const yNa=Y(d.na), yFl=Y(d.na+d.fl), yRe=Y(d.re), capEq=d.na-d.re; yCl=Y(d.na+d.fl+d.cl);
+      s+=box(bx[1],BW,yNa,y0,C.na);
+      s+=segLabel2(bx[1],yNa,yRe,'資本金',capEq)+segLabel2(bx[1],yRe,y0,'利益剰余金',d.re);
+      if(d.re>0&&d.na>0) s+=`<line x1="${bx[1]}" y1="${yRe}" x2="${bx[1]+BW}" y2="${yRe}" stroke="#fff" stroke-width="1.5" stroke-dasharray="6 4"/>`;
+      s+=`<rect x="${bx[1]}" y="${yNa}" width="${BW}" height="${Math.max(0,yRe-yNa)}" fill="transparent"><title>${tt('資本金',capEq,d.totalCapital)}</title></rect>`;
+      s+=`<rect x="${bx[1]}" y="${yRe}" width="${BW}" height="${Math.max(0,y0-yRe)}" fill="transparent"><title>${tt('利益剰余金',d.re,d.totalCapital)}</title></rect>`;
+      s+=box(bx[1],BW,yFl,yNa,C.fl,tt('固定負債',d.fl,d.totalCapital))+segLabel(bx[1],yFl,yNa,d.fl);
+      s+=box(bx[1],BW,yCl,yFl,C.cl,tt('流動負債',d.cl,d.totalCapital))+segLabel(bx[1],yCl,yFl,d.cl);
+      s+=uchiBand(bx[1],yCl,yFl,d.cl,d.ibdShort,'うち有利子負債(短期)','#3a0d0b');
+      s+=uchiBand(bx[1],yFl,yNa,d.fl,d.ibdLong,'うち有利子負債(長期)','#3a0d0b');
+      naTop=yNa; naBot=y0; flTop=yFl; flBot=yNa;
+    } else {
+      const yFl=Y(d.fl), yNaNeg=Y(d.na); yCl=Y(d.fl+d.cl);
+      s+=box(bx[1],BW,yFl,y0,C.fl,tt('固定負債',d.fl,d.totalCapital))+segLabel(bx[1],yFl,y0,d.fl);
+      s+=box(bx[1],BW,yCl,yFl,C.cl,tt('流動負債',d.cl,d.totalCapital))+segLabel(bx[1],yCl,yFl,d.cl);
+      s+=uchiBand(bx[1],yCl,yFl,d.cl,d.ibdShort,'うち有利子負債(短期)','#3a0d0b');
+      s+=uchiBand(bx[1],yFl,y0,d.fl,d.ibdLong,'うち有利子負債(長期)','#3a0d0b');
+      // 純資産マイナス（債務超過）＝baselineから下へ赤で表示
+      s+=`<rect x="${bx[1]}" y="${y0}" width="${BW}" height="${Math.max(0,yNaNeg-y0)}" fill="#f5c6c3" stroke="#c53030" stroke-width="1"><title>${tt('純資産（債務超過）',d.na,d.totalCapital)}</title></rect>`;
+      if(yNaNeg-y0>=26) s+=`<text x="${bx[1]+BW/2}" y="${(y0+yNaNeg)/2-3}" font-size="10" fill="#c53030" text-anchor="middle">債務超過</text><text x="${bx[1]+BW/2}" y="${(y0+yNaNeg)/2+11}" font-size="12" fill="#c53030" text-anchor="middle" font-weight="bold">${fmt(d.na)}</text>`;
+      else if(yNaNeg-y0>=12) s+=`<text x="${bx[1]+BW/2}" y="${(y0+yNaNeg)/2+4}" font-size="10" fill="#c53030" text-anchor="middle" font-weight="bold">${fmt(d.na)}</text>`;
+      naTop=y0; naBot=yNaNeg; flTop=yFl; flBot=y0;
+    }
+    // PL（比例縮尺）：左＝費用列（売上原価→当期純利益）／右＝収益列（売上高等）※両列とも収益合計＝費用合計＋利益 で同じ高さ
+    let costTop=y0, revTop=y0;
+    if(showPL){
+      const ni=d.netIncome;
+      const costSegs=[]; if(ni>=0) costSegs.push({name:'当期純利益',val:ni,col:'#2f855a'});
+      costSegs.push({name:'法人税等',val:d.tax,col:'#454b54'},{name:'特別損失',val:d.exl,col:'#565c66'},{name:'営業外費用',val:d.noe,col:'#69707a'},{name:'販管費',val:d.sga,col:'#CC6A1F'},{name:'売上原価',val:d.cogs,col:'#8a9199'});
+      const revSegs=[{name:'特別利益',val:d.exg,col:'#3a5f86'},{name:'営業外収益',val:d.noi,col:'#4E79A7'},{name:'売上高',val:d.sales,col:'#5b8fca'}];
+      if(ni<0) revSegs.push({name:'当期純損失',val:-ni,col:'#cc4a45'});
+      const cR=plStack(bx[2],costSegs), rR=plStack(bx[3],revSegs); s+=cR.svg+rR.svg; costTop=cR.top; revTop=rR.top;
+    }
+    s+=`<text x="${bx[0]+BW/2}" y="${yA-7}" font-size="12" fill="#333" text-anchor="middle" font-weight="bold">${fmt(d.totalAssets)}</text>`;
+    s+=`<text x="${bx[1]+BW/2}" y="${yCl-7}" font-size="12" fill="#333" text-anchor="middle" font-weight="bold">${fmt(d.totalCapital)}</text>`;
+    if(showPL){
+      s+=`<text x="${bx[2]+BW/2}" y="${costTop-7}" font-size="11" fill="#333" text-anchor="middle" font-weight="bold">${fmt(d.cogs+d.sga+d.noe+d.exl+d.tax+Math.max(d.netIncome,0))}</text>`;
+      s+=`<text x="${bx[3]+BW/2}" y="${revTop-7}" font-size="11" fill="#333" text-anchor="middle" font-weight="bold">${fmt(d.sales+d.noi+d.exg+Math.max(-d.netIncome,0))}</text>`;
+    }
+    s+=`<text x="${gx+groupInner/2}" y="${BOT+26}" font-size="16" fill="#1a1a1a" text-anchor="middle" font-weight="bold">${TLAB(year)}</text>`;
+    s+=`<text x="${bx[0]+BW/2}" y="${BOT+44}" font-size="11" fill="#666" text-anchor="middle">資産</text>`;
+    s+=`<text x="${bx[1]+BW/2}" y="${BOT+44}" font-size="11" fill="#666" text-anchor="middle">負債・純資産</text>`;
+    if(showPL){ s+=`<text x="${bx[2]+BW/2}" y="${BOT+44}" font-size="11" fill="#666" text-anchor="middle">費用</text>`;
+      s+=`<text x="${bx[3]+BW/2}" y="${BOT+44}" font-size="11" fill="#666" text-anchor="middle">収益</text>`; }
+    if(hi){
+      const B={ca:[bx[0],yA,yFa],fa:[bx[0],yFa,y0],cl:[bx[1],yCl,flTop],fl:[bx[1],flTop,flBot],na:[bx[1],naTop,naBot]};
+      if(showPL){ B.plcost=[bx[2],costTop,y0]; B.sales=[bx[3],revTop,y0]; }
+      for(const k in B){ if(!boxKeep.has(k)){ const b=B[k], t=Math.min(b[1],b[2]), bo=Math.max(b[1],b[2]); s+=`<rect x="${b[0]}" y="${t}" width="${BW}" height="${Math.max(0,bo-t)}" fill="#f4f5f7" fill-opacity="0.72"/>`; } }
+      const groups={};
+      (hi.boxes||[]).forEach(k=>{ const b=B[k]; if(!b) return; const col=b[0], t=Math.min(b[1],b[2]), bo=Math.max(b[1],b[2]); if(!groups[col]) groups[col]=[b[0],t,bo]; else{ const g=groups[col]; g[1]=Math.min(g[1],t); g[2]=Math.max(g[2],bo); } });
+      Object.keys(groups).forEach(col=>{ const g=groups[col]; s+=`<rect x="${g[0]}" y="${g[1]}" width="${BW}" height="${Math.max(0,g[2]-g[1])}" fill="none" stroke="${GOLD}" stroke-width="4"/>`; });
+      if(showPL && hi.plRange){ const bb=d.noi+d.exg, rg=hi.plRange(d), lo=Math.min(rg[0],rg[1]), hh=Math.max(rg[0],rg[1]), yb=Y(bb+lo), yt=Y(bb+hh), sT=Y(bb+d.sales), sB=Y(bb);
+        s+=`<rect x="${bx[3]}" y="${sT}" width="${BW}" height="${Math.max(0,sB-sT)}" fill="none" stroke="${GOLD}" stroke-width="2" stroke-dasharray="6 3"/>`;
+        s+=`<rect x="${bx[3]}" y="${yt}" width="${BW}" height="${Math.max(0,yb-yt)}" fill="#5b8fca" stroke="${GOLD}" stroke-width="4"/>`;
+        if(yb-yt>=16) s+=`<text x="${bx[3]+BW/2}" y="${(yt+yb)/2-2}" font-size="10" fill="#fff" text-anchor="middle">${hi.plName||''}</text><text x="${bx[3]+BW/2}" y="${(yt+yb)/2+12}" font-size="12" fill="#fff" font-weight="bold" text-anchor="middle">${fmt(hh-lo)}</text>`;
+      }
+    }
+  });
+  s+=`</svg>`; return s;
+}
+function drawChart(ds){ $("chart").innerHTML = comboSVG(ds, currentHi(), true); }
+// 1期分の詳細図（内訳で設定した科目名・数値まで表示・横幅ワイド）
+const SHADES={
+  ca:['#6b93c9','#5b8bc4','#4E79A7','#436b93','#395d80','#2f4f6d'],
+  fa:['#74ad69','#5e9a52','#4E8A46','#437a3d','#396a34','#2f5a2b'],
+  cl:['#d47a77','#cc605c','#C4433F','#ad3b37','#96332f','#7f2b28'],
+  fl:['#db9459','#d2803a','#CC6A1F','#b65d1b','#a05017','#8a4313'],
+  na:['#a884b6','#9970a6','#8E5AA0','#7d4f8e','#6c447c','#5b396a'],
+  cogs:['#bdbdbd','#ababab','#999999','#878787','#757575','#636363'],
+};
+function comboDetailSVG(row, hi, showPL){
+  showPL = showPL!==false;
+  const d=row.d, u=unitStr();
+  const BW=150,PLGAP=64,AX=95,TOP=82,BOT=560,chH=BOT-TOP,x0=135;
+  const bx=[x0,x0+BW,x0+2*BW+PLGAP,x0+3*BW+PLGAP];
+  const W = showPL ? (2*x0+4*BW+PLGAP) : (2*x0+2*BW), H=624;
+  const catX={ca:bx[0],fa:bx[0],cl:bx[1],fl:bx[1],na:bx[1],plcost:bx[2],sales:bx[3]};
+  const R=d.sales+d.noi+d.exg, Cst=d.cogs+d.sga+d.noe+d.exl+d.tax;
+  let posMax=Math.max(d.totalAssets,d.totalCapital,d.cl+d.fl+Math.max(d.na,0),d.cl+d.fl, showPL?Math.max(R,Cst):0);
+  let negMin=Math.min(0,d.na);
+  if(posMax<=0)posMax=1;
+  const span=posMax-negMin, Y=v=>BOT-((v-negMin)/span)*chH, y0=Y(0);
+  const boxKeep=hi?new Set(hi.boxes||[]):null; if(boxKeep&&boxKeep.has('sales'))boxKeep.add('gp');
+  const catR={};
+  const note=(cat,t,bo)=>{ if(!catR[cat])catR[cat]=[Math.min(t,bo),Math.max(t,bo)]; else{catR[cat][0]=Math.min(catR[cat][0],t,bo);catR[cat][1]=Math.max(catR[cat][1],t,bo);} };
+  let s=`<svg viewBox="0 0 ${W} ${H}" style="display:block;width:100%;height:auto;max-width:${W}px;margin:0 auto;font-family:inherit;">`;
+  s+=`<line x1="${AX}" y1="${TOP}" x2="${AX}" y2="${BOT}" stroke="#333" stroke-width="1.5"/>`;
+  s+=`<text x="${AX-28}" y="${TOP-16}" font-size="14" fill="#333">％</text>`;
+  const pMin=Math.floor((negMin/posMax*100)/20)*20;
+  for(let p=pMin;p<=100;p+=20){ const y=Y(p/100*posMax),emph=p===0;
+    s+=`<line x1="${AX}" y1="${y}" x2="${W-16}" y2="${y}" stroke="${emph?'#b8bcc2':'#eef1f4'}" stroke-width="${emph?1.2:1}"/><line x1="${AX-6}" y1="${y}" x2="${AX}" y2="${y}" stroke="#333"/><text x="${AX-10}" y="${y+5}" font-size="13" fill="#555" text-anchor="end">${p}</text>`; }
+  s+=`<text x="6" y="${TOP-16}" font-size="13" fill="#777">単位：${u}</text>`;
+  s+=`<text x="${AX+10}" y="${TOP-16}" font-size="13" fill="#555">${TLAB(row.year)}（最大値 ${fmt(posMax)} を100%）</text>`;
+  const seglabel=(x,t,bo,nm,val)=>{ const hh=bo-t; if(hh>=24) return `<text x="${x+BW/2}" y="${(t+bo)/2-2}" font-size="10.5" fill="#fff" text-anchor="middle">${nm}</text><text x="${x+BW/2}" y="${(t+bo)/2+13}" font-size="11.5" fill="#fff" text-anchor="middle" font-weight="bold">${fmt(val)}</text>`; if(hh>=13) return `<text x="${x+BW/2}" y="${(t+bo)/2+4}" font-size="10" fill="#fff" text-anchor="middle">${fmt(val)}</text>`; return ''; };
+  const drawStack=(x, segs, base)=>{ let cum=base, out=''; segs.forEach(sg=>{ if(!sg.val) return; const yb=Y(cum), yt=Y(cum+sg.val), t=Math.min(yt,yb), bo=Math.max(yt,yb);
+      out+=`<rect x="${x}" y="${t}" width="${BW}" height="${Math.max(0,bo-t)}" fill="${sg.col}" stroke="#fff" stroke-width="0.8"><title>${sg.name}：${fmt(sg.val)} ${u}</title></rect>`+seglabel(x,t,bo,sg.name,sg.val);
+      if(sg.cat) note(sg.cat,t,bo); cum+=sg.val; }); return out; };
+  const mapseg=(arr,shades,cat)=> arr.map((l,i)=>({name:l[0],val:l[1],col:shades[i%shades.length],cat}));
+  // 資産（固定→流動）
+  const faSegs=d.detFa?mapseg([['建物・設備',d.building],['車両・器具備品',d.vehicle],['土地',d.land],['ソフト・無形',d.software],['投資有価証券・保険',d.invsec],['長期貸付・その他',d.iota]],SHADES.fa,'fa'):[{name:'固定資産',val:d.fa,col:C.fa,cat:'fa'}];
+  const caSegs=d.detCa?mapseg([['現預金',d.cash],['売上債権',d.recv],['棚卸資産',d.inv],['短期貸付金',d.stloanto],['前払・仮払',d.prepaid],['その他流動資産',d.oca]],SHADES.ca,'ca'):[{name:'流動資産',val:d.ca,col:C.ca,cat:'ca'}];
+  s+=drawStack(bx[0], faSegs.concat(caSegs), 0);
+  // 負債・純資産（純資産→固定負債→流動負債）
+  const flSegs=d.detFl?mapseg([['長期借入金',d.ltloan],['社債',d.bond],['役員・関係者借入',d.execloan],['リース・引当金',d.lease],['その他長期負債',d.ofl]],SHADES.fl,'fl'):[{name:'固定負債',val:d.fl,col:C.fl,cat:'fl'}];
+  const clSegs=d.detCl?mapseg([['買掛金・支払手形',d.payb],['短期借入金',d.stloan],['1年内返済長期借入',d.cpltd],['未払金・未払費用',d.payables],['未払税金',d.taxpay],['その他短期負債',d.ocl]],SHADES.cl,'cl'):[{name:'流動負債',val:d.cl,col:C.cl,cat:'cl'}];
+  if(d.na>=0){
+    const naSegs=mapseg([['資本金',d.cap],['資本剰余金',d.csurp],['利益剰余金',d.re],['その他純資産',d.ona]],SHADES.na,'na');
+    s+=drawStack(bx[1], naSegs.concat(flSegs).concat(clSegs), 0);
+  } else {
+    s+=drawStack(bx[1], flSegs.concat(clSegs), 0);
+    const yNaNeg=Y(d.na); s+=`<rect x="${bx[1]}" y="${y0}" width="${BW}" height="${Math.max(0,yNaNeg-y0)}" fill="#f5c6c3" stroke="#c53030" stroke-width="1"><title>純資産（債務超過）：${fmt(d.na)} ${u}</title></rect>`;
+    if(yNaNeg-y0>=24) s+=`<text x="${bx[1]+BW/2}" y="${(y0+yNaNeg)/2-2}" font-size="10.5" fill="#c53030" text-anchor="middle">純資産(債務超過)</text><text x="${bx[1]+BW/2}" y="${(y0+yNaNeg)/2+12}" font-size="11.5" fill="#c53030" text-anchor="middle" font-weight="bold">${fmt(d.na)}</text>`;
+    note('na',y0,yNaNeg);
+  }
+  // PL（比例縮尺）：左＝費用列（内訳あり）／右＝収益列。両列とも 収益合計＝費用合計＋利益 で同じ高さ
+  if(showPL){
+    const ni=d.netIncome;
+    const sgaSegs = d.detSga ? SGA_LEAVES.map(([k,nm],i)=>({name:nm,val:d[k],col:['#d98f4f','#cf7a30','#CC6A1F','#b65d1b','#a05017','#8a4313','#75360f','#5f2c0c'][i%8],cat:'plcost'})) : [{name:'販管費',val:d.sga,col:'#CC6A1F',cat:'plcost'}];
+    const cogsSegs = d.detCogs ? cogsLeaves().map(([k,nm],i)=>({name:nm,val:d[k],col:SHADES.cogs[i%6],cat:'plcost'})) : [{name:'売上原価',val:d.cogs,col:'#8a9199',cat:'plcost'}];
+    let costSegs=[]; if(ni>=0) costSegs.push({name:'当期純利益',val:ni,col:'#2f855a',cat:'plcost'});
+    costSegs=costSegs.concat([{name:'法人税等',val:d.tax,col:'#454b54',cat:'plcost'},{name:'特別損失',val:d.exl,col:'#565c66',cat:'plcost'},{name:'営業外費用',val:d.noe,col:'#69707a',cat:'plcost'}], sgaSegs, cogsSegs);
+    s+=drawStack(bx[2],costSegs,0);
+    let revSegs=[{name:'特別利益',val:d.exg,col:'#3a5f86',cat:'sales'},{name:'営業外収益',val:d.noi,col:'#4E79A7',cat:'sales'},{name:'売上高',val:d.sales,col:'#5b8fca',cat:'sales'}];
+    if(ni<0) revSegs.push({name:'当期純損失',val:-ni,col:'#cc4a45',cat:'sales'});
+    s+=drawStack(bx[3],revSegs,0);
+    const cTot=d.cogs+d.sga+d.noe+d.exl+d.tax+Math.max(ni,0), rTot=d.sales+d.noi+d.exg+Math.max(-ni,0);
+    s+=`<text x="${bx[2]+BW/2}" y="${Y(cTot)-6}" font-size="12" fill="#333" text-anchor="middle" font-weight="bold">${fmt(cTot)}</text>`;
+    s+=`<text x="${bx[3]+BW/2}" y="${Y(rTot)-6}" font-size="12" fill="#333" text-anchor="middle" font-weight="bold">${fmt(rTot)}</text>`;
+    s+=`<text x="${bx[2]+BW/2}" y="${BOT+20}" font-size="12" fill="#444" text-anchor="middle" font-weight="bold">費用</text>`;
+    s+=`<text x="${bx[3]+BW/2}" y="${BOT+20}" font-size="12" fill="#444" text-anchor="middle" font-weight="bold">収益</text>`;
+  }
+  // 合計ラベル
+  s+=`<text x="${bx[0]+BW/2}" y="${Y(d.totalAssets)-6}" font-size="12" fill="#333" text-anchor="middle" font-weight="bold">${fmt(d.totalAssets)}</text>`;
+  s+=`<text x="${bx[1]+BW/2}" y="${Y(Math.max(d.cl+d.fl+Math.max(d.na,0),d.totalCapital))-6}" font-size="12" fill="#333" text-anchor="middle" font-weight="bold">${fmt(d.totalCapital)}</text>`;
+  s+=`<text x="${bx[0]+BW/2}" y="${BOT+20}" font-size="12" fill="#444" text-anchor="middle" font-weight="bold">資産</text>`;
+  s+=`<text x="${bx[1]+BW/2}" y="${BOT+20}" font-size="12" fill="#444" text-anchor="middle" font-weight="bold">負債・純資産</text>`;
+  // 強調（指標ボタン）
+  if(hi){
+    Object.keys(catR).forEach(cat=>{ if(!boxKeep.has(cat)){ const r=catR[cat]; s+=`<rect x="${catX[cat]}" y="${r[0]}" width="${BW}" height="${Math.max(0,r[1]-r[0])}" fill="#f4f5f7" fill-opacity="0.66"/>`; } });
+    const grp={};
+    (hi.boxes||[]).forEach(cat=>{ if(!catR[cat])return; const col=catX[cat]; if(!grp[col])grp[col]=[catR[cat][0],catR[cat][1]]; else{grp[col][0]=Math.min(grp[col][0],catR[cat][0]);grp[col][1]=Math.max(grp[col][1],catR[cat][1]);} });
+    Object.keys(grp).forEach(col=>{ const g=grp[col]; s+=`<rect x="${col}" y="${g[0]}" width="${BW}" height="${Math.max(0,g[1]-g[0])}" fill="none" stroke="${GOLD}" stroke-width="4"/>`; });
+    if(showPL && hi.plRange){ const bb=d.noi+d.exg, rg=hi.plRange(d), lo=Math.min(rg[0],rg[1]), hh=Math.max(rg[0],rg[1]), yb=Y(bb+lo), yt=Y(bb+hh), sT=Y(bb+d.sales), sB=Y(bb);
+      s+=`<rect x="${bx[3]}" y="${sT}" width="${BW}" height="${Math.max(0,sB-sT)}" fill="none" stroke="${GOLD}" stroke-width="2" stroke-dasharray="6 3"/>`;
+      s+=`<rect x="${bx[3]}" y="${yt}" width="${BW}" height="${Math.max(0,yb-yt)}" fill="#5b8fca" stroke="${GOLD}" stroke-width="4"/>`;
+      if(yb-yt>=18) s+=`<text x="${bx[3]+BW/2}" y="${(yt+yb)/2-2}" font-size="11" fill="#fff" text-anchor="middle">${hi.plName||''}</text><text x="${bx[3]+BW/2}" y="${(yt+yb)/2+13}" font-size="12.5" fill="#fff" font-weight="bold" text-anchor="middle">${fmt(hh-lo)}</text>`;
+    }
+  }
+  s+=`</svg>`; return s;
+}
+function drawIBDDiverge(ds){
+  const items=ds.map(({year,d})=>({year, st:d.ibdShort, lt:d.ibdLong, cap:d.totalCapital, ibd:d.ibd}));
+  let mx=1; items.forEach(x=>{ mx=Math.max(mx,x.st,x.lt); });
+  const anyIbd=items.some(x=>x.ibd>0), n=items.length, u=unitStr();
+  const W=Math.max(480,120+n*120), H=360, AX=70, TOP=34, BOT=326, MID=(TOP+BOT)/2, half=(BOT-MID)-16;
+  let s=svgOpen(W,H)+`<text x="6" y="16" font-size="12" fill="#777">有利子負債の内訳（上＝短期(＋)／下＝長期(−)・単位：${u}／( )内は総資本比）</text>`;
+  if(!anyIbd){ s+=`<text x="${W/2}" y="${MID}" font-size="13" fill="#999" text-anchor="middle">負債の内訳（★短期借入金・長期借入金・社債等）を入力すると表示されます</text></svg>`; return s; }
+  s+=`<line x1="${AX}" y1="${MID}" x2="${W-16}" y2="${MID}" stroke="#333" stroke-width="1.2"/><text x="${AX-8}" y="${MID+4}" font-size="12" fill="#555" text-anchor="end">0</text>`;
+  const gW=(W-AX-24)/n, bw=Math.min(70,gW-30);
+  items.forEach((x,gi)=>{ const cx=AX+16+gi*gW+gW/2, hS=x.st/mx*half, hL=x.lt/mx*half, pS=x.cap?x.st/x.cap*100:0, pL=x.cap?x.lt/x.cap*100:0;
+    s+=`<rect x="${cx-bw/2}" y="${MID-hS}" width="${bw}" height="${Math.max(0,hS)}" fill="#C4433F"><title>短期有利子負債 ${TLAB(x.year)}：${fmt(x.st)} ${u}（${p1(pS)}%）</title></rect>`;
+    if(x.st>0) s+=`<text x="${cx}" y="${MID-hS-5}" font-size="11" text-anchor="middle" font-weight="bold" fill="#333">${fmt(x.st)} (${p1(pS)}%)</text>`;
+    s+=`<rect x="${cx-bw/2}" y="${MID}" width="${bw}" height="${Math.max(0,hL)}" fill="#CC6A1F"><title>長期有利子負債 ${TLAB(x.year)}：${fmt(x.lt)} ${u}（${p1(pL)}%）</title></rect>`;
+    if(x.lt>0) s+=`<text x="${cx}" y="${MID+hL+14}" font-size="11" text-anchor="middle" font-weight="bold" fill="#333">${fmt(x.lt)} (${p1(pL)}%)</text>`;
+    s+=`<text x="${cx}" y="${BOT+18}" font-size="12" text-anchor="middle" font-weight="bold">${TLAB(x.year)}</text>`;
+  });
+  s+=`</svg>`; return s;
+}
+function plWaterfall(d, title){
+  return drawSteps([
+    {t:'total',label:'売上高',val:d.sales},
+    {t:'flow',label:'売上原価',amt:-d.cogs},
+    {t:'flow',label:'販管費',amt:-d.sga},
+    {t:'flow',label:'営業外収益',amt:d.noi},
+    {t:'flow',label:'営業外費用',amt:-d.noe},
+    {t:'flow',label:'特別損益',amt:(d.exg-d.exl)},
+    {t:'flow',label:'法人税等',amt:-d.tax},
+    {t:'total',label:'当期純利益',val:d.netIncome},
+  ], title);
+}
+function renderLegend(){
+  const items=[['流動資産',C.ca],['固定資産',C.fa],['流動負債',C.cl],['固定負債',C.fl],['純資産（資本金・利益剰余金）',C.na],['粗利',C.gp]];
+  let h=items.map(([nm,c])=>`<span class="lg"><i style="background:${c}"></i>${nm}</span>`).join('');
+  h+=`<span class="lg"><i class="lgline"></i>営業利益</span><span class="lg"><i class="lgline red"></i>当期純利益</span><span class="lg" style="color:#888">（点線の内枠＝うち有利子負債／うち減価償却費・純資産内の点線＝資本金／利益剰余金の区切り・バーにカーソルで科目と数値）</span>`;
+  $("legend").innerHTML=h;
 }
 
-/* ---------- judgement helpers ---------- */
+/* ---------- metrics ---------- */
 function badge(kind,label){ return `<span class="badge b-${kind}">${label}</span>`; }
-function judgeCurrent(v){ if(v>=200) return badge('good','優良'); if(v>=100) return badge('warn','標準'); return badge('bad','要注意'); }
-function judgeFixedLT(v){ if(v<=100) return badge('good','良好'); if(v<=110) return badge('warn','許容'); return badge('bad','過大'); }
-function judgeROE(v){ if(v>=8) return badge('good','良好'); if(v>=0) return badge('warn','低め'); return badge('bad','赤字'); }
-function judgeEquity(v){ if(v>=40) return badge('good','良好'); if(v>=20) return badge('warn','標準'); return badge('bad','低い'); }
+const CATS = {
+  growth:{ name:'成長性', note:'※成長率は前期比。複数期を入力すると算出されます（第1期は—）。',
+    metrics:[
+      { key:'gsales', label:'売上高成長率', v:d=>d.gSales, unit:'%', dec:1, hi:{boxes:['sales']}, ready:d=>d.gSales!=null,
+        formula:d=>`（当期売上高 − 前期売上高）÷ 前期売上高 × 100 ＝ <b>${d.gSales!=null?p1(d.gSales):'—'}</b>%`,
+        meaning:'前期からの売上高の伸び率。事業拡大のペースを示します。',
+        rows:[{lv:'good',name:'増収',range:'+2% 以上',note:'売上が伸びている'},{lv:'warn',name:'横ばい',range:'−2〜+2%',note:'ほぼ変化なし'},{lv:'bad',name:'減収',range:'−2% 未満',note:'売上が縮小'}],
+        judge:d=>{ if(d.gSales==null) return null; const v=d.gSales; return v>=2?'good':v>-2?'warn':'bad'; } },
+      { key:'ggross', label:'売上総利益成長率', v:d=>d.gGross, unit:'%', dec:1, hi:{plRange:d=>[0,d.grossProfit],plName:'粗利'}, ready:d=>d.gGross!=null,
+        formula:d=>`（当期粗利 − 前期粗利）÷ 前期粗利 × 100 ＝ <b>${d.gGross!=null?p1(d.gGross):'—'}</b>%`,
+        meaning:'前期からの売上総利益（粗利）の伸び率。付加価値の拡大ペース。',
+        rows:[{lv:'good',name:'増加',range:'+2% 以上',note:'粗利が伸びている'},{lv:'warn',name:'横ばい',range:'−2〜+2%',note:'ほぼ変化なし'},{lv:'bad',name:'減少',range:'−2% 未満',note:'粗利が縮小'}],
+        judge:d=>{ if(d.gGross==null) return null; const v=d.gGross; return v>=2?'good':v>-2?'warn':'bad'; } },
+      { key:'gop', label:'営業利益成長率', v:d=>d.gOp, unit:'%', dec:1, hi:{plRange:d=>[0,d.operatingProfit],plName:'営業利益'}, ready:d=>d.gOp!=null,
+        formula:d=>`（当期営業利益 − 前期営業利益）÷ 前期営業利益 × 100 ＝ <b>${d.gOp!=null?p1(d.gOp):'—'}</b>%`,
+        meaning:'前期からの営業利益の伸び率。本業の稼ぐ力の拡大ペース。',
+        rows:[{lv:'good',name:'増益',range:'+2% 以上',note:'本業利益が伸びている'},{lv:'warn',name:'横ばい',range:'−2〜+2%',note:'ほぼ変化なし'},{lv:'bad',name:'減益',range:'−2% 未満',note:'本業利益が縮小'}],
+        judge:d=>{ if(d.gOp==null) return null; const v=d.gOp; return v>=2?'good':v>-2?'warn':'bad'; } },
+      { key:'gna', label:'純資産成長率', v:d=>d.gNa, unit:'%', dec:1, hi:{boxes:['na']}, ready:d=>d.gNa!=null,
+        formula:d=>`（当期純資産 − 前期純資産）÷ 前期純資産 × 100 ＝ <b>${d.gNa!=null?p1(d.gNa):'—'}</b>%`,
+        meaning:'前期からの純資産（自己資本）の伸び率。内部留保の蓄積・財務体質の強化度。',
+        rows:[{lv:'good',name:'増加',range:'+2% 以上',note:'自己資本が充実'},{lv:'warn',name:'横ばい',range:'−2〜+2%',note:'ほぼ変化なし'},{lv:'bad',name:'減少',range:'−2% 未満',note:'自己資本が減少'}],
+        judge:d=>{ if(d.gNa==null) return null; const v=d.gNa; return v>=2?'good':v>-2?'warn':'bad'; } },
+    ]},
+  prof:{ name:'収益性',
+    metrics:[
+      { key:'npm', label:'売上高当期純利益率', v:d=>d.netMargin, unit:'%', dec:1, hi:{plRange:d=>[0,d.netIncome],plName:'当期純利益'},
+        formula:d=>`当期純利益 <b>${fmt(d.netIncome)}</b> ÷ 売上高 <b>${fmt(d.sales)}</b> × 100 ＝ <b>${p1(d.netMargin)}</b>%`,
+        meaning:'売上のうち最終的に何％が利益として残るか。事業全体の総合採算性。',
+        rows:[{lv:'good',name:'良好',range:'5% 以上',note:'高採算'},{lv:'warn',name:'普通',range:'0〜5%',note:'一般的な水準'},{lv:'bad',name:'赤字',range:'0% 未満',note:'最終赤字'}],
+        judge:d=>{const v=d.netMargin; return v>=5?'good':v>=0?'warn':'bad';} },
+      { key:'ordm', label:'売上高経常利益率', v:d=>d.ordMargin, unit:'%', dec:1, hi:{plRange:d=>[0,d.ordinaryProfit],plName:'経常利益'},
+        formula:d=>`経常利益 <b>${fmt(d.ordinaryProfit)}</b> ÷ 売上高 <b>${fmt(d.sales)}</b> × 100 ＝ <b>${p1(d.ordMargin)}</b>%`,
+        meaning:'本業＋財務活動を含む経常的な採算性。支払利息などの影響も反映した総合的な収益力。',
+        rows:[{lv:'good',name:'良好',range:'5% 以上',note:'経常的な採算が高い'},{lv:'warn',name:'普通',range:'2〜5%',note:'一般的な水準'},{lv:'bad',name:'低い',range:'2% 未満',note:'採算が弱い'}],
+        judge:d=>{const v=d.ordMargin; return v>=5?'good':v>=2?'warn':'bad';} },
+      { key:'opm', label:'売上高営業利益率', v:d=>d.opMargin, unit:'%', dec:1, hi:{plRange:d=>[0,d.operatingProfit],plName:'営業利益'},
+        formula:d=>`営業利益 <b>${fmt(d.operatingProfit)}</b> ÷ 売上高 <b>${fmt(d.sales)}</b> × 100 ＝ <b>${p1(d.opMargin)}</b>%`,
+        meaning:'本業でどれだけ効率的に利益を出せているか。企業の稼ぐ力の中核。',
+        rows:[{lv:'good',name:'良好',range:'10% 以上',note:'本業の収益力が高い'},{lv:'warn',name:'普通',range:'2〜10%',note:'一般的な水準'},{lv:'bad',name:'低い',range:'2% 未満',note:'本業の採算が弱い'}],
+        judge:d=>{const v=d.opMargin; return v>=10?'good':v>=2?'warn':'bad';} },
+      { key:'gm', label:'粗利率（売上総利益率）', v:d=>d.grossMargin, unit:'%', dec:1, hi:{plRange:d=>[0,d.grossProfit],plName:'粗利'}, detailOnly:true,
+        formula:d=>`粗利 <b>${fmt(d.grossProfit)}</b> ÷ 売上高 <b>${fmt(d.sales)}</b> × 100 ＝ <b>${p1(d.grossMargin)}</b>%`,
+        meaning:'売上に対する粗利の割合。商品・サービスの基礎的な収益力（100%−売上原価率）。',
+        rows:[{lv:'good',name:'高い',range:'30% 以上',note:'付加価値が高い'},{lv:'warn',name:'普通',range:'15〜30%',note:'標準的'},{lv:'bad',name:'低い',range:'15% 未満',note:'薄利'}],
+        judge:d=>{const v=d.grossMargin; return v>=30?'good':v>=15?'warn':'bad';} },
+      { key:'sgar', label:'販管費率', v:d=>d.sgaRatio, unit:'%', dec:1, hi:{plRange:d=>[d.operatingProfit,d.grossProfit],plName:'販管費'}, detailOnly:true,
+        formula:d=>`販管費 <b>${fmt(d.sga)}</b> ÷ 売上高 <b>${fmt(d.sales)}</b> × 100 ＝ <b>${p1(d.sgaRatio)}</b>%`,
+        meaning:'売上に対する販管費の割合。低いほど固定費負担が軽い。',
+        rows:[{lv:'good',name:'低い',range:'15% 以下',note:'費用効率が良い'},{lv:'warn',name:'普通',range:'15〜30%',note:'標準的'},{lv:'bad',name:'高い',range:'30% 超',note:'固定費負担が重い'}],
+        judge:d=>{const v=d.sgaRatio; return v<=15?'good':v<=30?'warn':'bad';} },
+      { key:'advr', label:'広告宣伝比率', v:d=>d.advRatio, unit:'%', dec:1, hi:{plRange:d=>[d.operatingProfit,d.grossProfit],plName:'販管費'}, ready:d=>d.detSga, detailOnly:true,
+        formula:d=>`広告宣伝費 <b>${fmt(d.adv)}</b> ÷ 売上高 <b>${fmt(d.sales)}</b> × 100 ＝ <b>${p1(d.advRatio)}</b>%`,
+        meaning:'売上に対する広告宣伝費の割合。販管費の内訳入力が必要です。適正水準は業種により大きく異なります。',
+        rows:[{lv:'good',name:'低い',range:'3% 以下',note:'販促負担が軽い'},{lv:'warn',name:'普通',range:'3〜10%',note:'標準的な範囲'},{lv:'bad',name:'高い',range:'10% 超',note:'広告依存が大きい'}],
+        judge:d=>{const v=d.advRatio; return v<=3?'good':v<=10?'warn':'bad';} },
+      { key:'persr', label:'人件費率', v:d=>d.personnelRatio, unit:'%', dec:1, hi:{boxes:['sales']}, ready:d=>d.personnelReady, detailOnly:true,
+        formula:d=>`人件費 <b>${fmt(d.laborCost)}</b>（労務費＋販管人件費）÷ 売上高 <b>${fmt(d.sales)}</b> × 100 ＝ <b>${p1(d.personnelRatio)}</b>%`,
+        meaning:'売上に対する人件費の割合。原価/販管費の内訳から算出。',
+        rows:[{lv:'good',name:'低い',range:'15% 以下',note:'労働生産性が高い'},{lv:'warn',name:'普通',range:'15〜30%',note:'標準的'},{lv:'bad',name:'高い',range:'30% 超',note:'人件費負担が重い'}],
+        judge:d=>{const v=d.personnelRatio; return v<=15?'good':v<=30?'warn':'bad';} },
+      { key:'labshare', label:'労働分配率', v:d=>d.laborShare, unit:'%', dec:1, hi:{boxes:['sales']}, ready:d=>d.personnelReady, detailOnly:true,
+        formula:d=>`人件費 <b>${fmt(d.laborCost)}</b> ÷ 粗利 <b>${fmt(d.grossProfit)}</b> × 100 ＝ <b>${p1(d.laborShare)}</b>%`,
+        meaning:'付加価値（粗利で簡易代用）のうち人件費に分配された割合。高すぎると利益を圧迫。',
+        rows:[{lv:'good',name:'適正',range:'50% 以下',note:'利益を確保しやすい'},{lv:'warn',name:'やや高',range:'50〜70%',note:'標準〜やや高い'},{lv:'bad',name:'高い',range:'70% 超',note:'利益を圧迫'}],
+        judge:d=>{const v=d.laborShare; return v<=50?'good':v<=70?'warn':'bad';} },
+    ]},
+  eff:{ name:'効率性', note:'※ROE＝売上高当期純利益率×総資本回転率×財務レバレッジ（デュポン分解）。',
+    metrics:[
+      { key:'roe', label:'ROE', v:d=>d.roe, unit:'%', dec:2, naDenom:true, hi:{boxes:['na'],lines:['ni']},
+        formula:d=>`当期純利益 <b>${fmt(d.netIncome)}</b> ÷ 純資産 <b>${fmt(d.na)}</b> × 100 ＝ <b>${p2(d.roe)}</b>%`,
+        meaning:'自己資本を使ってどれだけ利益を生んだか。ROE＝売上高当期純利益率×総資本回転率×財務レバレッジ。',
+        rows:[{lv:'good',name:'良好',range:'8% 以上',note:'自己資本を効率活用'},{lv:'warn',name:'低め',range:'0〜8%',note:'改善余地あり'},{lv:'bad',name:'赤字',range:'0% 未満',note:'自己資本を毀損'}],
+        judge:d=>{const v=d.roe; return v>=8?'good':v>=0?'warn':'bad';} },
+      { key:'finlev', label:'財務レバレッジ', v:d=>d.finLeverage, unit:'倍', dec:2, naDenom:true, hi:{boxes:['ca','fa','na']},
+        formula:d=>`総資本 <b>${fmt(d.totalCapital)}</b> ÷ 自己資本(純資産) <b>${fmt(d.na)}</b> ＝ <b>${p2(d.finLeverage)}</b> 倍`,
+        meaning:'自己資本の何倍の総資本を使っているか（＝1÷自己資本比率）。高いほど負債活用が大きくROEを押し上げる一方、リスクも上がる。',
+        rows:[{lv:'good',name:'健全',range:'2.0倍 以下',note:'自己資本が厚い'},{lv:'warn',name:'標準',range:'2.0〜4.0倍',note:'一般的な水準'},{lv:'bad',name:'高い',range:'4.0倍 超',note:'負債依存が大きい'}],
+        judge:d=>{const v=d.finLeverage; return v<=2?'good':v<=4?'warn':'bad';} },
+      { key:'npmeff', label:'売上高当期純利益率', v:d=>d.netMargin, unit:'%', dec:1, hi:{plRange:d=>[0,d.netIncome],plName:'当期純利益'},
+        formula:d=>`当期純利益 <b>${fmt(d.netIncome)}</b> ÷ 売上高 <b>${fmt(d.sales)}</b> × 100 ＝ <b>${p1(d.netMargin)}</b>%`,
+        meaning:'売上のうち最終的に何％が利益として残るか。ROE分解（デュポン）の収益性要素。',
+        rows:[{lv:'good',name:'良好',range:'5% 以上',note:'高採算'},{lv:'warn',name:'普通',range:'0〜5%',note:'一般的な水準'},{lv:'bad',name:'赤字',range:'0% 未満',note:'最終赤字'}],
+        judge:d=>{const v=d.netMargin; return v>=5?'good':v>=0?'warn':'bad';} },
+      { key:'atoturn', label:'総資産回転率', v:d=>d.atoturn, unit:'回', dec:2, hi:{boxes:['ca','fa','sales']},
+        formula:d=>`売上高 <b>${fmt(d.sales)}</b> ÷ 総資産 <b>${fmt(d.totalAssets)}</b> ＝ <b>${p2(d.atoturn)}</b> 回`,
+        meaning:'総資産が1年間に何回売上に変わったか。大きいほど資産を効率よく使えています。',
+        rows:[{lv:'good',name:'高い',range:'1.0回 以上',note:'資産を効率よく活用'},{lv:'warn',name:'普通',range:'0.5〜1.0回',note:'業種平均並み'},{lv:'bad',name:'低い',range:'0.5回 未満',note:'資産が過大の可能性'}],
+        judge:d=>{const v=d.atoturn; return v>=1?'good':v>=0.5?'warn':'bad';} },
+      { key:'roa', label:'ROA（総資産利益率）', v:d=>d.roa, unit:'%', dec:2, hi:{boxes:['ca','fa'],lines:['ni']},
+        formula:d=>`当期純利益 <b>${fmt(d.netIncome)}</b> ÷ 総資産 <b>${fmt(d.totalAssets)}</b> × 100 ＝ <b>${p2(d.roa)}</b>%`,
+        meaning:'総資産をどれだけ効率よく利益に変えたか。事業全体の資産効率。',
+        rows:[{lv:'good',name:'良好',range:'5% 以上',note:'資産効率が高い'},{lv:'warn',name:'普通',range:'2〜5%',note:'一般的な水準'},{lv:'bad',name:'低い',range:'2% 未満',note:'資産効率が低い'}],
+        judge:d=>{const v=d.roa; return v>=5?'good':v>=2?'warn':'bad';} },
+      { key:'faturn', label:'固定資産回転率', v:d=>d.faturn, unit:'回', dec:2, hi:{boxes:['fa','sales']}, detailOnly:true,
+        formula:d=>`売上高 <b>${fmt(d.sales)}</b> ÷ 固定資産 <b>${fmt(d.fa)}</b> ＝ <b>${p2(d.faturn)}</b> 回`,
+        meaning:'固定資産（設備等）がどれだけ効率よく売上を生んだか。高いほど設備効率が良い（業種差大）。',
+        rows:[{lv:'good',name:'高い',range:'2.0回 以上',note:'設備効率が高い'},{lv:'warn',name:'普通',range:'1.0〜2.0回',note:'標準的'},{lv:'bad',name:'低い',range:'1.0回 未満',note:'設備が過大の可能性'}],
+        judge:d=>{const v=d.faturn; return v>=2?'good':v>=1?'warn':'bad';} },
+      { key:'turnover', label:'総資本回転率', v:d=>d.assetTurnover, unit:'回', dec:2, hi:{boxes:['cl','fl','na','sales']}, detailOnly:true,
+        formula:d=>`売上高 <b>${fmt(d.sales)}</b> ÷ 総資本 <b>${fmt(d.totalCapital)}</b> ＝ <b>${p2(d.assetTurnover)}</b> 回`,
+        meaning:'総資本が1年間に何回売上に変わったか。',
+        rows:[{lv:'good',name:'高い',range:'1.0回 以上',note:'効率よく活用'},{lv:'warn',name:'普通',range:'0.5〜1.0回',note:'業種平均並み'},{lv:'bad',name:'低い',range:'0.5回 未満',note:'資産過大の可能性'}],
+        judge:d=>{const v=d.assetTurnover; return v>=1?'good':v>=0.5?'warn':'bad';} },
+      { key:'roic', label:'ROIC', v:d=>d.roic, unit:'%', dec:2, hi:{boxes:['cl','fl','na'],lines:['op']}, ready:d=>d.ibdReady, detailOnly:true,
+        formula:d=>`税引後営業利益 <b>${fmt(d.nopat)}</b> ÷ 投下資本 <b>${fmt(d.investedCap)}</b>（有利子負債＋純資産）× 100 ＝ <b>${p2(d.roic)}</b>%`,
+        meaning:'投下資本に対する税引後営業利益の割合。資本コスト(WACC)を上回るほど価値創造。負債の内訳入力が必要です。',
+        rows:[{lv:'good',name:'良好',range:'8% 以上',note:'資本コストを上回りやすい'},{lv:'warn',name:'普通',range:'4〜8%',note:'標準的'},{lv:'bad',name:'低い',range:'4% 未満',note:'資本効率が低い'}],
+        judge:d=>{const v=d.roic; return v>=8?'good':v>=4?'warn':'bad';} },
+      { key:'invturn', label:'棚卸資産回転率', v:d=>d.invTurnover, unit:'回', dec:2, hi:{boxes:['ca','sales']}, ready:d=>d.quickReady, detailOnly:true,
+        formula:d=>`売上原価 <b>${fmt(d.cogs)}</b> ÷ 棚卸資産 <b>${fmt(d.inv)}</b> ＝ <b>${p2(d.invTurnover)}</b> 回`,
+        meaning:'在庫が一定期間に何回入れ替わったか。高いほど在庫効率が良い（業種差大）。詳細入力の棚卸資産が必要。',
+        rows:[{lv:'good',name:'高い',range:'6回 以上',note:'在庫効率が良い'},{lv:'warn',name:'普通',range:'3〜6回',note:'標準的'},{lv:'bad',name:'低い',range:'3回 未満',note:'在庫過多の可能性'}],
+        judge:d=>{const v=d.invTurnover; return v>=6?'good':v>=3?'warn':'bad';} },
+      { key:'recvdays', label:'売上債権回転期間', v:d=>d.recvDays, unit:'日', dec:1, hi:{boxes:['ca','sales']}, ready:d=>d.quickReady, detailOnly:true,
+        formula:d=>`売上債権 <b>${fmt(d.recv)}</b> ÷（売上高 <b>${fmt(d.sales)}</b> ÷ 365）＝ <b>${p1(d.recvDays)}</b> 日`,
+        meaning:'売上債権が何日分の売上に相当するか＝回収の速さ。短いほど資金繰りが良い。詳細入力の売上債権が必要。',
+        rows:[{lv:'good',name:'良好',range:'45日 以内',note:'回収が速い'},{lv:'warn',name:'普通',range:'45〜90日',note:'標準的'},{lv:'bad',name:'長い',range:'90日 超',note:'回収が遅い'}],
+        judge:d=>{const v=d.recvDays; return v<=45?'good':v<=90?'warn':'bad';} },
+      { key:'salesemp', label:'1人当たり売上高', v:d=>d.salesPerEmp, unit:()=>unitStr()+'/人', dec:2, hi:{boxes:['ca','fa','sales']}, ready:d=>d.empReady, detailOnly:true,
+        formula:d=>`売上高 <b>${fmt(d.sales)}</b> ÷ 従業員数 <b>${fmt(d.emp)}</b> 人 ＝ <b>${p2(d.salesPerEmp)}</b> ${unitStr()}/人`,
+        meaning:'従業員1人がどれだけの売上を生んだか。従業員数（②数値入力）が必要です。',
+        rows:[{lv:'good',name:'高い',range:'業種平均超',note:'人的効率が高い'},{lv:'warn',name:'標準',range:'業種平均並み',note:'—'},{lv:'bad',name:'低い',range:'業種平均未満',note:'人的効率に課題'}],
+        judge:d=>null },
+      { key:'vaemp', label:'労働生産性（1人当たり付加価値）', v:d=>d.vaPerEmp, unit:()=>unitStr()+'/人', dec:2, hi:{lines:['op']}, ready:d=>d.empReady, detailOnly:true,
+        formula:d=>`簡易付加価値 <b>${fmt(d.valueAdded)}</b>（営業利益＋人件費＋減価償却＋地代家賃＋支払利息）÷ 従業員数 <b>${fmt(d.emp)}</b> 人 ＝ <b>${p2(d.vaPerEmp)}</b> ${unitStr()}/人`,
+        meaning:'従業員1人が生み出す付加価値。労働生産性の中核指標。高いほど賃上げ余力・競争力が高い。従業員数が必要です。',
+        rows:[{lv:'good',name:'高い',range:'高水準',note:'生産性が高い'},{lv:'warn',name:'標準',range:'標準的',note:'—'},{lv:'bad',name:'低い',range:'低水準',note:'生産性に課題'}],
+        judge:d=>null },
+    ]},
+  safe:{ name:'安全性',
+    metrics:[
+      { key:'equity', label:'自己資本比率', v:d=>d.equityRatio, unit:'%', dec:1, hi:{boxes:['na','ca','fa']},
+        formula:d=>`純資産 <b>${fmt(d.na)}</b> ÷ 総資本〈＝資産合計〉<b>${fmt(d.totalAssets)}</b> × 100 ＝ <b>${p1(d.equityRatio)}</b>%`,
+        meaning:'資産全体のうち返済不要の自己資本が占める割合。高いほど財務体質が安定。',
+        rows:[{lv:'good',name:'安全',range:'40% 以上',note:'自己資本が厚い'},{lv:'warn',name:'普通',range:'20〜40%',note:'一般的な水準'},{lv:'bad',name:'危険',range:'20% 未満',note:'借入依存で不安定'}],
+        judge:d=>{const v=d.equityRatio; return v>=40?'good':v>=20?'warn':'bad';} },
+      { key:'current', label:'流動比率', v:d=>d.currentRatio, unit:'%', dec:1, hi:{boxes:['ca','cl']},
+        formula:d=>`流動資産 <b>${fmt(d.ca)}</b> ÷ 流動負債 <b>${fmt(d.cl)}</b> × 100 ＝ <b>${p1(d.currentRatio)}</b>%`,
+        meaning:'1年以内に現金化できる資産で1年以内に返す負債をどれだけ賄えるか（短期の支払能力）。',
+        rows:[{lv:'good',name:'安全',range:'200% 以上',note:'支払能力が高い'},{lv:'warn',name:'普通',range:'100〜200%',note:'最低限は確保'},{lv:'bad',name:'危険',range:'100% 未満',note:'資金ショートの恐れ'}],
+        judge:d=>{const v=d.currentRatio; return v>=200?'good':v>=100?'warn':'bad';} },
+      { key:'debtratio', label:'負債比率', v:d=>d.debtRatio, unit:'%', dec:1, naDenom:true, hi:{boxes:['cl','fl','na']}, detailOnly:true,
+        formula:d=>`負債合計 <b>${fmt(d.cl+d.fl)}</b> ÷ 自己資本(純資産) <b>${fmt(d.na)}</b> × 100 ＝ <b>${p1(d.debtRatio)}</b>%`,
+        meaning:'自己資本に対する他人資本（負債）の割合。低いほど安全。100%以下なら負債が自己資本以下。',
+        rows:[{lv:'good',name:'良好',range:'100% 以下',note:'負債が自己資本以下'},{lv:'warn',name:'普通',range:'100〜200%',note:'標準的'},{lv:'bad',name:'過大',range:'200% 超',note:'負債依存が大きい'}],
+        judge:d=>{const v=d.debtRatio; return v<=100?'good':v<=200?'warn':'bad';} },
+      { key:'fixedratio', label:'固定比率', v:d=>d.fixedRatio, unit:'%', dec:1, naDenom:true, hi:{boxes:['fa','na']},
+        formula:d=>`固定資産 <b>${fmt(d.fa)}</b> ÷ 自己資本(純資産) <b>${fmt(d.na)}</b> × 100 ＝ <b>${p1(d.fixedRatio)}</b>%`,
+        meaning:'固定資産を自己資本だけでどれだけ賄えているか。100%以下なら設備投資を自己資本でカバー。',
+        rows:[{lv:'good',name:'良好',range:'100% 以下',note:'自己資本で調達'},{lv:'warn',name:'許容',range:'100〜150%',note:'許容範囲'},{lv:'bad',name:'過大',range:'150% 超',note:'借入依存が大きい'}],
+        judge:d=>{const v=d.fixedRatio; return v<=100?'good':v<=150?'warn':'bad';} },
+      { key:'fixedlt', label:'固定長期適合率', v:d=>d.fixedLTRatio, unit:'%', dec:1, naDenom:true, hi:{boxes:['fa','fl','na']},
+        formula:d=>`固定資産 <b>${fmt(d.fa)}</b> ÷（純資産 <b>${fmt(d.na)}</b> ＋ 固定負債 <b>${fmt(d.fl)}</b>）× 100 ＝ <b>${p1(d.fixedLTRatio)}</b>%`,
+        meaning:'長期に使う固定資産を、返済不要の純資産＋長期の負債で賄えているか。100%以下なら安定財源でカバー。',
+        rows:[{lv:'good',name:'良好',range:'100% 以下',note:'長期資金で調達'},{lv:'warn',name:'許容',range:'100〜110%',note:'ぎりぎり許容'},{lv:'bad',name:'過大',range:'110% 超',note:'短期資金で固定資産を賄い危険'}],
+        judge:d=>{const v=d.fixedLTRatio; return v<=100?'good':v<=110?'warn':'bad';} },
+      { key:'wc', label:'運転資本', v:d=>d.wc, unit:unitStr, dec:0, hi:{boxes:['ca','cl']}, detailOnly:true,
+        formula:d=>`流動資産 <b>${fmt(d.ca)}</b> − 流動負債 <b>${fmt(d.cl)}</b> ＝ <b>${fmt(d.wc)}</b> ${unitStr()}`,
+        meaning:'流動資産から流動負債を引いた、事業運営に必要な手元資金の余裕。プラスが健全、マイナスは短期資金不足の恐れ。',
+        rows:[{lv:'good',name:'健全',range:'プラス',note:'短期資金に余裕'},{lv:'warn',name:'均衡',range:'ほぼ 0',note:'余裕が小さい'},{lv:'bad',name:'不足',range:'マイナス',note:'短期資金が不足'}],
+        judge:d=>{const v=d.wc; return v>0?'good':v===0?'warn':'bad';} },
+      { key:'quick', label:'当座比率', v:d=>d.quickRatio, unit:'%', dec:1, hi:{boxes:['ca','cl']}, ready:d=>d.quickReady, detailOnly:true,
+        formula:d=>`当座資産 <b>${fmt(d.quick)}</b>（現預金＋有価証券＋売上債権）÷ 流動負債 <b>${fmt(d.cl)}</b> × 100 ＝ <b>${p1(d.quickRatio)}</b>%`,
+        meaning:'在庫を除く「すぐ現金化できる資産」で流動負債をどれだけ賄えるか。詳細入力が必要です。',
+        rows:[{lv:'good',name:'安全',range:'100% 以上',note:'即時の支払能力が高い'},{lv:'warn',name:'普通',range:'70〜100%',note:'許容範囲'},{lv:'bad',name:'危険',range:'70% 未満',note:'即時の支払能力が弱い'}],
+        judge:d=>{const v=d.quickRatio; return v>=100?'good':v>=70?'warn':'bad';} },
+      { key:'de', label:'D/Eレシオ', v:d=>d.de, unit:'倍', dec:2, naDenom:true, hi:{boxes:['cl','fl','na']}, ready:d=>d.ibdReady, detailOnly:true,
+        formula:d=>`有利子負債 <b>${fmt(d.ibd)}</b> ÷ 自己資本(純資産) <b>${fmt(d.na)}</b> ＝ <b>${p2(d.de)}</b> 倍`,
+        meaning:'自己資本に対する有利子負債の大きさ。低いほど健全。負債の内訳入力が必要です。',
+        rows:[{lv:'good',name:'良好',range:'1.0倍 以下',note:'借入が自己資本以下'},{lv:'warn',name:'許容',range:'1.0〜2.0倍',note:'標準的'},{lv:'bad',name:'過大',range:'2.0倍 超',note:'借入依存が大きい'}],
+        judge:d=>{const v=d.de; return v<=1?'good':v<=2?'warn':'bad';} },
+      { key:'ibdr', label:'有利子負債比率', v:d=>d.ibdRatio, unit:'%', dec:1, hi:{boxes:['cl','fl']}, ready:d=>d.ibdReady, detailOnly:true,
+        formula:d=>`有利子負債 <b>${fmt(d.ibd)}</b> ÷ 総資本 <b>${fmt(d.totalCapital)}</b> × 100 ＝ <b>${p1(d.ibdRatio)}</b>%`,
+        meaning:'総資本に占める有利子負債の割合。低いほど安全。負債の内訳入力が必要です。',
+        rows:[{lv:'good',name:'良好',range:'30% 以下',note:'借入が小さい'},{lv:'warn',name:'普通',range:'30〜60%',note:'標準的'},{lv:'bad',name:'過大',range:'60% 超',note:'借入が大きい'}],
+        judge:d=>{const v=d.ibdRatio; return v<=30?'good':v<=60?'warn':'bad';} },
+      { key:'netde', label:'ネットD/Eレシオ', v:d=>d.netDe, unit:'倍', dec:2, naDenom:true, hi:{boxes:['cl','fl','na']}, ready:d=>d.ibdReady, detailOnly:true,
+        formula:d=>`(有利子負債 <b>${fmt(d.ibd)}</b> − 現預金 <b>${fmt(d.cash)}</b>) ÷ 自己資本 <b>${fmt(d.na)}</b> ＝ <b>${p2(d.netDe)}</b> 倍`,
+        meaning:'手元現預金を差し引いた実質的な借入負担。マイナスなら実質無借金。負債内訳と現預金入力が必要です。',
+        rows:[{lv:'good',name:'良好',range:'0.5倍 以下',note:'実質負担が小さい'},{lv:'warn',name:'許容',range:'0.5〜1.5倍',note:'標準的'},{lv:'bad',name:'過大',range:'1.5倍 超',note:'実質負担が大きい'}],
+        judge:d=>{const v=d.netDe; return v<=0.5?'good':v<=1.5?'warn':'bad';} },
+      { key:'debtm', label:'借入金月商倍率', v:d=>d.debtMonths, unit:'ヶ月', dec:1, hi:{boxes:['cl','fl','sales']}, ready:d=>d.ibdReady, detailOnly:true,
+        formula:d=>`有利子負債 <b>${fmt(d.ibd)}</b> ÷（売上高 <b>${fmt(d.sales)}</b> ÷ 12）＝ <b>${p1(d.debtMonths)}</b> ヶ月`,
+        meaning:'有利子負債が月商の何ヶ月分か。小さいほど返済負担が軽い。負債の内訳入力が必要です。',
+        rows:[{lv:'good',name:'良好',range:'3ヶ月 以下',note:'返済負担が軽い'},{lv:'warn',name:'普通',range:'3〜6ヶ月',note:'標準的'},{lv:'bad',name:'過大',range:'6ヶ月 超',note:'返済負担が重い'}],
+        judge:d=>{const v=d.debtMonths; return v<=3?'good':v<=6?'warn':'bad';} },
+      { key:'icr', label:'インタレスト・カバレッジ・レシオ', v:d=>d.icr, unit:'倍', dec:2, hi:{lines:['op']}, ready:d=>d.intexp>0, detailOnly:true,
+        formula:d=>`(営業利益 <b>${fmt(d.operatingProfit)}</b> ＋ 受取利息配当金 <b>${fmt(d.recint)}</b>) ÷ 支払利息 <b>${fmt(d.intexp)}</b> ＝ <b>${p2(d.icr)}</b> 倍`,
+        meaning:'事業利益で支払利息を何倍賄えるか＝利払い能力。営業外の受取利息配当金と支払利息の入力が必要です。',
+        rows:[{lv:'good',name:'良好',range:'5倍 以上',note:'利払い余力が大きい'},{lv:'warn',name:'許容',range:'1〜5倍',note:'最低限は確保'},{lv:'bad',name:'危険',range:'1倍 未満',note:'利払いを賄えない'}],
+        judge:d=>{const v=d.icr; return v>=5?'good':v>=1?'warn':'bad';} },
+      { key:'debty', label:'債務償還年数', v:d=>d.debtYears, unit:'年', dec:1, hi:{boxes:['cl','fl'],lines:['op']}, ready:d=>d.ibdReady && d.opCFReady, detailOnly:true,
+        dispVal:d=>{ if(!d.ibdReady) return '—'; if(!d.opCFReady) return '<span class="md-na">—<small>（2期以上必要）</small></span>'; if(d.ibd<=0) return '0<small>年</small>'; if(!isFinite(d.debtYears)) return '返済原資なし'; return p1(d.debtYears)+'<small>年</small>'; },
+        formula:d=> d.opCFReady
+          ? `有利子負債 <b>${fmt(d.ibd)}</b> ÷ 営業CF <b>${fmt(d.opCF)}</b>（キャッシュフロー計算書の実際の営業キャッシュフロー）＝ <b>${isFinite(d.debtYears)?p1(d.debtYears):'—'}</b> 年`
+          : `有利子負債 <b>${fmt(d.ibd)}</b> ÷ 営業CF ＝ <b>—</b>（前期データがないため算出できません。②数値入力で2期以上を入力してください）`,
+        meaning:'実際の営業キャッシュフロー（CF計算書の営業CF）で有利子負債を何年で返せるか。短いほど安全。営業CFは前期との差分から算出するため2期以上の入力が必要です。負債内訳の入力も必要です。',
+        rows:[{lv:'good',name:'良好',range:'10年 以内',note:'返済力が高い'},{lv:'warn',name:'許容',range:'10〜20年',note:'標準的'},{lv:'bad',name:'過大',range:'20年 超',note:'返済に長期間'}],
+        judge:d=>{ if(d.ibd<=0) return 'good'; if(!isFinite(d.debtYears)) return 'bad'; const v=d.debtYears; return v<=10?'good':v<=20?'warn':'bad';} },
+    ]},
+};
+const ALL_METRICS={}; Object.values(CATS).forEach(c=>c.metrics.forEach(m=>{ALL_METRICS[m.key]=m;}));
+const findMetric=(cat,key)=> CATS[cat].metrics.find(m=>m.key===key);
+const metricReady=(m,d)=> m.ready? m.ready(d): true;
+// PL項目だけで完結する指標（貸借対照表の値を使わない＝貸借不一致でも判定OK）
+const PL_ONLY_KEYS=new Set(['gsales','ggross','gop','npm','gm','opm','advr','sgar','ordm','persr','labshare','npmeff']);
+const metricUsesBS=m=> !PL_ONLY_KEYS.has(m.key);
+// 純資産マイナス（債務超過）で意味をなさない指標（分母が自己資本）
+const metricNaBroken=(m,d)=> !!m.naDenom && d.insolvent;
+function metricDisp(m,d){
+  if(metricNaBroken(m,d)) return `<span class="md-na">算出対象外<small>（債務超過）</small></span>`;
+  if(!metricReady(m,d)) return '—';
+  if(m.dispVal) return m.dispVal(d);
+  const v=m.v(d); const s=(m.dec===0)?fmt(v):(m.dec===2?p2(v):p1(v));
+  const u=(typeof m.unit==='function')?m.unit():m.unit;
+  return `${s}<small>${u}</small>`;
+}
+// 判定：債務超過で分母崩壊 or 貸借不一致でBS指標 のときは色判定を止める（参考値）
+const metricJudge=(m,d)=>{
+  if(metricNaBroken(m,d)) return null;
+  if(!metricReady(m,d)) return null;
+  if(metricUsesBS(m) && d.bsBalanced===false) return null;
+  return m.judge(d);
+};
+function currentHi(){ if(curCat==='flow'){ const m=ALL_METRICS[flowKey]; return m?m.hi:null; } const m=findMetric(curCat,curKey); return m ? m.hi : null; }
 
-function metricRow(name,sub,valHTML){
-  return `<div class="metric"><div class="name">${name}<small>${sub}</small></div><div class="val">${valHTML}</div></div>`;
+function judgeTable(rows, curLv){
+  let h=`<table class="judge"><tr><th>判定</th><th>目安（範囲）</th><th>コメント</th></tr>`;
+  rows.forEach(r=>{ const cur=(r.lv===curLv);
+    h+=`<tr class="${cur?'cur':''}"><td class="lv ${r.lv}">${r.name}</td><td>${r.range}</td><td>${r.note}${cur?'<span class="cur-tag">◀ 現在</span>':''}</td></tr>`; });
+  return h+`</table>`;
+}
+function cmpTable(m, ds){
+  const avail=ds.length, nsel=Math.min(cmpN,avail), start=avail-nsel;
+  const isAmt=(typeof m.unit==='function');
+  let h=`<div class="cmp-toggle">`+[1,2,3].map(nn=>`<button class="cbtn ${cmpN===nn?'active':''}" data-n="${nn}" ${nn>avail?'disabled':''}>${nn}期</button>`).join('')+`</div>`;
+  h+=`<table class="judge"><tr><th>期</th><th>${m.label}</th><th>前期比</th><th>判定</th></tr>`;
+  for(let i=start;i<avail;i++){
+    const r=ds[i], disp=metricDisp(m,r.d);
+    let delta='—';
+    if(i>0 && metricReady(m,r.d) && metricReady(m,ds[i-1].d)){
+      const v=m.v(r.d), pv=m.v(ds[i-1].d);
+      if(isFinite(v)&&isFinite(pv)){
+        if(isAmt){ const g=pv? (v-pv)/Math.abs(pv)*100:0; delta=`${g>=0?'+':''}${p1(g)}%`; }
+        else if(m.unit==='%'){ const dd=v-pv; delta=`${dd>=0?'+':''}${p1(dd)}pt`; }
+        else { const dd=v-pv; delta=`${dd>=0?'+':''}${p2(dd)}${m.unit}`; }
+      }
+    }
+    const lv=metricJudge(m,r.d);
+    const bd = lv? badge(lv,(m.rows.find(x=>x.lv===lv)||{}).name||''):badge('na','—');
+    h+=`<tr><td>${TLAB(r.year)}</td><td class="num">${disp}</td><td class="num">${delta}</td><td>${bd}</td></tr>`;
+  }
+  return h+`</table>`;
+}
+function metricDetailHTML(m, ds, catNote){
+  const latest=ds[ds.length-1].d, latestYear=ds[ds.length-1].year;
+  const lv=metricJudge(m,latest);
+  const b = lv? badge(lv,(m.rows.find(r=>r.lv===lv)||{}).name||''):badge('na','参考');
+  const noteHTML=(m.note||catNote)?`<div class="md-note">${m.note||''}${catNote||''}</div>`:'';
+  const bm=(BENCH[industry]||{})[m.key];
+  let bmHTML='';
+  if(bm!=null && metricReady(m,latest)){
+    const v=m.v(latest), u=(typeof m.unit==='function')?m.unit():m.unit, diff=v-bm;
+    bmHTML=`<div class="md-table"><div class="md-label">参考レンジ（${INDUSTRIES[industry]}・簡易目安）</div><div class="bm-row">参考値 <b>${p1(bm)}${u}</b>　／　自社 <b>${p1(v)}${u}</b>　／　差 <b class="bm-${diff>=0?'up':'down'}">${diff>=0?'+':''}${p1(diff)}${u}</b><div class="bm-note">※公的統計の出典に基づく数値ではなく、本ツール内に設定した簡易な目安レンジです。業種・規模で大きく幅があるため、あくまで参考としてご覧ください。</div></div></div>`;
+  }
+  return `<div class="md-head"><span class="md-title">${m.label}<span style="font-size:11px;color:#94a3b8;font-weight:600;margin-left:8px;">最新：${TLAB(latestYear)}</span></span><span class="md-value">${metricDisp(m,latest)} ${b}</span></div>
+     <div class="md-body">
+       <div><div class="md-label">計算式（${TLAB(latestYear)}）</div><div class="md-formula">${m.formula(latest)}</div></div>
+       <div><div class="md-label">指標の意味</div><div class="md-meaning">${m.meaning}</div></div>
+       <div class="md-table"><div class="md-label">期間比較（1期／2期／3期）</div>${cmpTable(m,ds)}</div>
+       <div class="md-table"><div class="md-label">判定の目安</div>${judgeTable(m.rows, lv)}</div>
+       ${bmHTML}
+       ${noteHTML}
+     </div>`;
+}
+function renderFlow(ds){
+  $("flowArea").innerHTML = flowchartHTML(ds) + (ALL_METRICS[flowKey]? metricDetailHTML(ALL_METRICS[flowKey], ds):'');
+}
+// 共通：貸借不一致・債務超過の警告バナー（比較対象の全期をチェック）
+function warnBannerHTML(ds){
+  const avail=ds.length, nsel=Math.min(cmpN,avail), start=avail-nsel;
+  const shown=ds.slice(start);
+  const ins=shown.filter(r=>r.d.insolvent).map(r=>TLAB(r.year));
+  const unb=shown.filter(r=>r.d.bsBalanced===false).map(r=>TLAB(r.year));
+  let h='';
+  if(ins.length) h+=`<div class="warn-banner ins">🔴 <b>債務超過</b>（${ins.join('・')}：純資産がマイナス）。自己資本を分母にする指標（ROE・D/E・財務レバレッジ・固定比率など）は<b>「算出対象外」</b>と表示し、判定を行いません。</div>`;
+  if(unb.length) h+=`<div class="warn-banner bs">⚠ <b>貸借対照表が一致していません</b>（${unb.join('・')}）。純資産・総資産を使う指標（安全性・効率性・ROE 等）は<b>参考値</b>として色判定を止めています。②数値入力で貸借を一致させてください。</div>`;
+  return h;
+}
+// 成長の質（増収増益／増収減益／減収増益／減収減益）
+const GROWTH_QUALITY=(gs,gp)=>{
+  if(gs==null||gp==null) return null;
+  const up=v=>v>=2, down=v=>v<-2;
+  if(up(gs)&&up(gp)) return {lv:'good',name:'増収増益',note:'売上・利益がともに拡大。最も健全な成長。'};
+  if(up(gs)&&down(gp)) return {lv:'warn',name:'増収減益',note:'売上は伸びたが利益は縮小。原価・固定費の増加や採算悪化を確認。'};
+  if(down(gs)&&up(gp)) return {lv:'warn',name:'減収増益',note:'売上は減ったが利益は改善。コスト削減・選択と集中の効果。持続性に注意。'};
+  if(down(gs)&&down(gp)) return {lv:'bad',name:'減収減益',note:'売上・利益がともに縮小。事業の立て直しが必要。'};
+  return {lv:'warn',name:'横ばい',note:'売上・利益とも大きな変化なし。'};
+};
+function growthQualityHTML(ds){
+  if(ds.length<2) return '';
+  const d=ds[ds.length-1].d, q=GROWTH_QUALITY(d.gSales,d.gOp);
+  if(!q) return '';
+  const cls=q.lv==='good'?'good':q.lv==='bad'?'bad':'warn';
+  const col=q.lv==='good'?'#2f9e6f':q.lv==='bad'?'#d1453f':'#d9a13a';
+  return `<div class="gq-panel"><div class="gq-head">成長の質　<span class="gq-tag" style="background:${col}">${q.name}</span></div>
+    <div class="gq-body"><span>売上 <b style="color:${d.gSales>=0?'#2f9e6f':'#d1453f'}">${d.gSales>=0?'+':''}${p1(d.gSales)}%</b></span>　×　<span>営業利益 <b style="color:${d.gOp>=0?'#2f9e6f':'#d1453f'}">${d.gOp>=0?'+':''}${p1(d.gOp)}%</b></span></div>
+    <div class="gq-note">${q.note}</div></div>`;
+}
+function renderAnalysis(ds){
+  document.querySelectorAll('#subtabs .subtab').forEach(b=> b.classList.toggle('active', b.dataset.cat===curCat));
+  const cat=CATS[curCat];
+  $("analysisWarn").innerHTML = warnBannerHTML(ds) + (curCat==='growth'? growthQualityHTML(ds):'');
+  const hasDetail=cat.metrics.some(m=>m.detailOnly);
+  const mets=cat.metrics.filter(m=> showDetail || !m.detailOnly);
+  if(!mets.some(m=>m.key===curKey)) curKey=mets[0].key;
+  const latest=ds[ds.length-1].d;
+  let btns = mets.map(m=>{ const lv=metricJudge(m,latest), jc=lv?` j-${lv}`:''; return `<button class="mbtn${jc} ${m.key===curKey?'active':''}" data-key="${m.key}"><span>${m.label}</span><span class="mbv">${metricDisp(m,latest)}</span></button>`;}).join('');
+  if(hasDetail) btns += `<button class="mbtn detmet ${showDetail?'active':''}" id="detMetToggle"><span>${showDetail?'− 詳細指標を隠す':'＋ 詳細指標'}</span></button>`;
+  $("metricbtns").innerHTML = btns;
+  $("metricdetail").innerHTML = metricDetailHTML(findMetric(curCat,curKey), ds, cat.note);
+}
+// 指標の読み方フロー（辿るだけで読める）
+const FLOW=[
+  {step:'STEP 1', cat:'収益性 ― ちゃんと儲かっているか', main:'opm',
+   q:'営業利益率は十分か？（目安：10%以上=良好／2〜10%=普通／2%未満=低い）',
+   good:'本業はしっかり黒字。次のSTEPへ',
+   warn:'黒字だが利益率は薄め。粗利・固定費のどちらが原因か下で確認',
+   bad:'本業が低採算・赤字。粗利／固定費を分解して原因を特定',
+   drill:[{k:'gm',why:'粗利が薄い？'},{k:'sgar',why:'固定費（販管費）が重い？'}],
+   drill2:[{k:'advr',why:'広告宣伝費の負担は重くないか'},{k:'persr',why:'人件費・労働分配率は適正か'}]},
+  {step:'STEP 2', cat:'効率性 ― 資産・人を活かせているか', main:'atoturn',
+   q:'総資産回転率は十分か？（目安：1.0回以上=良好／0.5〜1.0回=普通／0.5回未満=低い）',
+   good:'資産を効率よく売上に変えている。次のSTEPへ',
+   warn:'やや効率が低い。どの資産が眠っているか下で確認',
+   bad:'資産が過大／遊休の可能性。下の指標で原因を確認',
+   drill:[{k:'faturn',why:'設備が過大？'},{k:'recvdays',why:'売掛金の回収が遅い？'},{k:'invturn',why:'在庫が多い？'}],
+   drill2:[{k:'roa',why:'総合効率（ROA）'},{k:'vaemp',why:'1人当たりの生産性'}]},
+  {step:'STEP 3', cat:'安全性 ― つぶれにくいか（返せるか）', main:'equity',
+   q:'自己資本比率は十分か？（目安：40%以上=安全／20〜40%=普通／20%未満=危険）',
+   good:'自己資本が厚く財務は安定。返済余力も確認',
+   warn:'最低限は確保。借入依存度・返済力を下で確認',
+   bad:'自己資本が薄く借入依存。返せるか・払えるかを下で確認',
+   drill:[{k:'debty',why:'何年で返せる？（債務償還年数）'},{k:'icr',why:'利息を払えている？（ICR）'}],
+   drill2:[{k:'current',why:'短期の支払能力（流動比率）'},{k:'fixedlt',why:'設備を長期資金で賄えているか'}]},
+  {step:'STEP 4', cat:'成長性 ― 伸びているか', main:'gsales',
+   q:'売上は前期より伸びているか？（目安：+2%以上=増収／±2%=横ばい／−2%未満=減収）',
+   good:'増収。利益も伸びているか（成長の質）を下で確認',
+   warn:'横ばい。伸びしろと収益源を確認',
+   bad:'減収。まず収益源の立て直しを',
+   drill:[{k:'gop',why:'営業利益は伸びている？'},{k:'gna',why:'純資産は積み上がっている？'}],
+   drill2:[]},
+];
+function flowNode(k, ds){
+  const m=ALL_METRICS[k]; if(!m) return '';
+  const latest=ds[ds.length-1].d, cur=(k===flowKey), lv=metricJudge(m,latest), jc=lv?` j-${lv}`:'';
+  return `<button class="fl-node${cur?' cur':''}${jc}" data-fk="${k}">${m.label}<span class="fl-val">${metricDisp(m,latest)}</span></button>`;
+}
+// 現金化（利益→現金）ステップ：黒字なのに現金が減っていないか
+function cashConvHTML(ds){
+  if(ds.length<2) return '';
+  const cur=ds[ds.length-1].d, prev=ds[ds.length-2].d;
+  const ni=cur.netIncome, dcash=cur.cash-prev.cash, ocf=(cur.opCF!=null?cur.opCF:0), u=unitStr();
+  let lv,msg;
+  if(ni>0 && dcash<0){ lv='warn'; msg='利益は黒字なのに現預金は減少しています。増加運転資金（売掛金・在庫の増加）や借入返済・設備投資で現金が流出している可能性。<b>黒字でも資金繰りは要注意</b>です。'; }
+  else if(ni>0 && dcash>=0){ lv='good'; msg='黒字で現預金も増加。利益がきちんと現金として残っています。'; }
+  else if(ni<=0 && dcash>=0){ lv='warn'; msg='赤字ですが現預金は維持・増加。借入や資産売却で一時的に補っている可能性があり、本業の立て直しが必要です。'; }
+  else { lv='bad'; msg='赤字かつ現預金も減少。資金繰りが厳しい状態です。早急な収益改善・資金確保を。'; }
+  const bg=lv==='good'?'#eaf7f0':lv==='bad'?'#fdecea':'#fdf3e2';
+  const col=lv==='good'?'#1c6b48':lv==='bad'?'#a3302b':'#8a5a10';
+  const sign=v=>`<b style="color:${v>=0?'#2f9e6f':'#d1453f'}">${v>=0?'+':''}${fmt(v)} ${u}</b>`;
+  return `<div class="cashconv">
+    <div class="cc-head">💰 現金化 ― 利益は現金になっているか</div>
+    <div class="cc-row"><span>当期純利益 ${sign(ni)}</span><span>現預金の増減（前期比） ${sign(dcash)}</span><span>営業CF（CF計算書） ${sign(ocf)}</span></div>
+    <div class="cc-note" style="background:${bg};color:${col}">${msg}</div>
+  </div>`;
+}
+function flowchartHTML(ds){
+  const latest=ds[ds.length-1].d;
+  let h=`<div class="flow-intro"><b>読み方</b>：上から <b>STEP 1 → 4</b> の順に見ます。各STEPの「まず見る指標」がどの色（<b style="color:#2f9e6f">緑:良好</b>／<b style="color:#d9a13a">黄:要確認</b>／<b style="color:#d1453f">赤:危険</b>）かを確認し、<b>緑でない</b>なら下の分岐指標を辿って“なぜそうなるか”の原因を探ります。<b>▶</b> は自社が今どの段階かの目印（指標ボタンの色と一致）。指標を押すと下に詳しい解説が出ます。</div><div class="flow2">`;
+  FLOW.forEach((s,i)=>{
+    const m=ALL_METRICS[s.main];
+    const lv=metricJudge(m,latest); // 'good'|'warn'|'bad'|null(参考)
+    const arms=[['good','✔ 良好（緑）',s.good],['warn','△ 要確認（黄）',s.warn],['bad','✘ 危険（赤）',s.bad]];
+    h+=`<div class="fl2-step">
+      <div class="fl2-head"><span class="fl2-badge">${s.step}</span><span class="fl2-cat">${s.cat}</span></div>
+      <div class="fl2-mainrow"><span class="fl2-lead">まず見る</span>${flowNode(s.main,ds)}</div>
+      <div class="fl2-q">Q. ${s.q}</div>
+      <div class="fl2-branch">`;
+    arms.forEach(a=>{ const on=(lv===a[0]), dim=(lv!=null&&!on);
+      h+=`<div class="fl2-arm ${on?'on-'+a[0]:''} ${dim?'dim':''}">${on?'▶ ':''}${a[1]} … ${a[2]}</div>`; });
+    h+=`</div>`;
+    if(lv===null) h+=`<div class="fl2-drilllabel" style="color:#64748b">※ 貸借不一致または債務超過のため参考値（色判定なし）</div>`;
+    if(s.drill.length){ h+=`<div class="fl2-drilllabel">↳ 原因を分解（クリックで解説）</div><div class="fl2-drill">`+s.drill.map(d=>`<span class="fl2-item">${flowNode(d.k,ds)}<span class="fl2-why">${d.why}</span></span>`).join('')+`</div>`; }
+    if(s.drill2.length){ h+=`<div class="fl2-drill">`+s.drill2.map(d=>`<span class="fl2-item">${flowNode(d.k,ds)}<span class="fl2-why">${d.why}</span></span>`).join('')+`</div>`; }
+    if(s.step==='STEP 4') h+=growthQualityHTML(ds);
+    h+=`</div>`;
+    if(i===0) h+=`<div class="fl2-down">▼</div>`+cashConvHTML(ds);
+    if(i<FLOW.length-1) h+=`<div class="fl2-down">▼</div>`;
+  });
+  h+=`<div class="fl2-summary">🔎 <b>まとめ方</b>：上で <b style="color:#d1453f">赤（危険）</b>・<b style="color:#d9a13a">黄（要確認）</b> になった指標が、この会社の<b>課題の候補</b>。特に赤が出たSTEPから優先して原因（分岐指標）と対策を検討します。</div>`;
+  return h+`</div>`;
 }
 
-function renderAnalysis(d){
-  // 成長性
-  $("cat-growth").innerHTML =
-    `<p class="placeholder">前期データが必要なため、成長率は算出できません。<br>${badge('na','3期対応時に実装')}</p>`
-    + metricRow("売上高","（当期・参考値）",`${fmt(d.sales)}<span>億</span>`)
-    + metricRow("当期純利益","（当期・参考値）",`${fmt(d.netIncome)}<span>億</span>`);
-
-  // 効率性
-  $("cat-eff").innerHTML =
-    metricRow("総資本回転率","売上高 ÷ 総資本",`${p2(d.assetTurnover)}<span>回</span>`)
-    + `<p class="placeholder">${badge('na','詳細指標は今後対応')} 棚卸資産回転率等は簡易版では未対応。</p>`;
-
-  // 収益性
-  $("cat-prof").innerHTML =
-    metricRow("ROE（自己資本利益率）","当期純利益 ÷ 純資産",`${p2(d.roe)}<span>%</span>${judgeROE(d.roe)}`)
-    + metricRow("当期純利益率","当期純利益 ÷ 売上高",`${p1(d.netMargin)}<span>%</span>`)
-    + metricRow("売上高営業利益率","営業利益 ÷ 売上高",`${p1(d.sales? d.operatingProfit/d.sales*100:0)}<span>%</span>`);
-
-  // 安全性
-  $("cat-safe").innerHTML =
-    metricRow("流動比率","流動資産 ÷ 流動負債",`${p1(d.currentRatio)}<span>%</span>${judgeCurrent(d.currentRatio)}`)
-    + metricRow("固定長期適合率","固定資産 ÷（純資産＋固定負債）",`${p1(d.fixedLTRatio)}<span>%</span>${judgeFixedLT(d.fixedLTRatio)}`)
-    + metricRow("純資産比率","純資産 ÷ 総資本",`${p1(d.equityRatio)}<span>%</span>${judgeEquity(d.equityRatio)}`);
+/* ---------- detail comparison ---------- */
+const BS_ROWS=[
+  {k:'ca',name:'流動資産',tot:true},
+  {k:'cash',name:'現金・預金',leaf:true},{k:'recv',name:'売上債権',leaf:true},{k:'inv',name:'棚卸資産',leaf:true},{k:'sec',name:'有価証券(短期)',leaf:true},{k:'oca',name:'その他流動資産',leaf:true},
+  {k:'fa',name:'固定資産',tot:true},
+  {k:'tfa',name:'有形固定資産',leaf:true},{k:'ifa',name:'無形固定資産',leaf:true},{k:'iota',name:'投資その他の資産',leaf:true},
+  {k:'totalAssets',name:'資産合計',grand:true},
+  {k:'cl',name:'流動負債',tot:true},
+  {k:'payb',name:'仕入債務',leaf:true},{k:'stloan',name:'短期借入金',leaf:true},{k:'cpltd',name:'1年内返済長期借入金',leaf:true},{k:'ocl',name:'その他流動負債',leaf:true},
+  {k:'fl',name:'固定負債',tot:true},
+  {k:'ltloan',name:'長期借入金',leaf:true},{k:'bond',name:'社債',leaf:true},{k:'ofl',name:'その他固定負債',leaf:true},
+  {k:'liab',name:'負債合計',tot:true},
+  {k:'ibd',name:'（うち有利子負債）',ibd:true},
+  {k:'cap',name:'資本金',leaf:true},{k:'csurp',name:'資本剰余金',leaf:true},{k:'re',name:'利益剰余金',leaf:true},{k:'ona',name:'その他純資産',leaf:true},
+  {k:'na',name:'純資産合計',tot:true},
+  {k:'totalCapital',name:'負債・純資産合計',grand:true},
+];
+function plRows(){
+  const r=[{k:'sales',name:'売上高'},{k:'cogs',name:'売上原価',tot:true}];
+  cogsLeaves().forEach(([k,nm])=> r.push({k,name:nm,leaf:true}));
+  r.push({k:'grossProfit',name:'売上総利益（粗利）',tot:true},{k:'sga',name:'販管費',tot:true});
+  SGA_LEAVES.forEach(([k,nm])=> r.push({k,name:nm,leaf:true}));
+  r.push({k:'operatingProfit',name:'営業利益',tot:true},{k:'noi',name:'営業外収益'},{k:'recint',name:'うち受取利息・配当金',leaf:true},{k:'noe',name:'営業外費用'},{k:'intexp',name:'うち支払利息',leaf:true},
+    {k:'ordinaryProfit',name:'経常利益',tot:true},{k:'exg',name:'特別利益'},{k:'exl',name:'特別損失'},{k:'pretaxProfit',name:'税引前当期純利益',tot:true},
+    {k:'tax',name:'法人税等'},{k:'netIncome',name:'当期純利益',tot:true},{k:'dep',name:'減価償却費(合計)',leaf:true});
+  return r;
 }
+function renderDetail(ds){
+  document.querySelectorAll('#segToggle .cbtn').forEach(x=> x.classList.toggle('active', x.dataset.seg===cmpSeg));
+  const u=unitStr(), val=(d,k)=> k==='liab'?(d.cl+d.fl):d[k];
+  const groups=[];
+  if(cmpSeg==='all'||cmpSeg==='bs') groups.push({title:'貸借対照表（BS）', rows:BS_ROWS});
+  if(cmpSeg==='all'||cmpSeg==='pl') groups.push({title:'損益計算書（PL）', rows:plRows()});
+  let h=`<table class="cmp-detail"><thead><tr><th class="itemcol">項目</th>`;
+  ds.forEach(r=> h+=`<th>${TLAB(r.year)}</th>`);
+  h+=`<th>前期比(最新)</th></tr></thead><tbody>`;
+  groups.forEach(g=>{
+    h+=`<tr class="grp"><td colspan="${ds.length+2}">${g.title}<span class="u">単位：${u}</span></td></tr>`;
+    g.rows.forEach(row=>{
+      const cls=row.grand?'grand':row.tot?'totrow':row.ibd?'ibd':'';
+      h+=`<tr class="${cls}"><td class="itemcol ${row.leaf?'leaf':''}">${row.name}</td>`;
+      ds.forEach(r=> h+=`<td class="num">${fmt(val(r.d,row.k))}</td>`);
+      let delta='—';
+      if(ds.length>=2){ const cur=val(ds[ds.length-1].d,row.k), prev=val(ds[ds.length-2].d,row.k); const g2=prev?(cur-prev)/Math.abs(prev)*100:0; delta=`${g2>=0?'+':''}${p1(g2)}%`; }
+      h+=`<td class="num delta">${delta}</td></tr>`;
+    });
+  });
+  $("detailTable").innerHTML=h+`</tbody></table>`;
+}
+
+/* ---------- detail figures ---------- */
+const CF_C={op:'#4E9A6B', iv:'#4E79A7', fi:'#8a8f96'};
+const CF_PATTERNS=[
+  {sign:'+--',no:'①',name:'安定型',desc:'本業で十分なキャッシュを稼ぎ、その範囲内外で投資・既存借入の弁済や株主配当を手当する。'},
+  {sign:'+-+',no:'②',name:'積極投資型',desc:'本業で稼ぐとともに資金調達も行い、設備投資を積極的に行っている。'},
+  {sign:'++-',no:'③',name:'B/S改善型',desc:'本業で稼ぎながら資産を売却してキャッシュ化し、借入弁済を進めて債務を軽くしている。'},
+  {sign:'+++',no:'④',name:'積極ピボット型',desc:'本業で稼ぎつつ資産売却でさらにキャッシュを生み、資金調達も行い次の展開に備える。'},
+  {sign:'--+',no:'⑤',name:'スタートアップ型/再建的ピボット型',desc:'本業では稼げていないが資金調達をして積極的に投資し、黒字化/再起を目指す。'},
+  {sign:'-++',no:'⑥',name:'注意型',desc:'本業でキャッシュが大きく減り、資産売却と資金調達で本業の減少を穴埋めしている。'},
+  {sign:'-+-',no:'⑦',name:'リストラ型',desc:'本業で稼げていないが、資産を売却して借入弁済を進めている。'},
+  {sign:'---',no:'⑧',name:'過去切り崩し型',desc:'本業で稼げず投資も弁済も行う。過去のキャッシュ蓄積があるからこそ成り立つ。'},
+];
+const cfSign=v=> v>=0?'+':'-';
+const cfPattern=(op,iv,fi)=> CF_PATTERNS.find(p=>p.sign===cfSign(op)+cfSign(iv)+cfSign(fi))||null;
+function computeCF(a,c){
+  const opCF=c.pretaxProfit+c.dep-c.tax-(c.recv-a.recv)-(c.inv-a.inv)+(c.payb-a.payb);
+  const capex=(c.fa-a.fa)+c.dep, invCF=-capex;
+  const dividend=Math.max(0,a.re+c.netIncome-c.re);
+  const finCF=(c.ibd-a.ibd)+(c.cap-a.cap)+(c.csurp-a.csurp)-dividend;
+  const calc=opCF+invCF+finCF, actual=c.cash-a.cash, adj=actual-calc;
+  return {opCF,invCF,finCF,dividend,capex,calc,actual,adj,fcf:opCF+invCF};
+}
+function cfMini(sign){ const cols=[CF_C.op,CF_C.iv,CF_C.fi]; let s='<svg width="58" height="44" viewBox="0 0 58 44"><line x1="2" y1="24" x2="56" y2="24" stroke="#ccc"/>';
+  for(let i=0;i<3;i++){ const up=sign[i]==='+', x=6+i*17, y=up?10:24; s+=`<rect x="${x}" y="${y}" width="12" height="14" fill="${cols[i]}"/>`; } return s+'</svg>'; }
+const PAL=['#4E79A7','#F28E2B','#59A14F','#E15759','#B07AA1','#76B7B2','#EDC948','#FF9DA7','#9C755F','#BAB0AC','#86BCB6','#D37295'];
+const detVal=(d,k)=> k==='liab'?(d.cl+d.fl):d[k];
+function itemGroups(){ return [
+  ['売上・利益',[['sales','売上高'],['grossProfit','粗利'],['operatingProfit','営業利益'],['ordinaryProfit','経常利益'],['netIncome','当期純利益']]],
+  ['原価の内訳',[['cogs','売上原価']].concat(cogsLeaves())],
+  ['販管費の内訳',[['sga','販管費']].concat(SGA_LEAVES)],
+  ['流動資産の内訳',[['ca','流動資産'],['cash','現預金'],['recv','売上債権'],['inv','棚卸資産'],['stloanto','短期貸付金'],['prepaid','前払・仮払金'],['oca','その他流動資産']]],
+  ['固定資産の内訳',[['fa','固定資産'],['building','建物・設備'],['vehicle','車両・器具備品'],['land','土地'],['software','ソフト・無形'],['invsec','投資有価証券'],['iota','長期貸付・その他']]],
+  ['負債の内訳',[['liab','負債合計'],['ibd','有利子負債'],['payb','買掛金・支払手形'],['stloan','短期借入金'],['cpltd','1年内返済長期借入'],['payables','未払金・未払費用'],['taxpay','未払税金'],['ocl','その他短期負債'],['ltloan','長期借入金'],['bond','社債'],['execloan','役員・関係者借入'],['lease','リース・引当金'],['ofl','その他長期負債']]],
+  ['純資産の内訳',[['na','純資産合計'],['cap','資本金'],['csurp','資本剰余金'],['re','利益剰余金'],['ona','その他純資産']]],
+  ['合計',[['totalAssets','資産合計'],['totalCapital','総資本']]],
+]; }
+function itemLabel(k){ for(const g of itemGroups()){ const f=g[1].find(x=>x[0]===k); if(f) return f[1]; } return k; }
+function svgOpen(W,H){ return `<svg viewBox="0 0 ${W} ${H}" style="display:block;width:100%;height:auto;max-width:${W}px;margin:0 auto;font-family:inherit;">`; }
+function axisY(mn,mx,AX,TOP,BOT,R,Y){ let s=`<line x1="${AX}" y1="${TOP}" x2="${AX}" y2="${BOT}" stroke="#333"/>`;
+  for(let i=0;i<=5;i++){ const v=mn+(mx-mn)*i/5, y=Y(v); s+=`<line x1="${AX}" y1="${y}" x2="${R}" y2="${y}" stroke="#eef1f4"/><text x="${AX-8}" y="${y+4}" font-size="12" fill="#666" text-anchor="end">${fmt(v)}</text>`; } return s; }
+function drawSteps(steps,title){
+  let run=0,mn=0,mx=0; const geo=[];
+  steps.forEach(st=>{ let base,top; if(st.t==='flow'){ base=run; top=run+st.amt; run=top; } else { base=0; top=st.val; run=st.val; } geo.push({base,top}); mn=Math.min(mn,base,top,0); mx=Math.max(mx,base,top); });
+  if(mx===mn) mx=mn+1;
+  const n=steps.length, W=Math.max(560,120+n*82), H=430, AX=90, TOP=40, BOT=350, R=W-20;
+  const Y=v=> BOT-(v-mn)/(mx-mn)*(BOT-TOP);
+  let s=svgOpen(W,H)+`<text x="${AX}" y="20" font-size="13" fill="#555">${title}（単位：${unitStr()}）</text>`+axisY(mn,mx,AX,TOP,BOT,R,Y);
+  const gW=(R-AX-20)/n, bw=Math.min(48,gW-14);
+  steps.forEach((st,i)=>{ const g=geo[i], gx=AX+20+i*gW+(gW-bw)/2, yA=Y(g.base), yB=Y(g.top), yTop=Math.min(yA,yB), hgt=Math.max(1,Math.abs(yA-yB));
+    const fill= st.t==='total'?'#2b6cb0': st.t==='sub'?'#8aa2c0':(st.amt>=0?'#2f855a':'#c53030');
+    s+=`<rect x="${gx}" y="${yTop}" width="${bw}" height="${hgt}" fill="${fill}"/>`;
+    if(i>0){ const py=Y(geo[i-1].top); s+=`<line x1="${gx-(gW-bw)}" y1="${py}" x2="${gx}" y2="${py}" stroke="#aaa" stroke-dasharray="3 3"/>`; }
+    const val= st.t==='flow'? (st.amt>=0?'+':'')+fmt(st.amt) : fmt(st.val);
+    s+=`<text x="${gx+bw/2}" y="${yTop-5}" font-size="11" text-anchor="middle" font-weight="bold" fill="#333">${val}</text>`;
+    s+=`<text x="${gx+bw/2}" y="${BOT+16}" font-size="10.5" text-anchor="middle" fill="#444">${st.label}</text>`;
+  });
+  s+=`</svg>`;
+  return {svg:s, legend:`<span class="lg"><i style="background:#2b6cb0"></i>合計</span><span class="lg"><i style="background:#8aa2c0"></i>小計</span><span class="lg"><i style="background:#2f855a"></i>増加(＋)</span><span class="lg"><i style="background:#c53030"></i>減少(−)</span>`};
+}
+function drawSeries(ds, keys, mode){
+  if(!keys.length){ return {svg:'<p class="ph">比較する科目を選択してください（下の「科目を追加」）。</p>', legend:''}; }
+  const years=ds.map(r=>r.year); let mn=0,mx=0;
+  keys.forEach(k=> ds.forEach(r=>{ const v=detVal(r.d,k); mn=Math.min(mn,v); mx=Math.max(mx,v); })); if(mx===mn) mx=mn+1;
+  const W=Math.max(560,120+years.length*Math.max(150,keys.length*26)), H=430, AX=90, TOP=30, BOT=360, R=W-20;
+  const Y=v=> BOT-(v-mn)/(mx-mn)*(BOT-TOP), cx=gi=> AX+20+gi*((R-AX-20)/years.length)+((R-AX-20)/years.length)/2;
+  const gW=(R-AX-20)/years.length;
+  let s=svgOpen(W,H)+`<text x="6" y="18" font-size="12" fill="#777">単位：${unitStr()}</text>`+axisY(mn,mx,AX,TOP,BOT,R,Y);
+  if(mode==='bar'){
+    const bw=Math.min(46,(gW-16)/keys.length);
+    years.forEach((yr,gi)=>{ const gx=AX+20+gi*gW;
+      keys.forEach((k,ki)=>{ const v=detVal(ds[gi].d,k), x=gx+(gW-bw*keys.length)/2+ki*bw, y0=Y(0), y=Y(v);
+        s+=`<rect x="${x}" y="${Math.min(y,y0)}" width="${Math.max(1,bw-2)}" height="${Math.max(0,Math.abs(y-y0))}" fill="${PAL[ki%PAL.length]}"><title>${itemLabel(k)} ${TLAB(yr)}：${fmt(v)} ${unitStr()}</title></rect>`; });
+    });
+    keys.forEach((k,ki)=>{ const bw2=Math.min(46,(gW-16)/keys.length); const pts=years.map((yr,gi)=>{ const gx=AX+20+gi*gW, x=gx+(gW-bw2*keys.length)/2+ki*bw2+(bw2-2)/2; return `${x},${Y(detVal(ds[gi].d,k))}`; }).join(' ');
+      s+=`<polyline points="${pts}" fill="none" stroke="${PAL[ki%PAL.length]}" stroke-width="1.2" stroke-dasharray="4 3" opacity="0.85"/>`; });
+  } else {
+    keys.forEach((k,ki)=>{ const pts=years.map((yr,gi)=>`${cx(gi)},${Y(detVal(ds[gi].d,k))}`).join(' ');
+      s+=`<polyline points="${pts}" fill="none" stroke="${PAL[ki%PAL.length]}" stroke-width="2.5"/>`;
+      years.forEach((yr,gi)=>{ s+=`<circle cx="${cx(gi)}" cy="${Y(detVal(ds[gi].d,k))}" r="3.5" fill="${PAL[ki%PAL.length]}"><title>${itemLabel(k)} ${TLAB(yr)}：${fmt(detVal(ds[gi].d,k))} ${unitStr()}</title></circle>`; });
+    });
+  }
+  years.forEach((yr,gi)=> s+=`<text x="${cx(gi)}" y="${BOT+20}" font-size="13" text-anchor="middle" font-weight="bold">${TLAB(yr)}</text>`);
+  s+=`</svg>`;
+  return {svg:s, legend:keys.map((k,ki)=>`<span class="lg"><i style="background:${PAL[ki%PAL.length]}"></i>${itemLabel(k)}</span>`).join('')+(mode==='bar'?`<span class="lg" style="color:#888">（点線＝各科目の期推移）</span>`:'')};
+}
+function drawItemTrend(ds, leaves, title){
+  const items=leaves.map(x=>x[0]), labels=Object.fromEntries(leaves);
+  let mn=0,mx=0; items.forEach(k=> ds.forEach(r=>{ const v=detVal(r.d,k); mn=Math.min(mn,v); mx=Math.max(mx,v); })); if(mx===mn) mx=mn+1;
+  const W=Math.max(560,120+items.length*Math.max(120,ds.length*22)), H=440, AX=90, TOP=34, BOT=360, R=W-20;
+  const Y=v=> BOT-(v-mn)/(mx-mn)*(BOT-TOP);
+  let s=svgOpen(W,H)+`<text x="6" y="18" font-size="12" fill="#777">${title}（単位：${unitStr()}・棒＝各期／点線＝推移）</text>`+axisY(mn,mx,AX,TOP,BOT,R,Y);
+  const gW=(R-AX-20)/items.length, bw=Math.min(30,(gW-20)/ds.length);
+  items.forEach((k,ii)=>{ const gx=AX+16+ii*gW;
+    ds.forEach((r,pi)=>{ const v=detVal(r.d,k), x=gx+(gW-bw*ds.length)/2+pi*bw, y0=Y(0), y=Y(v);
+      s+=`<rect x="${x}" y="${Math.min(y,y0)}" width="${Math.max(1,bw-2)}" height="${Math.max(0,Math.abs(y-y0))}" fill="${PAL[pi%PAL.length]}"><title>${labels[k]} ${TLAB(r.year)}：${fmt(v)} ${unitStr()}</title></rect>`; });
+    const pts=ds.map((r,pi)=>{ const x=gx+(gW-bw*ds.length)/2+pi*bw+(bw-2)/2; return `${x},${Y(detVal(r.d,k))}`; }).join(' ');
+    s+=`<polyline points="${pts}" fill="none" stroke="#333" stroke-width="1.3" stroke-dasharray="4 3" opacity="0.7"/>`;
+    s+=`<text x="${gx+gW/2}" y="${BOT+18}" font-size="11" text-anchor="middle" fill="#444">${labels[k]}</text>`;
+  });
+  s+=`</svg>`;
+  return {svg:s, legend:ds.map((r,pi)=>`<span class="lg"><i style="background:${PAL[pi%PAL.length]}"></i>${TLAB(r.year)}</span>`).join('')};
+}
+function drawSingleTrend(ds, key, color, label){
+  let mn=0,mx=0; ds.forEach(r=>{ const v=detVal(r.d,key); mn=Math.min(mn,v); mx=Math.max(mx,v); }); if(mx===mn) mx=mn+1;
+  const W=Math.max(480,140+ds.length*120), H=430, AX=100, TOP=34, BOT=360, R=W-20;
+  const Y=v=> BOT-(v-mn)/(mx-mn)*(BOT-TOP), cx=gi=> AX+20+gi*((R-AX-20)/ds.length)+((R-AX-20)/ds.length)/2;
+  const gW=(R-AX-20)/ds.length, bw=Math.min(80,gW-46);
+  let s=svgOpen(W,H)+`<text x="6" y="18" font-size="12" fill="#777">${label}（単位：${unitStr()}）</text>`+axisY(mn,mx,AX,TOP,BOT,R,Y);
+  ds.forEach((r,gi)=>{ const v=detVal(r.d,key), x=cx(gi)-bw/2, y0=Y(0), y=Y(v);
+    s+=`<rect x="${x}" y="${Math.min(y,y0)}" width="${bw}" height="${Math.max(0,Math.abs(y-y0))}" fill="${color}"><title>${label} ${TLAB(r.year)}：${fmt(v)} ${unitStr()}</title></rect>`;
+    s+=`<text x="${cx(gi)}" y="${Y(v)-6}" font-size="12" text-anchor="middle" font-weight="bold">${fmt(v)}</text>`;
+    s+=`<text x="${cx(gi)}" y="${BOT+20}" font-size="13" text-anchor="middle" font-weight="bold">${TLAB(r.year)}</text>`;
+  });
+  const pts=ds.map((r,gi)=>`${cx(gi)},${Y(detVal(r.d,key))}`).join(' ');
+  s+=`<polyline points="${pts}" fill="none" stroke="#333" stroke-width="1.3" stroke-dasharray="4 3" opacity="0.7"/>`;
+  s+=`</svg>`; $("dChart").innerHTML=s; $("dLegend").innerHTML=`<span class="lg" style="color:#888">点線＝期推移</span>`;
+}
+function drawCFCompare(ds){
+  const items=[]; for(let i=1;i<ds.length;i++) items.push({year:ds[i].year, cf:computeCF(ds[i-1].d,ds[i].d)});
+  let mn=0,mx=0; items.forEach(x=>[x.cf.opCF,x.cf.invCF,x.cf.finCF].forEach(v=>{mn=Math.min(mn,v);mx=Math.max(mx,v);})); if(mx===mn) mx=mn+1;
+  const keys=[['opCF','営業CF',CF_C.op],['invCF','投資CF',CF_C.iv],['finCF','財務CF',CF_C.fi]], years=items.map(x=>x.year);
+  const W=Math.max(520,120+years.length*170), H=430, AX=90, TOP=30, BOT=360, R=W-20;
+  const Y=v=>BOT-(v-mn)/(mx-mn)*(BOT-TOP);
+  let s=svgOpen(W,H)+`<text x="6" y="18" font-size="12" fill="#777">単位：${unitStr()}</text>`+axisY(mn,mx,AX,TOP,BOT,R,Y);
+  const gW=(R-AX-20)/years.length;
+  years.forEach((yr,gi)=>{ const gx=AX+20+gi*gW, bw=Math.min(40,(gW-20)/3);
+    keys.forEach((k,ki)=>{ const v=items[gi].cf[k[0]], x=gx+(gW-bw*3)/2+ki*bw, y0=Y(0), y=Y(v);
+      s+=`<rect x="${x}" y="${Math.min(y,y0)}" width="${Math.max(1,bw-3)}" height="${Math.max(0,Math.abs(y-y0))}" fill="${k[2]}"><title>${k[1]} ${TLAB(yr)}：${fmt(v)} ${unitStr()}</title></rect>`;
+      s+=`<text x="${x+(bw-3)/2}" y="${v>=0?y-4:y+12}" font-size="10" text-anchor="middle" fill="#444">${fmt(v)}</text>`; });
+    s+=`<text x="${gx+gW/2}" y="${BOT+20}" font-size="12" text-anchor="middle" font-weight="bold">${TLAB(yr)}</text>`;
+  });
+  s+=`</svg>`;
+  return {svg:s, legend:keys.map(k=>`<span class="lg"><i style="background:${k[2]}"></i>${k[1]}</span>`).join('')};
+}
+function renderMetricPanel(ds, keys, cur){
+  const list=keys.map(k=>ALL_METRICS[k]).filter(Boolean);
+  if(!list.length){ $("dMetricBtns").innerHTML=''; $("dMetricDetail").innerHTML=''; return cur; }
+  if(!list.some(m=>m.key===cur)) cur=list[0].key;
+  const latest=ds[ds.length-1].d;
+  $("dMetricBtns").innerHTML=list.map(m=>`<button class="mbtn ${m.key===cur?'active':''}" data-key="${m.key}"><span>${m.label}</span><span class="mbv">${metricDisp(m,latest)}</span></button>`).join('');
+  $("dMetricDetail").innerHTML=metricDetailHTML(ALL_METRICS[cur], ds);
+  return cur;
+}
+/* ---- sub-tab renderers ---- */
+let scope='all', pmode='multi', pidx=-1, plBreak='main';
+const BS_LEGEND=`<span class="lg"><i style="background:${C.ca}"></i>流動資産</span><span class="lg"><i style="background:${C.fa}"></i>固定資産</span><span class="lg"><i style="background:${C.cl}"></i>流動負債</span><span class="lg"><i style="background:${C.fl}"></i>固定負債</span><span class="lg"><i style="background:${C.na}"></i>純資産</span><span class="lg" style="color:#888">点線の内枠＝うち有利子負債／うち減価償却費</span>`;
+const LEG_FULL = BS_LEGEND+`<span class="lg"><i style="background:${C.gp}"></i>粗利</span>`;
+function renderMainChart(ds){
+  document.querySelectorAll('#scopeToggle .cbtn').forEach(x=>x.classList.toggle('active',x.dataset.scope===scope));
+  $("mainExtra").innerHTML='';
+  const hi=currentHi();
+  if(scope==='cs'){ renderCS(ds); return; }
+  const idx = pidx<0? ds.length-1 : Math.min(pidx, ds.length-1);
+  const modeChips=`<span class="ctl-lbl">期間：</span><button class="chip ${pmode==='multi'?'on':''}" data-pmode="multi">3期比較</button><button class="chip ${pmode==='single'?'on':''}" data-pmode="single">1期比較</button>`;
+  let ctl=`<div class="ctl-row">${modeChips}`;
+  if(pmode==='single') ctl+=`<span class="ctl-lbl" style="margin-left:8px;">対象期：</span><select id="mPeriod">`+ds.map((r,i)=>`<option value="${i}" ${i===idx?'selected':''}>${TLAB(r.year)}</option>`).join('')+`</select>`;
+  if(scope==='pl'&&pmode==='multi') ctl+=`<span class="ctl-lbl" style="margin-left:8px;">内訳：</span><button class="chip ${plBreak==='main'?'on':''}" data-plbreak="main">主要項目</button><button class="chip ${plBreak==='cogs'?'on':''}" data-plbreak="cogs">原価の内訳</button><button class="chip ${plBreak==='sga'?'on':''}" data-plbreak="sga">販管費の内訳</button>`;
+  ctl+=`</div>`;
+  $("mainControls").innerHTML=ctl;
+  if(scope==='all'){
+    if(pmode==='multi'){ $("chart").innerHTML=`<div class="fig60">`+comboSVG(ds,hi,true)+`</div>`; $("legend").innerHTML=LEG_FULL; }
+    else { $("chart").innerHTML=comboDetailSVG(ds[idx],hi,true); $("legend").innerHTML=LEG_FULL; }
+  } else if(scope==='bs'){
+    if(pmode==='multi'){ $("chart").innerHTML=`<div class="fig60">`+comboSVG(ds,hi,false)+`</div>`; $("legend").innerHTML=BS_LEGEND; }
+    else { $("chart").innerHTML=comboDetailSVG(ds[idx],hi,false); $("legend").innerHTML=BS_LEGEND; }
+  } else if(scope==='pl'){
+    if(pmode==='single'){ const wf=plWaterfall(ds[idx].d, `${TLAB(ds[idx].year)} PLウォーターフォール`); $("chart").innerHTML=wf.svg; $("legend").innerHTML=wf.legend; }
+    else if(plBreak==='main'){ const cmp=drawSeries(ds,['sales','cogs','grossProfit','sga','operatingProfit','ordinaryProfit','netIncome'],'bar'); $("chart").innerHTML=cmp.svg; $("legend").innerHTML=cmp.legend; }
+    else { const r=drawItemTrend(ds, plBreak==='cogs'?cogsLeaves():SGA_LEAVES, plBreak==='cogs'?'売上原価の内訳':'販管費の内訳'); $("chart").innerHTML=r.svg; $("legend").innerHTML=r.legend; }
+  }
+}
+// 間接法キャッシュフローの計算式（選択期：a=前期, c=当期）を実数入りで表示
+function cfFormulaHTML(a,c,cf,u,plabel){
+  const sg=v=>`<b style="color:${v>=0?'#2f855a':'#c53030'}">${v>=0?'+':'−'}${fmt(Math.abs(v))}</b>`;
+  const dlt=(cur,prev)=>cur-prev;
+  const Drecv=dlt(c.recv,a.recv), Dinv=dlt(c.inv,a.inv), Dpayb=dlt(c.payb,a.payb);
+  const Dfa=dlt(c.fa,a.fa), Dibd=dlt(c.ibd,a.ibd), Dcap=dlt(c.cap,a.cap), Dcsurp=dlt(c.csurp,a.csurp);
+  const chg=(prev,cur)=>`前期 ${fmt(prev)} → 当期 ${fmt(cur)}`;
+  const tbl=(title,note,rows,total,totalLabel)=>{
+    let h=`<table class="cf-form"><thead><tr><th class="itemcol">${title}<span class="cff-note">${note}</span></th><th class="num">CFへの影響</th></tr></thead><tbody>`;
+    rows.forEach(([nm,sub,val])=>{ h+=`<tr><td class="itemcol">${nm}${sub?`<span class="cff-sub">${sub}</span>`:''}</td><td class="num">${sg(val)}</td></tr>`; });
+    h+=`<tr class="cff-tot"><td class="itemcol">＝ ${totalLabel}</td><td class="num">${sg(total)}</td></tr></tbody></table>`;
+    return h;
+  };
+  const opT=tbl('営業CF（間接法）','税引前利益に非現金費用を戻し、運転資本の増減を調整',[
+    ['税引前当期純利益','', c.pretaxProfit],
+    ['＋ 減価償却費','非現金費用のため加算', c.dep],
+    ['− 法人税等','実際の納税額を控除', -c.tax],
+    ['− 売上債権の増加', chg(a.recv,c.recv)+'（増加＝未回収で現金減）', -Drecv],
+    ['− 棚卸資産の増加', chg(a.inv,c.inv)+'（増加＝在庫に資金滞留）', -Dinv],
+    ['＋ 仕入債務の増加', chg(a.payb,c.payb)+'（増加＝支払猶予で現金温存）', Dpayb],
+  ], cf.opCF, '営業CF');
+  const ivT=tbl('投資CF（間接法）','設備投資＝固定資産の増加＋当期減価償却費（取得ベースに戻す）',[
+    ['− 設備投資（capex）', chg(a.fa,c.fa)+`　固定資産の増減 ${fmt(Dfa)} ＋ 減価償却費 ${fmt(c.dep)} ＝ ${fmt(cf.capex)}`, -cf.capex],
+  ], cf.invCF, '投資CF');
+  const fiT=tbl('財務CF（間接法）','資金調達（借入・増資）と株主還元（配当）',[
+    ['有利子負債の増減', chg(a.ibd,c.ibd), Dibd],
+    ['＋ 資本金の増減', chg(a.cap,c.cap), Dcap],
+    ['＋ 資本剰余金の増減', chg(a.csurp,c.csurp), Dcsurp],
+    ['− 配当金', `max(0, 前期利益剰余金 ${fmt(a.re)} ＋ 当期純利益 ${fmt(c.netIncome)} − 当期利益剰余金 ${fmt(c.re)}) ＝ ${fmt(cf.dividend)}`, -cf.dividend],
+  ], cf.finCF, '財務CF');
+  const adjT=tbl('その他調整・検算','推定値とBS実績の差を調整して期末現金に一致させる',[
+    ['営業CF ＋ 投資CF ＋ 財務CF','（計算値）', cf.calc],
+    ['その他調整', `実際の現金増減 ${fmt(cf.actual)} − 計算値 ${fmt(cf.calc)}`, cf.adj],
+    ['現金の増減（実績）', chg(a.cash,c.cash), cf.actual],
+  ], cf.actual, '現金増減（BS一致）');
+  return `<div class="cf-h">計算式（間接法）｜${plabel}・単位：${u}</div>
+    <p class="cff-lead">このCF計算書は<b>間接法</b>で、貸借対照表（BS）と損益計算書（PL）の2期の差分から<b>推定</b>したものです。厳密な会計上のCF計算書とは一致しないことがあり、推定の端数は「その他調整」で吸収して期末現金に合わせています。</p>
+    <div class="cf-formwrap">${opT}${ivT}${fiT}${adjT}</div>`;
+}
+function renderCS(ds){
+  const modeChips=`<span class="ctl-lbl">期間：</span><button class="chip ${pmode==='multi'?'on':''}" data-pmode="multi">3期比較</button><button class="chip ${pmode==='single'?'on':''}" data-pmode="single">2期比較（1期分）</button>`;
+  if(ds.length<2){ $("mainControls").innerHTML=`<div class="ctl-row">${modeChips}</div>`; $("chart").innerHTML='<p class="ph">キャッシュフロー（CF）には2期以上の入力が必要です。「② 数値入力」で期を追加してください。</p>'; $("legend").innerHTML=''; return; }
+  const idx=pidx<1?ds.length-1:Math.min(pidx,ds.length-1);
+  let ctl=`<div class="ctl-row">${modeChips}`;
+  if(pmode==='single') ctl+=`<span class="ctl-lbl" style="margin-left:8px;">対象期：</span><select id="mPeriod">`+ds.map((r,i)=> i>=1?`<option value="${i}" ${i===idx?'selected':''}>${TLAB(ds[i-1].year)}→${TLAB(r.year)}</option>`:'').join('')+`</select>`;
+  ctl+=`</div>`;
+  $("mainControls").innerHTML=ctl;
+  if(pmode==='single'){ const cf=computeCF(ds[idx-1].d,ds[idx].d), startCash=ds[idx-1].d.cash, endCash=ds[idx].d.cash;
+    const r=drawSteps([{t:'total',label:'期首現金',val:startCash},{t:'flow',label:'営業CF',amt:cf.opCF},{t:'flow',label:'投資CF',amt:cf.invCF},{t:'flow',label:'財務CF',amt:cf.finCF},{t:'flow',label:'その他調整',amt:cf.adj},{t:'total',label:'期末現金',val:endCash}], `${TLAB(ds[idx-1].year)}→${TLAB(ds[idx].year)} 現金の増減（期首→期末）`);
+    $("chart").innerHTML=r.svg; $("legend").innerHTML=r.legend;
+  } else { const r=drawCFCompare(ds); $("chart").innerHTML=r.svg; $("legend").innerHTML=r.legend; }
+  const a=ds[idx-1].d,c=ds[idx].d,cf=computeCF(a,c),pat=cfPattern(cf.opCF,cf.invCF,cf.finCF),u=unitStr();
+  const opm=c.sales?cf.opCF/c.sales*100:0, sgn=v=>(v>=0?'+':'')+fmt(v), tile=(t,v)=>`<div class="cf-tile"><div class="t">${t}</div><div class="v">${v}</div></div>`;
+  let mh=`<div class="cf-pattern"><div><span class="cf-badge">該当 ${pat?pat.no+' '+pat.name:'—'}</span></div><div class="cf-desc">${pat?pat.desc:''}</div><div class="cf-signs">営業CF <b>${sgn(cf.opCF)}</b>　／　投資CF <b>${sgn(cf.invCF)}</b>　／　財務CF <b>${sgn(cf.finCF)}</b>　（${TLAB(ds[idx-1].year)}→${TLAB(ds[idx].year)}・単位：${u}）</div></div>`;
+  mh+=`<div class="cf-tiles">${tile('営業CF',fmt(cf.opCF))}${tile('投資CF',fmt(cf.invCF))}${tile('財務CF',fmt(cf.finCF))}${tile('フリーCF',fmt(cf.fcf))}${tile('現金増減',fmt(cf.actual))}${tile('営業CFマージン',p1(opm)+'%')}</div>`;
+  mh+=`<div class="cf-h">キャッシュフロー8パターン（該当を強調）</div><div class="cf-grid">`+CF_PATTERNS.map(p=>`<div class="cf-card ${pat&&p.sign===pat.sign?'cur':''}"><div class="cf-mini">${cfMini(p.sign)}</div><div class="cf-ct"><div class="nm">${p.no} ${p.name}</div><div class="ds">${p.desc}</div></div></div>`).join('')+`</div>`;
+  const rows=[['opCF','営業CF'],['invCF','投資CF'],['finCF','財務CF'],['fcf','フリーCF(営業+投資)'],['adj','その他調整'],['actual','現金増減']];
+  let t=`<div class="cf-h">キャッシュフロー（CF）数値表（単位：${u}）</div><div class="detail-wrap"><table class="cmp-detail"><thead><tr><th class="itemcol">項目</th>`;
+  for(let i=1;i<ds.length;i++) t+=`<th>${TLAB(ds[i-1].year)}→${TLAB(ds[i].year)}</th>`;
+  t+=`</tr></thead><tbody>`;
+  rows.forEach(([k,nm])=>{ t+=`<tr class="${k==='actual'?'grand':(k==='fcf'?'totrow':'')}"><td class="itemcol">${nm}</td>`;
+    for(let i=1;i<ds.length;i++){ const cf2=computeCF(ds[i-1].d,ds[i].d); t+=`<td class="num">${fmt(cf2[k])}</td>`; } t+=`</tr>`; });
+  t+=`</tbody></table></div>`;
+  const fh=cfFormulaHTML(a,c,cf,u,`${TLAB(ds[idx-1].year)}→${TLAB(ds[idx].year)}`);
+  $("mainExtra").innerHTML=mh+t+fh;
+}
+
 
 /* ---------- run ---------- */
-function renderBS(d){
-  const set=(id,v)=>{const el=$(id); if(el) el.textContent=fmt(v);};
-  set("totLiab", d.cl + d.fl);
-  set("totNA", d.na);
-  set("totAssets", d.totalAssets);
-  set("totLNA", d.totalCapital);
-}
-
 function run(){
-  const d = compute();
-  renderBS(d);
-  drawChart(d);
-  renderAnalysis(d);
+  applyUnitLabels();
+  sortPeriods();
+  renderPeriodBar();
+  updateComputedInputs();
+  const ds=derived();
+  renderAnalysis(ds);   // 先に指標を確定（選択指標＝チャート強調に反映）
+  renderMainChart(ds);
+  renderFlow(ds);
 }
-function reset(){ IDS.forEach(id=> $(id).value = DEFAULTS[id]); run(); }
 
-IDS.forEach(id=> $(id).addEventListener("input", run));
-$("resetBtn").addEventListener("click", reset);
+/* ---------- listeners ---------- */
+function onFormInput(e){
+  const t=e.target; if(t.tagName!=='INPUT'||!t.id.startsWith('in_')||t.readOnly) return;
+  const key=t.id.slice(3);
+  periods[curIdx].vals[key]=parseFloat(t.value)||0;
+  run();
+}
+$("bsLeft").addEventListener("input", onFormInput);
+$("bsRight").addEventListener("input", onFormInput);
+$("plForm").addEventListener("input", onFormInput);
+$("unit").addEventListener("change", run);
+$("in_emp").addEventListener("input", e=>{ periods[curIdx].vals.emp=parseFloat(e.target.value)||0; run(); });
+$("costType").addEventListener("change", e=>{ costType=e.target.value; buildInputForm(); run(); });
+$("resetBtn").addEventListener("click", openResetModal);
+$("delBtn").addEventListener("click", openDeleteModal);
+$("periodbar").addEventListener("click", e=>{
+  const t=e.target;
+  if(t.classList.contains("ptab")){ curIdx=+t.dataset.i; buildInputForm(); run(); return; }
+  if(t.id==="addBtn"){ openAddModal(); return; }
+});
+$("modalCancel").addEventListener("click", closeModal);
+$("modal").addEventListener("click", e=>{ if(e.target.id==='modal') closeModal(); });
+$("modalOk").addEventListener("click", ()=>{ if(!modalOnOk || modalOnOk()!==false) closeModal(); });
+$("modal").addEventListener("keydown", e=>{ if(e.key==='Enter'){ e.preventDefault(); $("modalOk").click(); } else if(e.key==='Escape'){ closeModal(); } });
 
-/* tabs */
 function switchTab(name){
   document.querySelectorAll(".tab").forEach(t=> t.classList.toggle("active", t.dataset.tab===name));
   document.querySelectorAll(".tabpane").forEach(p=> p.classList.toggle("active", p.id==="tab-"+name));
 }
 document.querySelectorAll(".tab").forEach(t=> t.addEventListener("click", ()=> switchTab(t.dataset.tab)));
-// 「分析する」= 再計算して図タブへ
 $("calcBtn").addEventListener("click", ()=>{ run(); switchTab("view"); });
+$("subtabs").addEventListener("click", e=>{ const b=e.target.closest(".subtab"); if(!b) return; curCat=b.dataset.cat; if(curCat!=='flow'){ curKey=CATS[curCat].metrics.filter(m=>!m.detailOnly)[0].key; } run(); });
+$("indSel").addEventListener("change", e=>{ industry=e.target.value; run(); });
+$("metricbtns").addEventListener("click", e=>{ const b=e.target.closest(".mbtn"); if(!b) return; if(b.id==='detMetToggle'){ showDetail=!showDetail; } else if(b.dataset.key){ curKey=b.dataset.key; } run(); });
+$("metricdetail").addEventListener("click", e=>{ const b=e.target.closest(".cbtn"); if(!b||b.disabled) return; cmpN=+b.dataset.n; run(); });
+$("flowArea").addEventListener("click", e=>{
+  const fn=e.target.closest(".fl-node"); if(fn){ flowKey=fn.dataset.fk; renderFlow(derived()); return; }
+  const b=e.target.closest(".cbtn"); if(b&&!b.disabled){ cmpN=+b.dataset.n; renderFlow(derived()); } });
+$("scopeToggle").addEventListener("click", e=>{ const b=e.target.closest(".cbtn"); if(!b) return; scope=b.dataset.scope; pidx=-1; run(); });
+$("mainControls").addEventListener("click", e=>{
+  const b=e.target.closest("[data-pmode],[data-plbreak]"); if(!b) return;
+  if(b.dataset.pmode){ pmode=b.dataset.pmode; run(); }
+  else if(b.dataset.plbreak){ plBreak=b.dataset.plbreak; run(); }
+});
+$("mainControls").addEventListener("change", e=>{ if(e.target.id==='mPeriod'){ pidx=+e.target.value; run(); } });
 
+/* ---------- 保存 / 復元（自己完結型HTML） ---------- */
+function saveHTML(){
+  // 現在の入力値をフォームから確定
+  if(typeof readInputs==='function') readInputs();
+  const state = {
+    v: 1,
+    savedAt: new Date().toISOString(),
+    periods: periods,
+    costType: costType,
+    unit: unitStr(),
+    industry: industry
+  };
+  // HTML自身に状態を埋め込む
+  const holder = $("appState");
+  if(holder) holder.textContent = JSON.stringify(state);
+  // アクティブ要素の value 属性を実DOMに反映（select/input）
+  document.querySelectorAll("select").forEach(sel=>{
+    const opts = sel.querySelectorAll("option");
+    opts.forEach(o=> o.removeAttribute("selected"));
+    const cur = sel.options[sel.selectedIndex];
+    if(cur) cur.setAttribute("selected","selected");
+  });
+  const html = "<!doctype html>\n" + document.documentElement.outerHTML;
+  const blob = new Blob([html], {type:"text/html;charset=utf-8"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  const y = state.savedAt.slice(0,10).replace(/-/g,"");
+  a.href = url;
+  a.download = "財務分析_" + y + ".html";
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(()=> URL.revokeObjectURL(url), 4000);
+}
+function restoreState(){
+  const holder = $("appState");
+  if(!holder) return false;
+  const raw = (holder.textContent||"").trim();
+  if(!raw) return false;
+  let s;
+  try{ s = JSON.parse(raw); }catch(e){ return false; }
+  if(!s || !Array.isArray(s.periods) || !s.periods.length) return false;
+  // periods を正規化（欠損キーは 0 / DET_KEYS は既定 true）
+  periods = s.periods.map(p=> ({ year: p.year, vals: Object.assign(zeros(), p.vals||{}) }));
+  if(s.costType){ costType = s.costType; const ct=$("costType"); if(ct) ct.value = s.costType; }
+  if(s.industry){ industry = s.industry; const isl=$("indSel"); if(isl) isl.value = s.industry; }
+  if(s.unit){ const u=$("unit"); if(u) u.value = s.unit; }
+  curIdx = 0;
+  return true;
+}
+
+restoreState();
+buildInputForm();
 run();
+$("saveBtn").addEventListener("click", saveHTML);
 </script>
 </body>
 </html>
