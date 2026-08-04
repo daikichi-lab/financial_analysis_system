@@ -278,15 +278,95 @@
   .btn-danger{background:var(--bad);color:#fff;}
 
   footer{text-align:center;font-size:11px;color:var(--muted);padding:16px;}
+
+  /* ---- システム化で追加：トップバー／担当先／OCR ---- */
+  .topbar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
+  .topbar .tb-title{flex:1 1 auto;min-width:200px;}
+  .tb-user{font-size:12px;color:#cbd5e0;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+  .tb-user b{color:#fff;font-weight:600;}
+  .tb-btn{padding:5px 12px;font-size:12px;font-weight:700;border:1px solid #4b5563;background:#374151;color:#e5e7eb;border-radius:6px;cursor:pointer;flex:0 0 auto;}
+  .tb-btn:hover{background:#4b5563;}
+  .tb-btn.admin{background:#2b6cb0;border-color:transparent;color:#fff;}
+  .clientbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;background:#fff;border:1px solid #d7dbe0;border-radius:8px;padding:10px 12px;margin-bottom:14px;}
+  .clientbar label{font-size:12px;font-weight:700;color:#475569;}
+  .clientbar select{padding:6px 8px;font-size:13px;border:1px solid #cbd5e0;border-radius:6px;min-width:220px;background:#fff;}
+  .clientbar .cb-status{font-size:11.5px;color:var(--muted);margin-left:auto;}
+  .clientbar .cb-status.dirty{color:#b7791f;font-weight:700;}
+  .cb-btn{flex:0 0 auto;padding:6px 14px;font-size:12.5px;font-weight:700;border-radius:6px;border:1px solid #cbd5e0;background:#fff;color:#334155;cursor:pointer;}
+  .cb-btn:hover{background:#f1f5f9;}
+  .cb-btn.pri{background:var(--accent);color:#fff;border-color:transparent;}
+  .cb-btn:disabled{opacity:.45;cursor:not-allowed;}
+
+  .ocr-panel{border:1px dashed #94a3b8;border-radius:10px;background:#f8fafc;padding:14px 16px;margin-bottom:14px;}
+  .ocr-head{font-size:13.5px;font-weight:800;color:#334155;margin-bottom:4px;}
+  .ocr-lead{font-size:11.5px;color:#64748b;line-height:1.6;margin-bottom:10px;}
+  .ocr-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
+  .ocr-row input[type=file]{font-size:12px;flex:1 1 240px;min-width:0;}
+  .ocr-row input[type=text]{flex:1 1 200px;min-width:0;padding:6px 8px;font-size:12px;border:1px solid #cbd5e0;border-radius:6px;}
+  .ocr-msg{font-size:12px;margin-top:10px;line-height:1.7;padding:9px 12px;border-radius:6px;display:none;}
+  .ocr-msg.on{display:block;}
+  .ocr-msg.info{background:#eef5fc;color:#1e40af;border:1px solid #bfdbfe;}
+  .ocr-msg.ok{background:#e6f4ea;color:#166534;border:1px solid #a7d7b8;}
+  .ocr-msg.err{background:#fde8e8;color:#8a1c1c;border:1px solid #f0b4b4;}
+  .ocr-msg ul{margin:6px 0 0;padding-left:20px;}
+  .spin{display:inline-block;width:12px;height:12px;border:2px solid #bfdbfe;border-top-color:#2b6cb0;border-radius:50%;animation:sp .8s linear infinite;vertical-align:-2px;margin-right:6px;}
+  @keyframes sp{to{transform:rotate(360deg);}}
+  /* 読み取り結果のうち自信がない項目 */
+  .frow input.lowconf,.frow .autoval.lowconf{background:#fff7e6;border:1.5px solid #e8a11a;}
+  .lowconf-legend{font-size:11.5px;color:#8a5a12;background:#fdf3e2;border:1px solid #efd8a8;border-radius:6px;padding:8px 10px;margin:10px 0 0;}
+
+  /* ---- 明細エディタ ---- */
+  .le-wrap{border:1px solid #e2e8f0;border-radius:8px;overflow-x:auto;}
+  table.le{border-collapse:collapse;width:100%;font-size:12.5px;min-width:660px;}
+  table.le th,table.le td{border-bottom:1px solid #eef1f4;padding:4px 6px;text-align:left;}
+  table.le th{background:#f1f5f9;font-size:11px;color:var(--muted);font-weight:700;white-space:nowrap;position:sticky;top:0;}
+  table.le tr.secrow td{background:#5b6670;color:#fff;font-weight:700;font-size:12px;padding:5px 10px;}
+  table.le tr.secrow.liab td{background:#2f6fb0;} table.le tr.secrow.na td{background:#2f9e6f;}
+  table.le tr.secrow.pl td{background:#8a5a12;} table.le tr.secrow.cogs td{background:#6b7280;}
+  table.le tr.secrow.sga td{background:#a05017;} table.le tr.secrow.misc td{background:#7c3aed;}
+  table.le tr.unmapped td{background:#fffaf0;}
+  table.le tr.lowc td{background:#fff7e6;}
+  table.le input[type=text]{width:100%;min-width:130px;padding:3px 6px;font-size:12.5px;border:1px solid #cbd5e0;border-radius:4px;}
+  table.le input.amt{width:110px;text-align:right;font-variant-numeric:tabular-nums;padding:3px 6px;font-size:12.5px;border:1px solid #cbd5e0;border-radius:4px;}
+  table.le select{max-width:190px;padding:3px 4px;font-size:12px;border:1px solid #cbd5e0;border-radius:4px;}
+  table.le select.none{color:#b45309;border-color:#e8a11a;background:#fff7e6;}
+  table.le td.act{white-space:nowrap;text-align:right;}
+  .le-del{padding:2px 7px;font-size:12px;border:1px solid #e2c3c3;background:#fff;color:#c53030;border-radius:4px;cursor:pointer;flex:0 0 auto;}
+  .le-del:hover{background:#fde8e8;}
+  .le-add{margin:6px 0 0;padding:4px 12px;font-size:12px;font-weight:700;border:1px dashed #94a3b8;background:#fff;color:#475569;border-radius:6px;cursor:pointer;flex:0 0 auto;}
+  .le-add:hover{background:#f1f5f9;}
+  .le-tools{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px;}
+  .agg-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:6px;}
+  .agg-item{display:flex;justify-content:space-between;gap:8px;font-size:12px;padding:5px 9px;border:1px solid #e2e8f0;border-radius:5px;background:#fbfcfd;}
+  .agg-item b{font-variant-numeric:tabular-nums;}
+  .agg-item .src{color:#94a3b8;font-size:10.5px;}
+  .agg-sec{font-size:11px;font-weight:700;color:var(--muted);margin:12px 0 5px;letter-spacing:.06em;}
+  .unmap-box{margin-top:12px;padding:10px 12px;background:#fff7e6;border:1px solid #efd8a8;border-radius:7px;font-size:12px;color:#8a5a12;}
+  .unmap-box b{color:#b45309;}
 </style>
 </head>
 <body>
 <header>
-  <h1>決算書 財務分析ツール（簡易版）</h1>
-  <p>最大3期を入力（中分類の内訳入力）→ 全体／PL／BS／CS と指標分析を1画面で比較</p>
+  <div class="topbar">
+    <div class="tb-title">
+      <h1>決算書 財務分析ツール</h1>
+      <p>最大3期を入力（中分類の内訳入力）→ 全体／PL／BS／CS と指標分析を1画面で比較</p>
+    </div>
+    <div class="tb-user" id="tbUser"></div>
+  </div>
 </header>
 
 <div class="wrap">
+  <div class="clientbar">
+    <label for="clientSel">担当先</label>
+    <select id="clientSel"><option value="">読み込み中…</option></select>
+    <button class="cb-btn" id="clientNewBtn">＋ 新規</button>
+    <button class="cb-btn" id="clientEditBtn">名称・業種の変更</button>
+    <button class="cb-btn" id="clientDelBtn" title="この担当先を削除">削除</button>
+    <button class="cb-btn pri" id="clientSaveBtn">💾 保存</button>
+    <span class="cb-status" id="clientStatus"></span>
+  </div>
+
   <div class="tabs">
     <button class="tab active" data-tab="view">① 財務分析</button>
     <button class="tab" data-tab="input">② 数値入力</button>
@@ -334,6 +414,18 @@
   <div class="tabpane" id="tab-input">
     <section class="panel">
       <h2>決算書の入力</h2>
+
+      <div class="ocr-panel">
+        <div class="ocr-head">📄 決算書を読み込む</div>
+        <p class="ocr-lead">PDF・画像（スキャン／写真）・Excel(.xlsx)・CSV に対応。前期と当期が並んだ比較形式なら複数期をまとめて取り込みます。<b>読み取り結果は下の入力欄に反映されるだけです。必ず内容を確認してから「分析する」を押してください。</b></p>
+        <div class="ocr-row">
+          <input type="file" id="ocrFile" accept=".pdf,.png,.jpg,.jpeg,.gif,.webp,.xlsx,.xlsm,.csv,.tsv,.txt,application/pdf,image/*">
+          <input type="text" id="ocrHint" placeholder="補足（任意）例：単位は千円／製造原価報告書は3ページ目">
+          <button class="cb-btn pri" id="ocrBtn">読み取る</button>
+        </div>
+        <div class="ocr-msg" id="ocrMsg"></div>
+      </div>
+
       <div class="companytabs"><button class="subtab active">自社</button></div>
       <div class="periodbar" id="periodbar"></div>
       <div class="field"><label>金額の単位</label>
@@ -342,6 +434,7 @@
           <option value="億円" selected>億円</option>
           <option value="100万円">100万円</option>
           <option value="万円">万円</option>
+          <option value="千円">千円</option>
           <option value="円">円</option>
         </select>
       </div>
@@ -350,15 +443,6 @@
         <span class="note" style="margin:0 0 0 8px;">※労働生産性の算出に使用（不明なら空欄でOK）</span>
       </div>
 
-      <h3>貸借対照表（BS）</h3>
-      <div class="bs-title">貸借対照表<span class="bs-unit">単位：億円</span></div>
-      <div class="bs-grid">
-        <div id="bsLeft" class="ledger"></div>
-        <div id="bsRight" class="ledger"></div>
-      </div>
-      <div class="bs-balance" id="bsBalance"></div>
-
-      <h3>損益計算書（PL）</h3>
       <div class="field"><label>売上原価の型（業種）</label>
         <select id="costType">
           <option value="A" selected>製造業（材料費・労務費・外注費…）</option>
@@ -366,9 +450,18 @@
           <option value="C">サービス業（労務費・外注費…）</option>
         </select>
       </div>
-      <div id="plForm" class="ledger"></div>
 
+      <h3>決算書の明細</h3>
+      <p class="note" style="margin:0 0 10px;">決算書に印字されている科目を<b>そのまま1行ずつ</b>入力します。まとめる必要はありません。
+        「対応先」で分析項目に紐づけると、複数の科目が自動で集計されます（受取手形＋売掛金＋電子記録債権 → 売上債権）。
+        対応先が空欄の行も金額は保持されますが、分析には反映されません。</p>
+      <div id="lineEditor"></div>
+      <div class="bs-balance" id="bsBalance"></div>
       <div id="inputWarn" class="input-warn" hidden></div>
+
+      <h3>集計結果（分析に使われる値）</h3>
+      <p class="note" style="margin:0 0 8px;">上の明細から自動計算されます。直接は編集できません。</p>
+      <div id="aggView"></div>
       <div class="btnrow">
         <button class="btn-primary" id="calcBtn">分析する</button>
         <button class="btn-ghost" id="resetBtn">この期をリセット（0）</button>
@@ -467,20 +560,18 @@ const DEMO = [
 ];
 
 /* ---------- state ---------- */
-let periods = DEMO.map(p=> ({year:p.year, vals:Object.assign({}, p.vals)}));
+// 明細行が本体。デモデータは起動時に明細へ変換する（FIELDSET 読込後）。
+let periods = DEMO.map(p=> ({year:p.year, label:'', vals:Object.assign({}, p.vals), lines:null}));
 let curIdx = 0, curCat='eff', curKey='roe', cmpN=3, cmpSeg='all', showDetail=false, industry='manuf', flowKey='opm';
-const INDUSTRIES={manuf:'製造業',wholesale:'卸売業',retail:'小売業',construct:'建設業',service:'サービス業',it:'情報通信業',food:'飲食・宿泊業'};
-// 業種平均の目安（中小企業の概算値・単位は各指標に準拠）
-const BENCH={
-  manuf:{gm:22,costr:78,sgar:18,opm:3.5,ordm:4.0,npm:2.5,equity:40,current:180,fixedlt:85,fixedratio:120,debtratio:150,atoturn:1.0,faturn:1.6,roa:3.5,roe:8,labshare:50,persr:15,de:1.2,debty:8,icr:4},
-  wholesale:{gm:15,costr:85,sgar:12,opm:2.0,ordm:2.5,npm:1.5,equity:35,current:160,fixedlt:80,fixedratio:110,debtratio:180,atoturn:1.8,faturn:4.0,roa:3.0,roe:8,labshare:45,persr:10,de:1.5,debty:8,icr:4},
-  retail:{gm:30,costr:70,sgar:27,opm:2.5,ordm:3.0,npm:1.8,equity:30,current:140,fixedlt:90,fixedratio:140,debtratio:200,atoturn:1.8,faturn:3.0,roa:4.0,roe:9,labshare:50,persr:18,de:1.6,debty:9,icr:3.5},
-  construct:{gm:20,costr:80,sgar:15,opm:4.0,ordm:4.5,npm:3.0,equity:38,current:150,fixedlt:80,fixedratio:110,debtratio:160,atoturn:1.2,faturn:5.0,roa:4.5,roe:10,labshare:48,persr:18,de:1.0,debty:6,icr:5},
-  service:{gm:45,costr:55,sgar:40,opm:4.0,ordm:4.5,npm:3.0,equity:40,current:170,fixedlt:85,fixedratio:120,debtratio:150,atoturn:1.1,faturn:2.5,roa:4.0,roe:9,labshare:55,persr:35,de:1.1,debty:7,icr:4.5},
-  it:{gm:45,costr:55,sgar:38,opm:6.0,ordm:6.5,npm:4.5,equity:45,current:190,fixedlt:75,fixedratio:100,debtratio:120,atoturn:1.0,faturn:3.0,roa:6.0,roe:11,labshare:55,persr:38,de:0.8,debty:5,icr:8},
-  food:{gm:60,costr:40,sgar:56,opm:3.0,ordm:3.0,npm:1.5,equity:20,current:110,fixedlt:100,fixedratio:180,debtratio:300,atoturn:1.5,faturn:2.0,roa:3.0,roe:8,labshare:40,persr:30,de:2.5,debty:12,icr:2.5},
-};
+// 業種・業種平均・判定しきい値・指標の表示設定はサーバのマスタから読み込む（管理画面で変更可能）。
+// 読み込み前／通信失敗時に画面が壊れないよう、最低限のフォールバックだけ持つ。
+let INDUSTRIES={manuf:'製造業'};
+let BENCH={};
+let THRESHOLDS={};   // metric_key -> {judged,good_op,good_value,warn_op,warn_value,各ラベル}
+let METRICSET={};    // metric_key -> {label,visible,detail_only,sort_order}
 const sortPeriods = () => periods.sort((a,b)=> a.year-b.year);
+// 直近の読み取り履歴ID（元ファイルへのリンクに使う）
+let lastImportId = null;
 
 /* ---------- compute ---------- */
 function computeVals(v){
@@ -576,7 +667,7 @@ function computeVals(v){
     detCa:!!v.det_ca,detFa:!!v.det_fa,detCl:!!v.det_cl,detFl:!!v.det_fl,detCogs:!!v.det_cogs,detSga:!!v.det_sga};
 }
 const derived = () => {
-  const arr=periods.map(p=> ({year:p.year, d:computeVals(p.vals)}));
+  const arr=periods.map(p=> ({year:p.year, d:computeVals(aggregateLines(p.lines||[]).vals)}));
   const g=(cur,prev)=> (prev!=null && prev!==0) ? (cur-prev)/Math.abs(prev)*100 : null;
   arr.forEach((r,i)=>{ const pv=i>0?arr[i-1].d:null;
     r.d.gSales = pv? g(r.d.sales,pv.sales):null;
@@ -592,101 +683,157 @@ const derived = () => {
   return arr;
 };
 
-/* ---------- input form (BS/PL) ---------- */
-const BS_LEFT = [
-  {sec:'資産の部'},
-  {big:'ca', label:'流動資産', leaves:[['cash','現預金'],['recv','売上債権'],['inv','棚卸資産'],['stloanto','短期貸付金・役員貸付金'],['prepaid','前払・仮払・立替金'],['oca','その他流動資産']]},
-  {big:'fa', label:'固定資産', leaves:[['building','建物・設備'],['vehicle','車両・工具器具備品'],['land','土地'],['software','ソフトウェア・無形資産'],['invsec','投資有価証券・保険積立金'],['iota','長期貸付金・その他投資']]},
-  {auto:'totalAssets', label:'資産合計'},
-];
-const BS_RIGHT = [
-  {sec:'負債の部', cls:'liab'},
-  {big:'cl', label:'流動負債（短期負債）', leaves:[['payb','買掛金・支払手形'],['stloan','短期借入金 ★'],['cpltd','1年以内返済予定長期借入金 ★'],['payables','未払金・未払費用'],['taxpay','未払税金'],['ocl','その他短期負債']], uchi:{key:'ibds', label:'└ うち有利子負債（短期）★'}},
-  {big:'fl', label:'固定負債（長期負債）', leaves:[['ltloan','長期借入金 ★'],['bond','社債 ★'],['execloan','役員・関係者借入金'],['lease','リース債務・引当金'],['ofl','その他長期負債']], uchi:{key:'ibdl', label:'└ うち有利子負債（長期）★'}},
-  {auto:'liab', label:'負債合計'},
-  {auto:'ibd', label:'（有利子負債 合計 ★）', sub:true},
-  {sec:'純資産の部', cls:'na'},
-  {plain:'cap', label:'資本金'},
-  {plain:'csurp', label:'資本剰余金'},
-  {plain:'re', label:'利益剰余金'},
-  {plain:'ona', label:'その他純資産'},
-  {auto:'na', label:'純資産合計'},
-  {auto:'totalCapital', label:'負債・純資産合計'},
-];
-const PL_STRUCT = [
-  {plain:'sales', label:'売上高'},
-  {big:'cogs', label:'売上原価', leavesFn:cogsLeaves, uchi:{key:'depcogs', label:'└ うち減価償却費（製造原価）'}},
-  {auto:'grossProfit', label:'売上総利益（粗利）'},
-  {big:'sga', label:'販管費', leaves:SGA_LEAVES, uchi:{key:'depsga', label:'└ うち減価償却費（販管費）'}},
-  {auto:'operatingProfit', label:'営業利益'},
-  {plain:'noi', label:'営業外収益'},
-  {plain:'recint', label:'うち受取利息・配当金', sub:true},
-  {plain:'noe', label:'営業外費用'},
-  {plain:'intexp', label:'うち支払利息', sub:true},
-  {auto:'ordinaryProfit', label:'経常利益'},
-  {plain:'exg', label:'特別利益'},
-  {plain:'exl', label:'特別損失'},
-  {auto:'pretaxProfit', label:'税引前当期純利益'},
-  {plain:'tax', label:'法人税等'},
-  {auto:'netIncome', label:'当期純利益'},
-];
+/* ---------- 明細エディタ（決算書の科目をそのまま持つ） ---------- */
+// 内部項目の定義。サーバの /api/masters から読み込む（表示名は決算書の科目名とは別物）。
+let FIELDSET = {};   // key -> {label, section, kind, parent}
+let SECTIONS = {asset:'資産の部',liab:'負債の部',na:'純資産の部',pl:'損益計算書',cogs:'製造原価',sga:'販管費',misc:'その他'};
+const SEC_ORDER = ['asset','liab','na','pl','cogs','sga','misc'];
+
+const looksTotal = s => /(合計|総額|計)$/.test(String(s||'').replace(/[\s　]/g,''));
+const isCheckKey = k => FIELDSET[k] && FIELDSET[k].kind === 'check';
+
+/** 明細行 → 分析用の内部キー。server/aggregate.js と同じ規則。 */
+function aggregateLines(lines){
+  const byKey={}, unmapped=[];
+  for(const l of (lines||[])){
+    const amount=Number(l.amount);
+    if(!isFinite(amount)) continue;
+    const key = l.map_key && FIELDSET[l.map_key] ? l.map_key : null;
+    if(!key){ if(l.source_label) unmapped.push({source_label:l.source_label, amount, section:l.section}); continue; }
+    const b = byKey[key] || (byKey[key]={total:null,sum:0,lines:[]});
+    b.lines.push(l);
+    const t = l.is_total!=null ? !!l.is_total : looksTotal(l.source_label);
+    if(t) b.total=amount; else b.sum+=amount;
+  }
+  const vals={}, checks={};
+  for(const k of NUM_KEYS){ const b=byKey[k]; vals[k] = !b?0:(b.total!=null?b.total:b.sum); }
+  for(const k in byKey){ if(isCheckKey(k)) checks[k]= byKey[k].total!=null?byKey[k].total:byKey[k].sum; }
+  // 明示の合計行が無ければ内訳から積み上げる
+  for(const key of ['ca','fa','cl','fl','sga','cogs']){
+    if(vals[key]) continue;
+    const sum = NUM_KEYS.filter(k=>{const f=FIELDSET[k]; return f&&f.parent===key&&(f.kind==='component'||f.kind==='other');})
+                        .reduce((a,k)=>a+(vals[k]||0),0);
+    if(sum) vals[key]=sum;
+  }
+  DET_KEYS.forEach(k=> vals[k]=true);
+  return {vals, checks, unmapped, byKey};
+}
+
+const curLines = () => (periods[curIdx] && (periods[curIdx].lines || (periods[curIdx].lines=[]))) || [];
+const curVals  = () => aggregateLines(curLines()).vals;
+
+/** 旧形式（内部キーごとの数値）を明細行に起こす。デモデータと後方互換用。 */
+function valsToLines(vals){
+  const out=[]; let i=0;
+  for(const k of NUM_KEYS){
+    const f=FIELDSET[k], amount=Number((vals||{})[k]);
+    if(!f || !amount) continue;
+    out.push({sort_order:++i, section:f.section, source_label:f.label, amount,
+              map_key:k, is_total:(f.kind==='total'?1:0), origin:'manual', confidence:'high'});
+  }
+  return out;
+}
+
+/** 対応先のセレクト。セクションに合う項目を優先して並べる。 */
+function fieldOptions(sel, section){
+  const list=Object.entries(FIELDSET)
+    .filter(([,f])=> f.kind!=='calc')
+    .sort((a,b)=>{
+      const as=a[1].section===section?0:1, bs=b[1].section===section?0:1;
+      if(as!==bs) return as-bs;
+      return SEC_ORDER.indexOf(a[1].section)-SEC_ORDER.indexOf(b[1].section);
+    });
+  let h=`<option value="">（対応先なし）</option>`;
+  let lastSec=null;
+  for(const [k,f] of list){
+    if(f.section!==lastSec){ if(lastSec!==null) h+=`</optgroup>`; h+=`<optgroup label="${SECTIONS[f.section]||f.section}">`; lastSec=f.section; }
+    h+=`<option value="${k}" ${k===sel?'selected':''}>${escapeHTML(f.label)}</option>`;
+  }
+  return h+(lastSec!==null?`</optgroup>`:'');
+}
+
 function buildInputForm(){
-  const v=periods[curIdx].vals, u=unitStr();
-  const g=k=> (v[k]!=null? v[k]:0);
-  const numRow=(key,label,cls='')=> `<div class="frow ${cls}"><label>${label}</label><input type="number" id="in_${key}" value="${g(key)}"><span class="unit">${u}</span></div>`;
-  const autoRow=(key,label,cls='')=> `<div class="frow fauto ${cls}"><label>${label}</label><span class="autoval" id="in_${key}">0</span><span class="unit">${u}</span></div>`;
-  function bigRow(item){
-    const cogsIdentity = (item.big==='cogs' && costType==='B'); // 商業の原価は期首+仕入−期末の計算式
-    let h=`<div class="frow fbig"><label>${item.label}</label>`;
-    if(cogsIdentity) h+=`<input type="number" id="in_${item.big}" value="0" readonly>`;
-    else h+=`<input type="number" id="in_${item.big}" value="${g(item.big)}">`; // 合計は入力可（「その他」は差額を自動計算）
-    h+=`<span class="unit">${u}</span></div>`;
-    const lv=item.leavesFn? item.leavesFn(): item.leaves, resid=cogsIdentity?null:otherOf(item.big); // 内訳は常時表示
-    h+=lv.map(([k,lb])=> k===resid ? autoRow(k,lb,'fleaf') : numRow(k,lb,'fleaf')).join('');
-    return h;
+  const lines=curLines();
+  const u=unitStr();
+  const bySec={}; SEC_ORDER.forEach(s=> bySec[s]=[]);
+  lines.forEach((l,i)=>{ const s=bySec[l.section]?l.section:'asset'; bySec[s].push({l,i}); });
+
+  let h=`<div class="le-tools">
+      <span class="note" style="margin:0;">全 <b>${lines.length}</b> 行　／　単位：${u}</span>
+      <button class="le-add" data-addsec="asset" style="margin:0;">＋ 行を追加</button>
+    </div><div class="le-wrap"><table class="le">
+    <thead><tr><th style="min-width:150px;">決算書の科目名</th><th style="width:120px;">金額（${u}）</th>
+      <th style="width:200px;">対応先（分析項目）</th><th style="width:60px;">小計</th><th style="width:40px;"></th></tr></thead><tbody>`;
+
+  for(const sec of SEC_ORDER){
+    const rows=bySec[sec];
+    if(!rows.length && sec!=='asset') continue;
+    h+=`<tr class="secrow ${sec}"><td colspan="5">${SECTIONS[sec]||sec}</td></tr>`;
+    for(const {l,i} of rows){
+      const cls=[!l.map_key?'unmapped':'', l.confidence==='low'?'lowc':''].filter(Boolean).join(' ');
+      h+=`<tr class="${cls}" data-i="${i}">
+        <td><input type="text" data-f="source_label" value="${escapeHTML(l.source_label||'')}" placeholder="例：受取手形"></td>
+        <td><input type="number" class="amt" data-f="amount" value="${Number(l.amount)||0}"></td>
+        <td><select data-f="map_key" class="${l.map_key?'':'none'}">${fieldOptions(l.map_key||'', l.section)}</select></td>
+        <td style="text-align:center;"><input type="checkbox" data-f="is_total" ${l.is_total?'checked':''} title="「〜合計」の行はチェック。内訳との二重計上を防ぎます"></td>
+        <td class="act"><button class="le-del" data-del="${i}" title="この行を削除">×</button></td></tr>`;
+    }
+    h+=`<tr><td colspan="5" style="padding:4px 6px;"><button class="le-add" data-addsec="${sec}">＋ ${SECTIONS[sec]||sec}に行を追加</button></td></tr>`;
   }
-  function render(struct){
-    return struct.map(item=>{
-      if(item.sec) return `<div class="fsec ${item.cls||''}">${item.sec}</div>`;
-      if(item.big) return bigRow(item);
-      if(item.auto) return autoRow(item.auto, item.label, item.sub?'fsub':'');
-      if(item.plain) return numRow(item.plain, item.label, item.sub?'fsub':'');
-      return '';
-    }).join('');
-  }
-  $("bsLeft").innerHTML = render(BS_LEFT);
-  $("bsRight").innerHTML = render(BS_RIGHT);
-  $("plForm").innerHTML = render(PL_STRUCT);
-  const empEl=$('in_emp'); if(empEl) empEl.value=g('emp');
+  h+=`</tbody></table></div>`;
+  $("lineEditor").innerHTML=h;
+  const empEl=$('in_emp'); if(empEl) empEl.value = (lines.find(l=>l.map_key==='emp')||{}).amount || 0;
   updateComputedInputs();
 }
+
+/** 集計結果・貸借バランス・未対応科目の表示。 */
 function updateComputedInputs(){
-  const v=periods[curIdx].vals, d=computeVals(v);
-  const setNum=(id,val)=>{ const el=$('in_'+id); if(el&&el.tagName==='INPUT') el.value=Math.round(val); };
-  const setTxt=(id,val)=>{ const el=$('in_'+id); if(el&&el.tagName!=='INPUT'){ el.textContent=fmt(val); el.classList.toggle('in-neg', val<0); } };
-  if(v.det_ca) setTxt('oca',d.oca);
-  if(v.det_fa) setTxt('iota',d.iota);
-  if(v.det_cl) setTxt('ocl',d.ocl);
-  if(v.det_fl) setTxt('ofl',d.ofl);
-  if(v.det_cogs && costType==='B') setNum('cogs',d.cogs);       // 商業の原価は計算式のため合計を自動表示
-  if(v.det_cogs && costType!=='B') setTxt('othcogs',d.othcogs); // その他＝合計−主要内訳
-  if(v.det_sga) setTxt('othsga',d.othsga);
-  setTxt('totalAssets',d.totalAssets); setTxt('liab',d.cl+d.fl); setTxt('ibd',d.ibd);
-  setTxt('na',d.na); setTxt('totalCapital',d.totalCapital);
-  setTxt('grossProfit',d.grossProfit); setTxt('operatingProfit',d.operatingProfit);
-  setTxt('ordinaryProfit',d.ordinaryProfit); setTxt('pretaxProfit',d.pretaxProfit); setTxt('netIncome',d.netIncome);
+  const lines=curLines(), agg=aggregateLines(lines), u=unitStr();
+  const d=computeVals(agg.vals);
+
+  // 集計値（どの科目から来たかも見せる）
+  let h='';
+  for(const sec of SEC_ORDER){
+    const keys=NUM_KEYS.filter(k=> FIELDSET[k] && FIELDSET[k].section===sec && agg.byKey[k]);
+    if(!keys.length) continue;
+    h+=`<div class="agg-sec">${SECTIONS[sec]||sec}</div><div class="agg-grid">`;
+    for(const k of keys){
+      const src=agg.byKey[k].lines.map(l=>l.source_label).filter(Boolean);
+      const srcTxt = src.length>1 ? `${src.length}科目：${escapeHTML(src.join('＋'))}` : escapeHTML(src[0]||'');
+      h+=`<div class="agg-item"><span>${escapeHTML(FIELDSET[k].label)}<br><span class="src">${srcTxt}</span></span><b>${fmt(agg.vals[k])}</b></div>`;
+    }
+    h+=`</div>`;
+  }
+  if(agg.unmapped.length){
+    h+=`<div class="unmap-box">⚠ <b>対応先が未設定の科目が ${agg.unmapped.length} 件</b>あります。金額は保存されますが分析には反映されません。<br>`+
+       agg.unmapped.map(x=>`・${escapeHTML(x.source_label)}（${fmt(x.amount)} ${u}）`).join('<br>')+
+       `<br><span style="font-size:11px;">よく出てくる科目は、管理者に対応表への追加をご依頼ください。次回の読み取りから自動で入ります。</span></div>`;
+  }
+  $("aggView").innerHTML = h || `<p class="ph">明細を入力すると集計結果が表示されます。</p>`;
+
+  // 貸借バランス
   const bal=$("bsBalance");
-  if(bal){ const diff=d.totalAssets-d.totalCapital, u=unitStr();
-    if(Math.round(diff)===0){ bal.className='bs-balance ok'; bal.textContent=`貸借一致（差額 0 ${u}）`; }
+  if(bal){ const diff=d.totalAssets-d.totalCapital;
+    if(!d.totalAssets && !d.totalCapital){ bal.className='bs-balance'; bal.textContent=''; }
+    else if(Math.round(diff)===0){ bal.className='bs-balance ok'; bal.textContent=`貸借一致（差額 0 ${u}）`; }
     else { bal.className='bs-balance ng'; bal.textContent=`貸借差 ${diff>0?'+':''}${fmt(diff)} ${u}（資産合計 − 負債・純資産合計）— 一致するよう入力してください`; } }
-  // 「その他（残差）」マイナス警告
-  const iw=$("inputWarn"), u=unitStr();
+
+  // 検算（決算書に印字された合計との突き合わせ）
+  const notes=[];
+  const c=k=>Number(agg.checks[k]||0);
+  const chk=(actual,label,sum)=>{ if(actual&&sum&&Math.round(actual-sum)!==0)
+    notes.push(`${label}：決算書の記載 ${fmt(actual)} と明細の合計 ${fmt(sum)} が一致しません（差 ${fmt(actual-sum)}）`); };
+  chk(c('_totalAssets'),'資産合計',d.totalAssets);
+  chk(c('_totalNa'),'純資産合計',d.na);
+  chk(c('_grossProfit'),'売上総利益',d.grossProfit);
+  chk(c('_operatingProfit'),'営業利益',d.operatingProfit);
+  if(d.negResiduals && d.negResiduals.length){
+    d.negResiduals.forEach(r=> notes.push(`${r[0]}：内訳の合計が「${r[0]}」の合計を超えています（${r[1]} ${fmt(r[2])} ${u}）`));
+  }
+  const iw=$("inputWarn");
   if(iw){
-    if(d.negResiduals && d.negResiduals.length){
-      iw.hidden=false;
-      iw.innerHTML=`⚠ <b>内訳の合計が大項目の合計を超えています</b>（「その他」がマイナス）。入力を見直してください。<br>`+
-        d.negResiduals.map(r=>`・${r[0]}：${r[1]} <b>${fmt(r[2])} ${u}</b>`).join('<br>');
-    } else iw.hidden=true;
+    if(notes.length){ iw.hidden=false; iw.innerHTML=`⚠ <b>確認してください</b><br>`+notes.map(n=>'・'+n).join('<br>'); }
+    else iw.hidden=true;
   }
 }
 
@@ -720,14 +867,14 @@ function openAddModal(){
     onOk:()=>{ const y=parseInt($("modalYear").value,10); const err=$("modalErr");
       if(!Number.isFinite(y)){ err.textContent='期（数字）を入力してください。'; return false; }
       if(periods.some(p=>p.year===y)){ err.textContent='その期は既に存在します。'; return false; }
-      periods.push({year:y, vals:Object.assign({}, periods[curIdx].vals)});
+      periods.push({year:y, label:'', lines:(periods[curIdx].lines||[]).map(l=>Object.assign({},l))});
       sortPeriods(); curIdx=periods.findIndex(p=>p.year===y); buildInputForm(); run(); } });
 }
 function openResetModal(){
   const y=periods[curIdx].year;
   openModal({ title:'数値のリセット', okLabel:'リセットする', okClass:'btn-danger',
     bodyHTML:`<div class="modal-msg"><b>${TLAB(y)}</b> の入力数値（内訳含む）をすべて <b>0</b> にします。よろしいですか？</div>`,
-    onOk:()=>{ periods[curIdx].vals=zeros(); buildInputForm(); run(); } });
+    onOk:()=>{ periods[curIdx].lines=[]; buildInputForm(); run(); } });
 }
 function openDeleteModal(){
   if(periods.length<=1){ openModal({title:'削除できません', okLabel:'OK', bodyHTML:`<div class="modal-msg">最後の1期は削除できません。<br>先に別の期を追加してください。</div>`, onOk:()=>{}}); return; }
@@ -1181,6 +1328,8 @@ const CATS = {
           : `有利子負債 <b>${fmt(d.ibd)}</b> ÷ 営業CF ＝ <b>—</b>（前期データがないため算出できません。②数値入力で2期以上を入力してください）`,
         meaning:'実際の営業キャッシュフロー（CF計算書の営業CF）で有利子負債を何年で返せるか。短いほど安全。営業CFは前期との差分から算出するため2期以上の入力が必要です。負債内訳の入力も必要です。',
         rows:[{lv:'good',name:'良好',range:'10年 以内',note:'返済力が高い'},{lv:'warn',name:'許容',range:'10〜20年',note:'標準的'},{lv:'bad',name:'過大',range:'20年 超',note:'返済に長期間'}],
+        // 無借金・返済原資なしはしきい値の外側なので先に確定させる
+        special:d=>{ if(d.ibd<=0) return 'good'; if(!isFinite(d.debtYears)) return 'bad'; return null; },
         judge:d=>{ if(d.ibd<=0) return 'good'; if(!isFinite(d.debtYears)) return 'bad'; const v=d.debtYears; return v<=10?'good':v<=20?'warn':'bad';} },
     ]},
 };
@@ -1200,12 +1349,43 @@ function metricDisp(m,d){
   const u=(typeof m.unit==='function')?m.unit():m.unit;
   return `${s}<small>${u}</small>`;
 }
+/* ---- 判定しきい値（管理画面のマスタ）を適用する ---- */
+const CMP={gte:(a,b)=>a>=b, gt:(a,b)=>a>b, lte:(a,b)=>a<=b, lt:(a,b)=>a<b};
+const metricUnit = m => (typeof m.unit==='function') ? m.unit() : m.unit;
+function judgeByThreshold(m,d){
+  const t=THRESHOLDS[m.key];
+  if(!t) return m.judge(d);            // マスタ未読込時は従来ロジック
+  if(!t.judged) return null;           // 「判定しない」指標（1人当たり売上高など）
+  if(m.special){ const s=m.special(d); if(s) return s; }  // 債務償還年数などの特殊分岐
+  const v=m.v(d);
+  if(v==null || typeof v!=='number' || !isFinite(v)) return null;
+  const g=CMP[t.good_op]||CMP.gte, w=CMP[t.warn_op]||CMP.gte;
+  return g(v,t.good_value) ? 'good' : w(v,t.warn_value) ? 'warn' : 'bad';
+}
+const opText=(op,val,u)=> op==='gte'?`${val}${u} 以上`: op==='gt'?`${val}${u} 超`: op==='lte'?`${val}${u} 以下`:`${val}${u} 未満`;
+// 「判定の目安」表もしきい値マスタから組み立てる（管理画面の変更がそのまま反映される）
+function metricRows(m){
+  const t=THRESHOLDS[m.key];
+  if(!t || !t.judged) return m.rows;
+  const u=metricUnit(m), higher=(t.good_op==='gte'||t.good_op==='gt');
+  const badRange = higher
+    ? (t.warn_op==='gt' ? `${t.warn_value}${u} 以下` : `${t.warn_value}${u} 未満`)
+    : (t.warn_op==='lt' ? `${t.warn_value}${u} 以上` : `${t.warn_value}${u} 超`);
+  return [
+    {lv:'good', name:t.good_label, range:opText(t.good_op,t.good_value,u), note:t.good_note},
+    {lv:'warn', name:t.warn_label, range: higher?`${t.warn_value}〜${t.good_value}${u}`:`${t.good_value}〜${t.warn_value}${u}`, note:t.warn_note},
+    {lv:'bad',  name:t.bad_label,  range:badRange, note:t.bad_note},
+  ];
+}
+const levelName=(m,lv)=> ((metricRows(m).find(r=>r.lv===lv))||{}).name || '';
+const metricLabel=m=> (METRICSET[m.key] && METRICSET[m.key].label) || m.label;
+
 // 判定：債務超過で分母崩壊 or 貸借不一致でBS指標 のときは色判定を止める（参考値）
 const metricJudge=(m,d)=>{
   if(metricNaBroken(m,d)) return null;
   if(!metricReady(m,d)) return null;
   if(metricUsesBS(m) && d.bsBalanced===false) return null;
-  return m.judge(d);
+  return judgeByThreshold(m,d);
 };
 function currentHi(){ if(curCat==='flow'){ const m=ALL_METRICS[flowKey]; return m?m.hi:null; } const m=findMetric(curCat,curKey); return m ? m.hi : null; }
 
@@ -1219,7 +1399,7 @@ function cmpTable(m, ds){
   const avail=ds.length, nsel=Math.min(cmpN,avail), start=avail-nsel;
   const isAmt=(typeof m.unit==='function');
   let h=`<div class="cmp-toggle">`+[1,2,3].map(nn=>`<button class="cbtn ${cmpN===nn?'active':''}" data-n="${nn}" ${nn>avail?'disabled':''}>${nn}期</button>`).join('')+`</div>`;
-  h+=`<table class="judge"><tr><th>期</th><th>${m.label}</th><th>前期比</th><th>判定</th></tr>`;
+  h+=`<table class="judge"><tr><th>期</th><th>${metricLabel(m)}</th><th>前期比</th><th>判定</th></tr>`;
   for(let i=start;i<avail;i++){
     const r=ds[i], disp=metricDisp(m,r.d);
     let delta='—';
@@ -1232,7 +1412,7 @@ function cmpTable(m, ds){
       }
     }
     const lv=metricJudge(m,r.d);
-    const bd = lv? badge(lv,(m.rows.find(x=>x.lv===lv)||{}).name||''):badge('na','—');
+    const bd = lv? badge(lv,levelName(m,lv)):badge('na','—');
     h+=`<tr><td>${TLAB(r.year)}</td><td class="num">${disp}</td><td class="num">${delta}</td><td>${bd}</td></tr>`;
   }
   return h+`</table>`;
@@ -1240,7 +1420,7 @@ function cmpTable(m, ds){
 function metricDetailHTML(m, ds, catNote){
   const latest=ds[ds.length-1].d, latestYear=ds[ds.length-1].year;
   const lv=metricJudge(m,latest);
-  const b = lv? badge(lv,(m.rows.find(r=>r.lv===lv)||{}).name||''):badge('na','参考');
+  const b = lv? badge(lv,levelName(m,lv)):badge('na','参考');
   const noteHTML=(m.note||catNote)?`<div class="md-note">${m.note||''}${catNote||''}</div>`:'';
   const bm=(BENCH[industry]||{})[m.key];
   let bmHTML='';
@@ -1248,12 +1428,12 @@ function metricDetailHTML(m, ds, catNote){
     const v=m.v(latest), u=(typeof m.unit==='function')?m.unit():m.unit, diff=v-bm;
     bmHTML=`<div class="md-table"><div class="md-label">参考レンジ（${INDUSTRIES[industry]}・簡易目安）</div><div class="bm-row">参考値 <b>${p1(bm)}${u}</b>　／　自社 <b>${p1(v)}${u}</b>　／　差 <b class="bm-${diff>=0?'up':'down'}">${diff>=0?'+':''}${p1(diff)}${u}</b><div class="bm-note">※公的統計の出典に基づく数値ではなく、本ツール内に設定した簡易な目安レンジです。業種・規模で大きく幅があるため、あくまで参考としてご覧ください。</div></div></div>`;
   }
-  return `<div class="md-head"><span class="md-title">${m.label}<span style="font-size:11px;color:#94a3b8;font-weight:600;margin-left:8px;">最新：${TLAB(latestYear)}</span></span><span class="md-value">${metricDisp(m,latest)} ${b}</span></div>
+  return `<div class="md-head"><span class="md-title">${metricLabel(m)}<span style="font-size:11px;color:#94a3b8;font-weight:600;margin-left:8px;">最新：${TLAB(latestYear)}</span></span><span class="md-value">${metricDisp(m,latest)} ${b}</span></div>
      <div class="md-body">
        <div><div class="md-label">計算式（${TLAB(latestYear)}）</div><div class="md-formula">${m.formula(latest)}</div></div>
        <div><div class="md-label">指標の意味</div><div class="md-meaning">${m.meaning}</div></div>
        <div class="md-table"><div class="md-label">期間比較（1期／2期／3期）</div>${cmpTable(m,ds)}</div>
-       <div class="md-table"><div class="md-label">判定の目安</div>${judgeTable(m.rows, lv)}</div>
+       <div class="md-table"><div class="md-label">判定の目安</div>${judgeTable(metricRows(m), lv)}</div>
        ${bmHTML}
        ${noteHTML}
      </div>`;
@@ -1292,15 +1472,34 @@ function growthQualityHTML(ds){
     <div class="gq-body"><span>売上 <b style="color:${d.gSales>=0?'#2f9e6f':'#d1453f'}">${d.gSales>=0?'+':''}${p1(d.gSales)}%</b></span>　×　<span>営業利益 <b style="color:${d.gOp>=0?'#2f9e6f':'#d1453f'}">${d.gOp>=0?'+':''}${p1(d.gOp)}%</b></span></div>
     <div class="gq-note">${q.note}</div></div>`;
 }
+// 表示ON/OFFと並び順は管理画面のマスタに従う
+const isDetailOnly = m => { const s=METRICSET[m.key]; return s ? !!s.detail_only : !!m.detailOnly; };
+function catMetrics(catKey){
+  return CATS[catKey].metrics
+    .filter(m=>{ const s=METRICSET[m.key]; return !s || !!s.visible; })
+    .sort((a,b)=>{ const sa=METRICSET[a.key], sb=METRICSET[b.key];
+                   return ((sa&&sa.sort_order)||0)-((sb&&sb.sort_order)||0); });
+}
+const defaultKeyOf = catKey => {
+  const list=catMetrics(catKey);
+  return ((list.find(m=>!isDetailOnly(m)) || list[0] || {}).key) || null;
+};
 function renderAnalysis(ds){
   document.querySelectorAll('#subtabs .subtab').forEach(b=> b.classList.toggle('active', b.dataset.cat===curCat));
   const cat=CATS[curCat];
   $("analysisWarn").innerHTML = warnBannerHTML(ds) + (curCat==='growth'? growthQualityHTML(ds):'');
-  const hasDetail=cat.metrics.some(m=>m.detailOnly);
-  const mets=cat.metrics.filter(m=> showDetail || !m.detailOnly);
+  const all=catMetrics(curCat);
+  const hasDetail=all.some(isDetailOnly);
+  const mets=all.filter(m=> showDetail || !isDetailOnly(m));
+  if(!mets.length){
+    $("metricbtns").innerHTML = hasDetail
+      ? `<button class="mbtn detmet" id="detMetToggle"><span>＋ 詳細指標</span></button>` : '';
+    $("metricdetail").innerHTML = `<div class="ph">このカテゴリに表示できる指標がありません（管理画面の指標設定をご確認ください）。</div>`;
+    return;
+  }
   if(!mets.some(m=>m.key===curKey)) curKey=mets[0].key;
   const latest=ds[ds.length-1].d;
-  let btns = mets.map(m=>{ const lv=metricJudge(m,latest), jc=lv?` j-${lv}`:''; return `<button class="mbtn${jc} ${m.key===curKey?'active':''}" data-key="${m.key}"><span>${m.label}</span><span class="mbv">${metricDisp(m,latest)}</span></button>`;}).join('');
+  let btns = mets.map(m=>{ const lv=metricJudge(m,latest), jc=lv?` j-${lv}`:''; return `<button class="mbtn${jc} ${m.key===curKey?'active':''}" data-key="${m.key}"><span>${metricLabel(m)}</span><span class="mbv">${metricDisp(m,latest)}</span></button>`;}).join('');
   if(hasDetail) btns += `<button class="mbtn detmet ${showDetail?'active':''}" id="detMetToggle"><span>${showDetail?'− 詳細指標を隠す':'＋ 詳細指標'}</span></button>`;
   $("metricbtns").innerHTML = btns;
   $("metricdetail").innerHTML = metricDetailHTML(findMetric(curCat,curKey), ds, cat.note);
@@ -1339,7 +1538,7 @@ const FLOW=[
 function flowNode(k, ds){
   const m=ALL_METRICS[k]; if(!m) return '';
   const latest=ds[ds.length-1].d, cur=(k===flowKey), lv=metricJudge(m,latest), jc=lv?` j-${lv}`:'';
-  return `<button class="fl-node${cur?' cur':''}${jc}" data-fk="${k}">${m.label}<span class="fl-val">${metricDisp(m,latest)}</span></button>`;
+  return `<button class="fl-node${cur?' cur':''}${jc}" data-fk="${k}">${metricLabel(m)}<span class="fl-val">${metricDisp(m,latest)}</span></button>`;
 }
 // 現金化（利益→現金）ステップ：黒字なのに現金が減っていないか
 function cashConvHTML(ds){
@@ -1689,17 +1888,53 @@ function run(){
 }
 
 /* ---------- listeners ---------- */
-function onFormInput(e){
-  const t=e.target; if(t.tagName!=='INPUT'||!t.id.startsWith('in_')||t.readOnly) return;
-  const key=t.id.slice(3);
-  periods[curIdx].vals[key]=parseFloat(t.value)||0;
-  run();
+function newLine(section){
+  return {sort_order:(curLines().length+1), section, source_label:'', amount:0,
+          map_key:null, is_total:0, origin:'manual', confidence:'high'};
 }
-$("bsLeft").addEventListener("input", onFormInput);
-$("bsRight").addEventListener("input", onFormInput);
-$("plForm").addEventListener("input", onFormInput);
+// 明細の編集（科目名・金額・対応先・小計）
+$("lineEditor").addEventListener("input", e=>{
+  const f=e.target.dataset && e.target.dataset.f; if(!f) return;
+  const tr=e.target.closest("tr[data-i]"); if(!tr) return;
+  const l=curLines()[Number(tr.dataset.i)]; if(!l) return;
+  if(f==='amount') l.amount=parseFloat(e.target.value)||0;
+  else if(f==='source_label'){ l.source_label=e.target.value; l.is_total=looksTotal(l.source_label)?1:0; }
+  updateComputedInputs(); setDirty(true); scheduleRun();
+});
+$("lineEditor").addEventListener("change", e=>{
+  const f=e.target.dataset && e.target.dataset.f;
+  const tr=e.target.closest("tr[data-i]");
+  if(f && tr){
+    const l=curLines()[Number(tr.dataset.i)];
+    if(l){
+      if(f==='map_key'){ l.map_key=e.target.value||null; e.target.classList.toggle('none', !l.map_key); }
+      else if(f==='is_total') l.is_total=e.target.checked?1:0;
+      updateComputedInputs(); setDirty(true); scheduleRun();
+      return;
+    }
+  }
+});
+$("lineEditor").addEventListener("click", e=>{
+  const del=e.target.dataset && e.target.dataset.del;
+  if(del!=null){ curLines().splice(Number(del),1); buildInputForm(); run(); setDirty(true); return; }
+  const sec=e.target.dataset && e.target.dataset.addsec;
+  if(sec){ curLines().push(newLine(sec)); buildInputForm();
+    const rows=$("lineEditor").querySelectorAll('tr[data-i]');
+    const last=rows[rows.length-1]; if(last) last.querySelector('input[data-f="source_label"]').focus();
+    setDirty(true); return; }
+});
+// 入力のたびに全再計算すると重いので少し待ってからまとめて走らせる
+let runTimer=null;
+function scheduleRun(){ clearTimeout(runTimer); runTimer=setTimeout(()=>{ const ds=derived();
+  renderAnalysis(ds); renderMainChart(ds); renderFlow(ds); }, 350); }
 $("unit").addEventListener("change", run);
-$("in_emp").addEventListener("input", e=>{ periods[curIdx].vals.emp=parseFloat(e.target.value)||0; run(); });
+$("in_emp").addEventListener("input", e=>{
+  const v=parseFloat(e.target.value)||0;
+  const lines=curLines(); let row=lines.find(l=>l.map_key==='emp');
+  if(!row){ row={sort_order:lines.length+1, section:'misc', source_label:'期末従業員数',
+                 amount:0, map_key:'emp', is_total:0, origin:'manual', confidence:'high'}; lines.push(row); }
+  row.amount=v; updateComputedInputs(); setDirty(true); scheduleRun();
+});
 $("costType").addEventListener("change", e=>{ costType=e.target.value; buildInputForm(); run(); });
 $("resetBtn").addEventListener("click", openResetModal);
 $("delBtn").addEventListener("click", openDeleteModal);
@@ -1719,7 +1954,8 @@ function switchTab(name){
 }
 document.querySelectorAll(".tab").forEach(t=> t.addEventListener("click", ()=> switchTab(t.dataset.tab)));
 $("calcBtn").addEventListener("click", ()=>{ run(); switchTab("view"); });
-$("subtabs").addEventListener("click", e=>{ const b=e.target.closest(".subtab"); if(!b) return; curCat=b.dataset.cat; if(curCat!=='flow'){ curKey=CATS[curCat].metrics.filter(m=>!m.detailOnly)[0].key; } run(); });
+$("subtabs").addEventListener("click", e=>{ const b=e.target.closest(".subtab"); if(!b) return; curCat=b.dataset.cat;
+  if(curCat!=='flow'){ const k=defaultKeyOf(curCat); if(k) curKey=k; } run(); });
 $("indSel").addEventListener("change", e=>{ industry=e.target.value; run(); });
 $("metricbtns").addEventListener("click", e=>{ const b=e.target.closest(".mbtn"); if(!b) return; if(b.id==='detMetToggle'){ showDetail=!showDetail; } else if(b.dataset.key){ curKey=b.dataset.key; } run(); });
 $("metricdetail").addEventListener("click", e=>{ const b=e.target.closest(".cbtn"); if(!b||b.disabled) return; cmpN=+b.dataset.n; run(); });
@@ -1739,9 +1975,11 @@ function saveHTML(){
   // 現在の入力値をフォームから確定
   if(typeof readInputs==='function') readInputs();
   const state = {
-    v: 1,
+    v: 2,
     savedAt: new Date().toISOString(),
-    periods: periods,
+    fields: Object.entries(FIELDSET).map(([key,f])=>({key,label:f.label,section:f.section,kind:f.kind,parent:f.parent})),
+    sections: SECTIONS,
+    periods: periods.map(p=>({year:p.year, label:p.label||'', lines:p.lines||[]})),
     costType: costType,
     unit: unitStr(),
     industry: industry
@@ -1776,8 +2014,11 @@ function restoreState(){
   let s;
   try{ s = JSON.parse(raw); }catch(e){ return false; }
   if(!s || !Array.isArray(s.periods) || !s.periods.length) return false;
+  if(Array.isArray(s.fields)){ FIELDSET={}; s.fields.forEach(f=> FIELDSET[f.key]={label:f.label,section:f.section,kind:f.kind,parent:f.parent}); }
+  if(s.sections) SECTIONS=s.sections;
   // periods を正規化（欠損キーは 0 / DET_KEYS は既定 true）
-  periods = s.periods.map(p=> ({ year: p.year, vals: Object.assign(zeros(), p.vals||{}) }));
+  periods = s.periods.map(p=> ({ year: p.year, label: p.label||'',
+    lines: Array.isArray(p.lines) ? p.lines : valsToLines(Object.assign(zeros(), p.vals||{})) }));
   if(s.costType){ costType = s.costType; const ct=$("costType"); if(ct) ct.value = s.costType; }
   if(s.industry){ industry = s.industry; const isl=$("indSel"); if(isl) isl.value = s.industry; }
   if(s.unit){ const u=$("unit"); if(u) u.value = s.unit; }
@@ -1785,10 +2026,260 @@ function restoreState(){
   return true;
 }
 
-restoreState();
-buildInputForm();
-run();
+/* ================= サーバ連携 ================= */
+const OFFLINE = location.protocol === 'file:';   // 書き出したHTMLを単体で開いた場合
+let ME=null, CLIENTS=[], curClientId=null, dirty=false, standalone=false;
+
+async function api(path, opt={}){
+  const res = await fetch(path, Object.assign({credentials:'same-origin'}, opt));
+  let body=null; try{ body=await res.json(); }catch{}
+  if(!res.ok){ const e=new Error((body&&body.error)||`通信エラー (${res.status})`); e.status=res.status; throw e; }
+  return body;
+}
+const jsonPost=(path,obj,method='POST')=> api(path,{method,headers:{'Content-Type':'application/json'},body:JSON.stringify(obj)});
+
+function setDirty(v){
+  dirty=v;
+  const el=$("clientStatus"); if(!el) return;
+  if(standalone){ el.textContent='単体モード（サーバ未接続）'; el.className='cb-status'; return; }
+  if(!curClientId){ el.textContent='担当先を選択または新規作成してください'; el.className='cb-status'; return; }
+  el.textContent = v ? '未保存の変更があります' : '保存済み';
+  el.className = 'cb-status' + (v?' dirty':'');
+}
+// 入力・単位・業種などの変更で未保存フラグを立てる
+["input","change"].forEach(ev=> document.addEventListener(ev, e=>{
+  if(e.target && e.target.closest && e.target.closest('#tab-input,#indSel')) setDirty(true);
+}, true));
+
+/* ---- マスタ ---- */
+function applyMasters(m){
+  if(m.fields){ FIELDSET={}; m.fields.forEach(f=> FIELDSET[f.key]={label:f.label,section:f.section,kind:f.kind,parent:f.parent}); }
+  if(m.sections) SECTIONS=m.sections;
+  // FIELDSET が入るまで明細に変換できないので、ここで初期データを起こす
+  periods.forEach(p=>{ if(!p.lines) p.lines=valsToLines(p.vals||{}); });
+  INDUSTRIES={}; (m.industries||[]).forEach(i=> INDUSTRIES[i.code]=i.name);
+  BENCH=m.benchmarks||{}; THRESHOLDS=m.thresholds||{}; METRICSET=m.metrics||{};
+  const sel=$("indSel");
+  const keep=sel.value;
+  sel.innerHTML=(m.industries||[]).map(i=>`<option value="${i.code}">${i.name}</option>`).join('');
+  if(keep && INDUSTRIES[keep]) sel.value=keep;
+  if(!INDUSTRIES[sel.value]) sel.selectedIndex=0;
+  industry=sel.value||Object.keys(INDUSTRIES)[0]||'manuf';
+  // 指標が非表示になっている場合に備えて選択中キーを補正
+  const k=defaultKeyOf(curCat); if(k && !catMetrics(curCat).some(x=>x.key===curKey)) curKey=k;
+}
+
+/* ---- 担当先 ---- */
+function renderClientOptions(){
+  const sel=$("clientSel");
+  sel.innerHTML = CLIENTS.length
+    ? CLIENTS.map(c=>`<option value="${c.id}">${escapeHTML(c.name)}（${INDUSTRIES[c.industry_code]||c.industry_code}）</option>`).join('')
+    : `<option value="">担当先がありません</option>`;
+  if(curClientId) sel.value=String(curClientId);
+}
+const escapeHTML = s => String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+async function loadClients(preferId){
+  const r=await api('/api/clients');
+  CLIENTS=r.clients||[];
+  if(preferId && CLIENTS.some(c=>c.id===preferId)) curClientId=preferId;
+  else if(!CLIENTS.some(c=>c.id===curClientId)) curClientId = CLIENTS.length? CLIENTS[0].id : null;
+  renderClientOptions();
+}
+
+async function openClient(id){
+  if(!id){ curClientId=null; setDirty(false); return; }
+  const r=await api(`/api/clients/${id}/statements`);
+  curClientId=id;
+  const c=r.client;
+  costType=['A','B','C'].includes(c.cost_type)? c.cost_type:'A';
+  $("costType").value=costType;
+  if(c.unit) $("unit").value=c.unit;
+  if(INDUSTRIES[c.industry_code]){ $("indSel").value=c.industry_code; industry=c.industry_code; }
+  periods = (r.periods && r.periods.length)
+    ? r.periods.map(p=>({year:p.year, label:p.label||'', lines:(p.lines||[]).map(l=>Object.assign({},l))}))
+    : [{year:1, label:'', lines:[]}];
+  curIdx=0;
+  buildInputForm(); run(); setDirty(false);
+}
+
+async function saveClient(){
+  if(standalone) return;
+  if(!curClientId){ alertModal('担当先が未選択です','先に「＋ 新規」で担当先を作成してください。'); return; }
+  const btn=$("clientSaveBtn"); btn.disabled=true;
+  try{
+    await jsonPost(`/api/clients/${curClientId}/statements`, {
+      periods: periods.map(p=>({year:p.year, label:p.label||'', lines:p.lines||[]})),
+      cost_type: costType, unit: unitStr(), industry_code: industry,
+    }, 'PUT');
+    setDirty(false);
+    await loadClients(curClientId);
+  }catch(e){ alertModal('保存できませんでした', e.message); }
+  finally{ btn.disabled=false; }
+}
+
+function alertModal(title, msg){
+  openModal({title, okLabel:'OK', bodyHTML:`<div class="modal-msg">${escapeHTML(msg)}</div>`, onOk:()=>{}});
+}
+
+function industryOptions(sel){
+  return Object.entries(INDUSTRIES).map(([c,n])=>`<option value="${c}" ${c===sel?'selected':''}>${escapeHTML(n)}</option>`).join('');
+}
+
+function openClientModal(mode){
+  const cur = mode==='edit' ? CLIENTS.find(c=>c.id===curClientId) : null;
+  if(mode==='edit' && !cur){ alertModal('担当先が未選択です','変更する担当先を選択してください。'); return; }
+  openModal({
+    title: mode==='edit' ? '担当先の変更' : '担当先の新規作成',
+    okLabel: mode==='edit' ? '変更する' : '作成する',
+    focus:'mClientName',
+    bodyHTML:`<label class="modal-label">会社名</label>
+      <input type="text" id="mClientName" value="${cur?escapeHTML(cur.name):''}" style="width:100%;padding:8px;font-size:14px;border:1px solid #bbb;border-radius:6px;">
+      <label class="modal-label" style="margin-top:12px;">業種</label>
+      <select id="mClientInd" style="width:100%;padding:8px;font-size:14px;border:1px solid #bbb;border-radius:6px;">${industryOptions(cur?cur.industry_code:industry)}</select>
+      <div class="modal-err" id="modalErr"></div>`,
+    onOk:()=>{
+      const name=$("mClientName").value.trim(), ind=$("mClientInd").value, err=$("modalErr");
+      if(!name){ err.textContent='会社名を入力してください。'; return false; }
+      (async()=>{
+        try{
+          if(mode==='edit'){
+            await jsonPost(`/api/clients/${cur.id}`, {name, industry_code:ind}, 'PATCH');
+            industry=ind; $("indSel").value=ind;
+            await loadClients(cur.id); run();
+          }else{
+            const r=await jsonPost('/api/clients', {name, industry_code:ind, cost_type:costType, unit:unitStr()});
+            await loadClients(r.id);
+            periods=[{year:1, label:'', lines:[]}]; curIdx=0;
+            industry=ind; $("indSel").value=ind;
+            buildInputForm(); run(); setDirty(false);
+          }
+        }catch(e){ alertModal('保存できませんでした', e.message); }
+      })();
+    },
+  });
+}
+
+function openClientDeleteModal(){
+  const c=CLIENTS.find(x=>x.id===curClientId);
+  if(!c){ alertModal('担当先が未選択です','削除する担当先を選択してください。'); return; }
+  openModal({ title:'担当先の削除', okLabel:'削除する', okClass:'btn-danger',
+    bodyHTML:`<div class="modal-msg"><b>${escapeHTML(c.name)}</b> と、登録済みの決算データをすべて削除します。<br>この操作は取り消せません。よろしいですか？</div>`,
+    onOk:()=>{ (async()=>{
+      try{ await api(`/api/clients/${c.id}`,{method:'DELETE'});
+           curClientId=null; await loadClients();
+           if(curClientId) await openClient(curClientId);
+           else { periods=[{year:1,label:'',lines:[]}]; curIdx=0; buildInputForm(); run(); setDirty(false); }
+           renderClientOptions();
+      }catch(e){ alertModal('削除できませんでした', e.message); }
+    })(); } });
+}
+
+/* ---- 決算書の読み取り ---- */
+function ocrMessage(cls, html){
+  const el=$("ocrMsg"); el.className=`ocr-msg on ${cls}`; el.innerHTML=html;
+}
+async function runOCR(){
+  const f=$("ocrFile").files[0];
+  if(!f){ ocrMessage('err','ファイルを選択してください。'); return; }
+  const btn=$("ocrBtn"); btn.disabled=true;
+  ocrMessage('info', `<span class="spin"></span>読み取り中です。決算書の枚数によっては1分ほどかかります…`);
+  try{
+    const fd=new FormData();
+    fd.append('file', f);
+    fd.append('hint', $("ocrHint").value || '');
+    if(curClientId) fd.append('client_id', String(curClientId));
+    const res=await fetch('/api/ocr',{method:'POST',credentials:'same-origin',body:fd});
+    let r=null; try{ r=await res.json(); }catch{}
+    if(!res.ok) throw new Error((r&&r.error)||`読み取りに失敗しました (${res.status})`);
+
+    // 画面へ反映（読み取った明細をそのまま入れる。まとめない）
+    periods = r.periods.map(p=>({year:p.year, label:p.label||'', lines:(p.lines||[]).map(l=>Object.assign({},l))}));
+    if(r.unit) $("unit").value=r.unit;
+    if(r.cost_type){ costType=r.cost_type; $("costType").value=costType; }
+    curIdx=0;
+    buildInputForm(); run(); setDirty(true);
+    lastImportId = r.import_id || null;
+
+    const lc=r.periods.reduce((n,p)=>n+(p.lines||[]).filter(l=>l.confidence==='low').length,0);
+    const um=r.periods.reduce((n,p)=>n+((p.unmapped||[]).length),0);
+    const rows=r.periods.reduce((n,p)=>n+(p.lines||[]).length,0);
+    const labels=r.periods.map(p=>escapeHTML(p.label||TLAB(p.year))).join(' / ');
+    let html=`<b>${r.periods.length}期・${rows}行を読み取りました</b>（${labels}）`;
+    if(r.company_name) html+=`<br>会社名：${escapeHTML(r.company_name)}`;
+    html+=`<br>単位：${escapeHTML(r.unit||'不明')}　／　要確認 ${lc}件　／　対応先なし ${um}件`;
+    if(r.usage) html+=`　／　${escapeHTML(r.usage.engine==='free'?'無料エンジン':'有料エンジン')}（${((r.usage.elapsed_ms||0)/1000).toFixed(1)}秒・約${Math.round((r.usage.cost_usd||0)*150)}円）`;
+    const notes=r.periods.flatMap(p=>p.notes||[]);
+    const allw=(r.warnings||[]).concat(notes);
+    if(allw.length) html+=`<br><b>確認してください：</b><ul>${allw.map(w=>`<li>${escapeHTML(w)}</li>`).join('')}</ul>`;
+    if(r.import_id) html+=`<br><a href="/api/ocr/imports/${r.import_id}/file" target="_blank" rel="noopener">読み取り元のファイルを開く</a>`;
+    html+=`<br>下の明細に反映しました。<b>科目名・金額・対応先を確認</b>してから「分析する」を押してください。`;
+    ocrMessage((lc || um || allw.length) ? 'info' : 'ok', html);
+  }catch(e){
+    ocrMessage('err', escapeHTML(e.message||'読み取りに失敗しました'));
+  }finally{ btn.disabled=false; }
+}
+
+/* ---- 単体モード（サーバなしで開いたHTML） ---- */
+function startStandalone(){
+  standalone=true;
+  document.querySelector('.clientbar').style.display='none';
+  const p=$("ocrBtn"); if(p){ p.disabled=true; $("ocrFile").disabled=true;
+    ocrMessage('info','この画面はサーバに接続していないため、決算書の読み取りは利用できません。'); }
+  $("tbUser").innerHTML=`<span>単体モード（保存済みHTML）</span>`;
+  restoreState();
+  buildInputForm(); run();
+}
+
+/* ---- 起動 ---- */
+async function boot(){
+  if(OFFLINE){ startStandalone(); return; }
+  try{
+    const me=await api('/api/auth/me');
+    ME=me.user;
+  }catch(e){
+    if(e.status===401){ location.href='/login.html?next='+encodeURIComponent(location.pathname); return; }
+    startStandalone(); return;   // サーバに届かない＝書き出したHTMLとして扱う
+  }
+  $("tbUser").innerHTML =
+    `<span><b>${escapeHTML(ME.name)}</b>${ME.org?`（${escapeHTML(ME.org)}）`:''}</span>` +
+    (ME.role==='admin' ? `<a class="tb-btn admin" href="/admin.html">管理画面</a>` : '') +
+    `<button class="tb-btn" id="logoutBtn">ログアウト</button>`;
+  $("logoutBtn").addEventListener('click', async ()=>{
+    if(dirty && !confirm('未保存の変更があります。保存せずにログアウトしますか？')) return;
+    try{ await jsonPost('/api/auth/logout',{}); }catch{}
+    location.href='/login.html';
+  });
+
+  try{ applyMasters(await api('/api/masters')); }
+  catch(e){ console.warn('マスタの取得に失敗:', e.message); }
+  buildInputForm();   // 内部項目の定義が入ってから明細を描く
+  run();
+
+  try{
+    await loadClients();
+    if(curClientId) await openClient(curClientId);
+    else { periods=[{year:1, label:'', lines:[]}]; curIdx=0; buildInputForm(); run(); }
+  }catch(e){ console.warn('担当先の取得に失敗:', e.message); }
+  setDirty(false);
+  run();
+}
+
+/* ---- リスナー ---- */
+$("clientSel").addEventListener('change', async e=>{
+  const id=Number(e.target.value)||null;
+  if(dirty && !confirm('未保存の変更があります。破棄して切り替えますか？')){ e.target.value=String(curClientId); return; }
+  try{ await openClient(id); }catch(err){ alertModal('読み込めませんでした', err.message); }
+});
+$("clientNewBtn").addEventListener('click', ()=> openClientModal('new'));
+$("clientEditBtn").addEventListener('click', ()=> openClientModal('edit'));
+$("clientDelBtn").addEventListener('click', openClientDeleteModal);
+$("clientSaveBtn").addEventListener('click', saveClient);
+$("ocrBtn").addEventListener('click', runOCR);
 $("saveBtn").addEventListener("click", saveHTML);
+window.addEventListener('beforeunload', e=>{ if(dirty && !standalone){ e.preventDefault(); e.returnValue=''; } });
+
+boot();
 </script>
 </body>
 </html>

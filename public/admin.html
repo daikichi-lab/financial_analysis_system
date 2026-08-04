@@ -1,0 +1,792 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>管理画面｜決算書 財務分析システム</title>
+<style>
+  :root{--bg:#f4f5f7;--panel:#fff;--ink:#1a1a1a;--muted:#666;--accent:#2b6cb0;
+        --good:#2f855a;--warn:#b7791f;--bad:#c53030;--line:#e2e8f0;}
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:"Hiragino Kaku Gothic ProN","Meiryo","Yu Gothic",system-ui,sans-serif;
+       background:var(--bg);color:var(--ink);line-height:1.55;}
+  header{background:#1f2937;color:#fff;padding:14px 20px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
+  header h1{margin:0;font-size:17px;font-weight:600;flex:1 1 auto;}
+  .tb-user{font-size:12px;color:#cbd5e0;display:flex;align-items:center;gap:8px;}
+  .tb-btn{padding:5px 12px;font-size:12px;font-weight:700;border:1px solid #4b5563;background:#374151;
+          color:#e5e7eb;border-radius:6px;cursor:pointer;text-decoration:none;}
+  .tb-btn:hover{background:#4b5563;}
+  .wrap{max-width:1200px;margin:0 auto;padding:18px;}
+
+  .tabs{display:flex;gap:4px;border-bottom:2px solid #cbd5e0;margin-bottom:16px;flex-wrap:wrap;}
+  .tab{padding:10px 18px;border:none;background:transparent;font-size:13.5px;font-weight:600;color:#64748b;
+       cursor:pointer;border-radius:8px 8px 0 0;border-bottom:3px solid transparent;margin-bottom:-2px;}
+  .tab:hover{color:#334155;background:#eef2f6;}
+  .tab.active{color:var(--accent);border-bottom-color:var(--accent);background:#fff;}
+  .pane{display:none;} .pane.active{display:block;}
+
+  .panel{background:var(--panel);border:1px solid #d7dbe0;border-radius:8px;padding:16px;margin-bottom:16px;}
+  .panel h2{margin:0 0 4px;font-size:14px;border-left:4px solid var(--accent);padding-left:8px;}
+  .panel p.lead{margin:0 0 14px;font-size:12px;color:var(--muted);line-height:1.7;}
+
+  table{border-collapse:collapse;width:100%;font-size:12.5px;}
+  th,td{border:1px solid var(--line);padding:7px 9px;text-align:left;vertical-align:middle;}
+  th{background:#f1f5f9;font-size:11px;color:var(--muted);font-weight:700;white-space:nowrap;}
+  td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;}
+  tr:hover td{background:#fafbfc;}
+  .scroll{overflow-x:auto;}
+
+  input[type=text],input[type=email],input[type=password],input[type=number],select{
+    padding:6px 8px;font-size:12.5px;border:1px solid #cbd5e0;border-radius:5px;background:#fff;max-width:100%;}
+  input:focus,select:focus{outline:2px solid var(--accent);border-color:var(--accent);}
+  input.cell{width:84px;text-align:right;font-variant-numeric:tabular-nums;}
+  input.cell.changed{background:#fff7e6;border-color:#e8a11a;}
+
+  button{padding:6px 14px;font-size:12.5px;font-weight:700;border-radius:6px;cursor:pointer;
+         border:1px solid #cbd5e0;background:#fff;color:#334155;}
+  button:hover{background:#f1f5f9;}
+  button.pri{background:var(--accent);color:#fff;border-color:transparent;}
+  button.pri:hover{background:#255994;}
+  button.danger{background:var(--bad);color:#fff;border-color:transparent;}
+  button.sm{padding:3px 9px;font-size:11.5px;}
+  button:disabled{opacity:.45;cursor:not-allowed;}
+
+  .row{display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;margin-bottom:12px;}
+  .field{display:flex;flex-direction:column;gap:4px;}
+  .field label{font-size:11px;font-weight:700;color:#475569;}
+  .toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:0 0 12px;}
+  .toolbar .sp{margin-left:auto;}
+
+  .pill{display:inline-block;font-size:10.5px;padding:2px 9px;border-radius:999px;color:#fff;font-weight:700;}
+  .pill.admin{background:#8E5AA0;} .pill.fp{background:#4E79A7;}
+  .pill.active{background:var(--good);} .pill.suspended{background:#94a3b8;}
+
+  .msg{padding:10px 13px;border-radius:7px;font-size:12.5px;margin-bottom:14px;display:none;}
+  .msg.on{display:block;}
+  .msg.ok{background:#e6f4ea;color:#166534;border:1px solid #a7d7b8;}
+  .msg.err{background:#fde8e8;color:#8a1c1c;border:1px solid #f0b4b4;}
+  .msg.info{background:#eef5fc;color:#1e40af;border:1px solid #bfdbfe;}
+
+  .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;
+                 justify-content:center;z-index:100;padding:16px;}
+  .modal-overlay[hidden]{display:none;}
+  .modal{background:#fff;border-radius:10px;max-width:420px;width:100%;box-shadow:0 10px 40px rgba(0,0,0,.25);overflow:hidden;}
+  .modal-title{font-size:15px;font-weight:700;padding:14px 18px;background:#f1f5f9;border-bottom:1px solid var(--line);}
+  .modal-body{padding:18px;font-size:13px;}
+  .modal-body label{display:block;font-size:11.5px;font-weight:700;color:#475569;margin:11px 0 4px;}
+  .modal-body label:first-child{margin-top:0;}
+  .modal-body input,.modal-body select{width:100%;}
+  .modal-err{color:var(--bad);font-size:12px;margin-top:10px;min-height:16px;}
+  .modal-actions{display:flex;gap:8px;padding:0 18px 18px;}
+  .modal-actions button{flex:1;padding:9px;}
+  .hint{font-size:11px;color:#94a3b8;margin-top:4px;line-height:1.6;}
+  .cat-head td{background:#eef2f6;font-weight:700;color:#334155;}
+</style>
+</head>
+<body>
+<header>
+  <h1>管理画面</h1>
+  <div class="tb-user" id="tbUser"></div>
+</header>
+
+<div class="wrap">
+  <div class="tabs">
+    <button class="tab active" data-pane="fps">FP管理</button>
+    <button class="tab" data-pane="clients">担当先</button>
+    <button class="tab" data-pane="bench">業種平均</button>
+    <button class="tab" data-pane="thresholds">判定基準</button>
+    <button class="tab" data-pane="metrics">指標の表示</button>
+    <button class="tab" data-pane="accounts">科目マッピング</button>
+    <button class="tab" data-pane="imports">読み取り履歴</button>
+    <button class="tab" data-pane="industries">業種マスタ</button>
+    <button class="tab" data-pane="activity">利用状況</button>
+  </div>
+
+  <div class="msg" id="msg"></div>
+
+  <!-- FP管理 -->
+  <div class="pane active" id="pane-fps">
+    <section class="panel">
+      <h2>FPアカウント</h2>
+      <p class="lead">FPは自分の担当先だけを分析できます。管理者はこの画面と全担当先を参照できます。</p>
+      <div class="toolbar"><button class="pri" id="fpNewBtn">＋ FPを追加</button></div>
+      <div class="scroll"><table id="fpTable"></table></div>
+    </section>
+  </div>
+
+  <!-- 担当先 -->
+  <div class="pane" id="pane-clients">
+    <section class="panel">
+      <h2>担当先企業</h2>
+      <p class="lead">全FPの担当先です。担当FPの付け替えができます。決算データの中身は分析画面で確認してください。</p>
+      <div class="scroll"><table id="clientTable"></table></div>
+    </section>
+  </div>
+
+  <!-- 業種平均 -->
+  <div class="pane" id="pane-bench">
+    <section class="panel">
+      <h2>業種平均（参考レンジ）</h2>
+      <p class="lead">分析画面の「参考レンジ」に表示される値です。空欄にすると、その指標では参考レンジを表示しません。
+        公的統計の出典値ではなく運用上の目安として設定してください。</p>
+      <div class="toolbar">
+        <button class="pri" id="benchSaveBtn">変更を保存</button>
+        <button id="benchResetBtn">編集を取り消す</button>
+        <span class="sp" id="benchDirty"></span>
+      </div>
+      <div class="scroll"><table id="benchTable"></table></div>
+    </section>
+  </div>
+
+  <!-- 判定基準 -->
+  <div class="pane" id="pane-thresholds">
+    <section class="panel">
+      <h2>企業価値の判定基準</h2>
+      <p class="lead">各指標を <b style="color:var(--good)">良好</b>／<b style="color:var(--warn)">要確認</b>／<b style="color:var(--bad)">危険</b> に振り分ける境界値です。
+        比較条件は「以上・超・以下・未満」から選べます。上の条件から順に判定し、どちらにも当てはまらないものが危険になります。</p>
+      <div class="toolbar">
+        <button class="pri" id="thSaveBtn">変更を保存</button>
+        <button id="thResetBtn">編集を取り消す</button>
+        <span class="sp" id="thDirty"></span>
+      </div>
+      <div class="scroll"><table id="thTable"></table></div>
+    </section>
+  </div>
+
+  <!-- 指標の表示 -->
+  <div class="pane" id="pane-metrics">
+    <section class="panel">
+      <h2>指標の表示ON/OFF・並び順</h2>
+      <p class="lead">「標準」は分析画面に最初から並ぶ指標、「詳細」は［＋ 詳細指標］を押したときに出る指標です。
+        非表示にした指標は分析画面に出ません。並び順は数字が小さいほど左に並びます。</p>
+      <div class="toolbar">
+        <button class="pri" id="msSaveBtn">変更を保存</button>
+        <button id="msResetBtn">編集を取り消す</button>
+        <span class="sp" id="msDirty"></span>
+      </div>
+      <div class="scroll"><table id="msTable"></table></div>
+    </section>
+  </div>
+
+  <!-- 科目マッピング -->
+  <div class="pane" id="pane-accounts">
+    <section class="panel">
+      <h2>まだ対応先が決まっていない科目</h2>
+      <p class="lead">決算書に出てきたが対応表に無い科目です。ここで対応先を決めると、<b>次回の読み取りから自動で分析に反映</b>されます。
+        既に保存済みの明細には遡って反映されないので、その分は入力画面で選び直してください。</p>
+      <div class="scroll"><table id="unmapTable"></table></div>
+    </section>
+    <section class="panel">
+      <h2>科目名 → 分析項目の対応表</h2>
+      <p class="lead">決算書に印字されている科目名（表示名）と、分析エンジンが使う内部項目は別物です。ここはその橋渡しだけを持ちます。
+        セクションを指定すると、そのセクションに現れた時だけ適用されます（「減価償却費」を製造原価と販管費で振り分けるのに使います）。</p>
+      <div class="row">
+        <div class="field"><label>決算書の科目名</label><input type="text" id="acPattern" placeholder="例：受取手形"></div>
+        <div class="field"><label>対応先（分析項目）</label><select id="acKey"></select></div>
+        <div class="field"><label>セクション</label><select id="acSection"></select></div>
+        <button class="pri" id="acAddBtn">追加</button>
+      </div>
+      <div class="toolbar"><input type="text" id="acSearch" placeholder="科目名で絞り込み" style="width:220px;">
+        <span class="sp" id="acCount"></span></div>
+      <div class="scroll"><table id="acTable"></table></div>
+    </section>
+  </div>
+
+  <!-- 読み取り履歴 -->
+  <div class="pane" id="pane-imports">
+    <section class="panel">
+      <h2>読み取り履歴</h2>
+      <p class="lead">読み取りに使った元ファイルと、抽出した全項目・警告を保存しています。行を選ぶと明細が表示されます。</p>
+      <div class="toolbar"><button id="impReloadBtn">再読み込み</button></div>
+      <div class="scroll"><table id="impTable"></table></div>
+      <div id="impDetail" style="margin-top:16px;"></div>
+    </section>
+  </div>
+
+  <!-- 業種マスタ -->
+  <div class="pane" id="pane-industries">
+    <section class="panel">
+      <h2>業種マスタ</h2>
+      <p class="lead">業種を追加すると、業種平均タブに新しい列が増えます。担当先で使用中の業種は削除できません（「無効」にすると新規選択できなくなります）。</p>
+      <div class="row">
+        <div class="field"><label>業種コード（半角英数）</label><input type="text" id="indCode" placeholder="realestate"></div>
+        <div class="field"><label>業種名</label><input type="text" id="indName" placeholder="不動産業"></div>
+        <button class="pri" id="indAddBtn">追加</button>
+      </div>
+      <div class="scroll"><table id="indTable"></table></div>
+    </section>
+  </div>
+
+  <!-- 利用状況 -->
+  <div class="pane" id="pane-activity">
+    <section class="panel">
+      <h2>利用状況</h2>
+      <p class="lead">ログイン・決算データの保存・決算書の読み取りなどの記録です（新しい順に最大200件）。</p>
+      <div class="toolbar"><button id="logReloadBtn">再読み込み</button></div>
+      <div class="scroll"><table id="logTable"></table></div>
+    </section>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal" hidden>
+  <div class="modal" role="dialog" aria-modal="true">
+    <div class="modal-title" id="modalTitle"></div>
+    <div class="modal-body" id="modalBody"></div>
+    <div class="modal-actions">
+      <button id="modalCancel">キャンセル</button>
+      <button class="pri" id="modalOk">OK</button>
+    </div>
+  </div>
+</div>
+
+<script>
+"use strict";
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const CAT_NAME = { growth:'成長性', prof:'収益性', eff:'効率性', safe:'安全性' };
+const OP_NAME  = { gte:'以上', gt:'超', lte:'以下', lt:'未満' };
+
+let ME=null, MASTERS=null, INDUSTRIES=[], FPS=[];
+const edits = { bench:new Map(), th:new Map(), ms:new Map() };  // 未保存の編集
+
+/* ---------- 共通 ---------- */
+async function api(path, opt={}) {
+  const res = await fetch(path, Object.assign({credentials:'same-origin'}, opt));
+  let body=null; try{ body = await res.json(); }catch{}
+  if(!res.ok){ const e=new Error((body&&body.error)||`通信エラー (${res.status})`); e.status=res.status; throw e; }
+  return body;
+}
+const send = (path, obj, method='POST') =>
+  api(path, {method, headers:{'Content-Type':'application/json'}, body:JSON.stringify(obj)});
+
+let msgTimer=null;
+function notify(kind, text){
+  const el=$("msg"); el.className=`msg on ${kind}`; el.textContent=text;
+  clearTimeout(msgTimer);
+  if(kind==='ok') msgTimer=setTimeout(()=>{ el.className='msg'; }, 4000);
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+const fmtDate = s => s ? new Date(s).toLocaleString('ja-JP',{year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'}) : '—';
+
+let modalOnOk=null;
+function openModal(o){
+  $("modalTitle").textContent=o.title||'';
+  $("modalBody").innerHTML=o.bodyHTML||'';
+  const ok=$("modalOk"); ok.textContent=o.okLabel||'OK'; ok.className=o.okClass||'pri';
+  modalOnOk=o.onOk||null; $("modal").hidden=false;
+  if(o.focus){ const el=$(o.focus); if(el){ el.focus(); if(el.select) el.select(); } }
+}
+const closeModal = () => { $("modal").hidden=true; modalOnOk=null; };
+$("modalCancel").addEventListener('click', closeModal);
+$("modalOk").addEventListener('click', async ()=>{ if(!modalOnOk || (await modalOnOk())!==false) closeModal(); });
+$("modal").addEventListener('click', e=>{ if(e.target.id==='modal') closeModal(); });
+$("modal").addEventListener('keydown', e=>{
+  if(e.key==='Enter'){ e.preventDefault(); $("modalOk").click(); }
+  else if(e.key==='Escape') closeModal();
+});
+
+/* ---------- タブ ---------- */
+document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => {
+  document.querySelectorAll('.tab').forEach(x=> x.classList.toggle('active', x===t));
+  document.querySelectorAll('.pane').forEach(p=> p.classList.toggle('active', p.id==='pane-'+t.dataset.pane));
+  if(t.dataset.pane==='activity') loadLogs();
+  if(t.dataset.pane==='clients') loadClients();
+  if(t.dataset.pane==='accounts'){ loadAccounts(); loadUnmapped(); }
+  if(t.dataset.pane==='imports') loadImports();
+}));
+
+/* ---------- FP管理 ---------- */
+async function loadFPs(){
+  const r=await api('/api/fps'); FPS=r.users||[];
+  $("fpTable").innerHTML =
+    `<tr><th>氏名</th><th>メールアドレス</th><th>所属</th><th>権限</th><th>状態</th>
+         <th class="num">担当先</th><th class="num">利用回数</th><th>最終ログイン</th><th>操作</th></tr>` +
+    FPS.map(u=>`<tr>
+      <td>${esc(u.name)}</td><td>${esc(u.email)}</td><td>${esc(u.org)||'—'}</td>
+      <td><span class="pill ${u.role}">${u.role==='admin'?'管理者':'FP'}</span></td>
+      <td><span class="pill ${u.status}">${u.status==='active'?'有効':'停止'}</span></td>
+      <td class="num">${u.client_count}</td><td class="num">${u.activity_count}</td>
+      <td>${fmtDate(u.last_login_at)}</td>
+      <td style="white-space:nowrap;">
+        <button class="sm" data-fp-edit="${u.id}">編集</button>
+        <button class="sm" data-fp-pw="${u.id}">PW再設定</button>
+        <button class="sm danger" data-fp-del="${u.id}">削除</button>
+      </td></tr>`).join('');
+}
+
+function fpFormHTML(u){
+  return `<label>氏名</label><input type="text" id="fName" value="${esc(u?u.name:'')}">
+    <label>メールアドレス</label>${u
+      ? `<input type="text" value="${esc(u.email)}" disabled><div class="hint">メールアドレスの変更はできません。</div>`
+      : `<input type="email" id="fEmail" autocomplete="off">`}
+    <label>所属</label><input type="text" id="fOrg" value="${esc(u?u.org:'')}">
+    <label>権限</label><select id="fRole">
+      <option value="fp" ${u&&u.role==='fp'?'selected':''}>FP（分析画面のみ）</option>
+      <option value="admin" ${u&&u.role==='admin'?'selected':''}>管理者（管理画面も利用可）</option></select>
+    ${u ? `<label>状態</label><select id="fStatus">
+      <option value="active" ${u.status==='active'?'selected':''}>有効</option>
+      <option value="suspended" ${u.status==='suspended'?'selected':''}>停止（ログイン不可）</option></select>`
+        : `<label>初期パスワード</label><input type="password" id="fPw" autocomplete="new-password">
+           <div class="hint">8文字以上。本人に伝えてください。</div>`}
+    <div class="modal-err" id="modalErr"></div>`;
+}
+
+$("fpNewBtn").addEventListener('click', ()=> openModal({
+  title:'FPを追加', okLabel:'追加する', focus:'fName', bodyHTML: fpFormHTML(null),
+  onOk: async ()=>{
+    const err=$("modalErr");
+    try{
+      await send('/api/fps', { name:$("fName").value, email:$("fEmail").value, org:$("fOrg").value,
+                               role:$("fRole").value, password:$("fPw").value });
+      await loadFPs(); notify('ok','FPを追加しました。');
+    }catch(e){ err.textContent=e.message; return false; }
+  }}));
+
+document.addEventListener('click', async e=>{
+  const t=e.target;
+  if(t.dataset.fpEdit){
+    const u=FPS.find(x=>String(x.id)===t.dataset.fpEdit);
+    openModal({ title:'FPの編集', okLabel:'保存する', focus:'fName', bodyHTML: fpFormHTML(u),
+      onOk: async ()=>{ const err=$("modalErr");
+        try{
+          await send(`/api/fps/${u.id}`, { name:$("fName").value, org:$("fOrg").value,
+                                           role:$("fRole").value, status:$("fStatus").value }, 'PATCH');
+          await loadFPs(); notify('ok','保存しました。');
+        }catch(e2){ err.textContent=e2.message; return false; } }});
+  }
+  if(t.dataset.fpPw){
+    const u=FPS.find(x=>String(x.id)===t.dataset.fpPw);
+    openModal({ title:`パスワード再設定：${u.name}`, okLabel:'再設定する', focus:'nPw',
+      bodyHTML:`<label>新しいパスワード</label><input type="password" id="nPw" autocomplete="new-password">
+        <div class="hint">8文字以上。再設定すると、このアカウントは即座にログアウトされます。</div>
+        <div class="modal-err" id="modalErr"></div>`,
+      onOk: async ()=>{ const err=$("modalErr");
+        try{ await send(`/api/fps/${u.id}`, { password:$("nPw").value }, 'PATCH');
+             notify('ok','パスワードを再設定しました。本人にお伝えください。');
+        }catch(e2){ err.textContent=e2.message; return false; } }});
+  }
+  if(t.dataset.fpDel){
+    const u=FPS.find(x=>String(x.id)===t.dataset.fpDel);
+    openModal({ title:'FPの削除', okLabel:'削除する', okClass:'danger',
+      bodyHTML:`<div><b>${esc(u.name)}</b>（${esc(u.email)}）を削除します。<br>
+        担当先が残っている場合は決算データも一緒に削除されます。この操作は取り消せません。</div>
+        <div class="modal-err" id="modalErr"></div>`,
+      onOk: async ()=>{ const err=$("modalErr");
+        try{ await api(`/api/fps/${u.id}`,{method:'DELETE'}); }
+        catch(e2){
+          if(e2.status===409){
+            // 担当先ごと消す確認
+            if(!confirm(`${e2.message}\n\n担当先と決算データも含めて削除しますか？`)) { err.textContent='削除を中止しました。'; return false; }
+            try{ await api(`/api/fps/${u.id}?cascade=1`,{method:'DELETE'}); }
+            catch(e3){ err.textContent=e3.message; return false; }
+          } else { err.textContent=e2.message; return false; }
+        }
+        await loadFPs(); notify('ok','削除しました。'); }});
+  }
+});
+
+/* ---------- 担当先 ---------- */
+async function loadClients(){
+  const r=await api('/api/clients?scope=all');
+  const rows=r.clients||[];
+  const opts = u => FPS.filter(f=>f.status==='active')
+    .map(f=>`<option value="${f.id}" ${f.id===u?'selected':''}>${esc(f.name)}</option>`).join('');
+  $("clientTable").innerHTML =
+    `<tr><th>会社名</th><th>業種</th><th>担当FP</th><th class="num">登録期数</th><th>更新日時</th></tr>` +
+    (rows.length ? rows.map(c=>`<tr>
+      <td>${esc(c.name)}</td>
+      <td>${esc((INDUSTRIES.find(i=>i.code===c.industry_code)||{}).name || c.industry_code)}</td>
+      <td><select data-client-owner="${c.id}">${opts(c.owner_user_id)}</select></td>
+      <td class="num">${c.period_count}</td><td>${fmtDate(c.updated_at)}</td></tr>`).join('')
+      : `<tr><td colspan="5" style="color:#94a3b8;">担当先はまだ登録されていません。</td></tr>`);
+}
+document.addEventListener('change', async e=>{
+  const id=e.target.dataset && e.target.dataset.clientOwner;
+  if(!id) return;
+  try{ await send(`/api/clients/${id}`, { owner_user_id:Number(e.target.value) }, 'PATCH');
+       notify('ok','担当FPを変更しました。'); await loadFPs(); }
+  catch(err){ notify('err', err.message); await loadClients(); }
+});
+
+/* ---------- 業種平均 ---------- */
+function benchMetricList(){
+  // 参考レンジは「％や倍で他社比較できる指標」に限る（金額そのものは比較にならない）
+  const skip=new Set(['wc','salesemp','vaemp']);
+  return Object.values(MASTERS.metrics).filter(m=>!skip.has(m.metric_key))
+    .sort((a,b)=> a.category===b.category ? a.sort_order-b.sort_order
+                : Object.keys(CAT_NAME).indexOf(a.category)-Object.keys(CAT_NAME).indexOf(b.category));
+}
+function renderBench(){
+  const mets=benchMetricList();
+  let h=`<tr><th>指標</th>${INDUSTRIES.map(i=>`<th class="num">${esc(i.name)}</th>`).join('')}</tr>`;
+  let cat=null;
+  for(const m of mets){
+    if(m.category!==cat){ cat=m.category;
+      h+=`<tr class="cat-head"><td colspan="${INDUSTRIES.length+1}">${CAT_NAME[cat]||cat}</td></tr>`; }
+    h+=`<tr><td>${esc(m.label)}</td>` + INDUSTRIES.map(i=>{
+      const k=`${i.code}|${m.metric_key}`;
+      const val = edits.bench.has(k) ? edits.bench.get(k)
+                : ((MASTERS.benchmarks[i.code]||{})[m.metric_key] ?? '');
+      return `<td class="num"><input class="cell ${edits.bench.has(k)?'changed':''}" data-bench="${k}" value="${val}"></td>`;
+    }).join('') + `</tr>`;
+  }
+  $("benchTable").innerHTML=h;
+  $("benchDirty").textContent = edits.bench.size ? `未保存 ${edits.bench.size}件` : '';
+}
+document.addEventListener('input', e=>{
+  const k=e.target.dataset && e.target.dataset.bench;
+  if(!k) return;
+  const v=e.target.value.trim();
+  const orig=(MASTERS.benchmarks[k.split('|')[0]]||{})[k.split('|')[1]];
+  if(v===String(orig ?? '')) edits.bench.delete(k); else edits.bench.set(k, v);
+  e.target.classList.toggle('changed', edits.bench.has(k));
+  $("benchDirty").textContent = edits.bench.size ? `未保存 ${edits.bench.size}件` : '';
+});
+$("benchSaveBtn").addEventListener('click', async ()=>{
+  if(!edits.bench.size) return notify('info','変更はありません。');
+  const values=[...edits.bench.entries()].map(([k,v])=>{
+    const [industry_code, metric_key]=k.split('|');
+    return { industry_code, metric_key, value: v==='' ? null : Number(v) };
+  });
+  const bad=values.find(v=> v.value!==null && !Number.isFinite(v.value));
+  if(bad) return notify('err', `「${bad.metric_key}」に数値以外が入力されています。`);
+  try{ await send('/api/masters/benchmarks', {values}, 'PUT');
+       edits.bench.clear(); await reloadMasters(); renderBench(); notify('ok','業種平均を保存しました。');
+  }catch(e){ notify('err', e.message); }
+});
+$("benchResetBtn").addEventListener('click', ()=>{ edits.bench.clear(); renderBench(); });
+
+/* ---------- 判定基準 ---------- */
+function thValue(key, field){
+  const e=edits.th.get(key);
+  return (e && e[field]!==undefined) ? e[field] : MASTERS.thresholds[key][field];
+}
+function renderThresholds(){
+  const mets=Object.values(MASTERS.metrics)
+    .sort((a,b)=> a.category===b.category ? a.sort_order-b.sort_order
+                : Object.keys(CAT_NAME).indexOf(a.category)-Object.keys(CAT_NAME).indexOf(b.category));
+  let h=`<tr><th>指標</th><th>判定</th><th class="num">良好の基準</th><th>条件</th>
+         <th class="num">要確認の基準</th><th>条件</th><th>良好の表示名</th><th>要確認の表示名</th><th>危険の表示名</th></tr>`;
+  let cat=null;
+  for(const m of mets){
+    const k=m.metric_key, t=MASTERS.thresholds[k]; if(!t) continue;
+    if(m.category!==cat){ cat=m.category; h+=`<tr class="cat-head"><td colspan="9">${CAT_NAME[cat]||cat}</td></tr>`; }
+    const dirty=edits.th.has(k);
+    h+=`<tr><td>${esc(m.label)}</td>
+      <td><label style="font-size:11.5px;"><input type="checkbox" data-thf="${k}|judged" ${Number(thValue(k,'judged'))?'checked':''}> する</label></td>
+      <td class="num"><input class="cell ${dirty?'changed':''}" data-thf="${k}|good_value" value="${thValue(k,'good_value')}"></td>
+      <td>${opSelectFor(k,'good_op')}</td>
+      <td class="num"><input class="cell ${dirty?'changed':''}" data-thf="${k}|warn_value" value="${thValue(k,'warn_value')}"></td>
+      <td>${opSelectFor(k,'warn_op')}</td>
+      <td><input type="text" style="width:80px;" data-thf="${k}|good_label" value="${esc(thValue(k,'good_label'))}"></td>
+      <td><input type="text" style="width:80px;" data-thf="${k}|warn_label" value="${esc(thValue(k,'warn_label'))}"></td>
+      <td><input type="text" style="width:80px;" data-thf="${k}|bad_label" value="${esc(thValue(k,'bad_label'))}"></td>
+    </tr>`;
+  }
+  $("thTable").innerHTML=h;
+  $("thDirty").textContent = edits.th.size ? `未保存 ${edits.th.size}指標` : '';
+}
+function opSelectFor(key, field){
+  const val=thValue(key, field);
+  return `<select data-thf="${key}|${field}">` +
+    Object.entries(OP_NAME).map(([k,v])=>`<option value="${k}" ${k===val?'selected':''}>${v}</option>`).join('') + `</select>`;
+}
+function markTh(key, field, value){
+  const e=edits.th.get(key) || {};
+  e[field]=value; edits.th.set(key, e);
+  $("thDirty").textContent = `未保存 ${edits.th.size}指標`;
+}
+document.addEventListener('input', e=>{
+  const d=e.target.dataset && e.target.dataset.thf; if(!d) return;
+  const [key, field]=d.split('|');
+  markTh(key, field, e.target.type==='checkbox' ? (e.target.checked?1:0) : e.target.value);
+  if(e.target.classList.contains('cell')) e.target.classList.add('changed');
+});
+document.addEventListener('change', e=>{
+  const d=e.target.dataset && e.target.dataset.thf; if(!d) return;
+  const [key, field]=d.split('|');
+  markTh(key, field, e.target.type==='checkbox' ? (e.target.checked?1:0) : e.target.value);
+});
+$("thSaveBtn").addEventListener('click', async ()=>{
+  if(!edits.th.size) return notify('info','変更はありません。');
+  for(const [key,patch] of edits.th){
+    for(const f of ['good_value','warn_value']){
+      if(patch[f]!==undefined && !Number.isFinite(Number(patch[f]))){
+        return notify('err', `「${MASTERS.metrics[key].label}」の基準値に数値以外が入力されています。`);
+      }
+    }
+  }
+  try{
+    for(const [key,patch] of edits.th) await send(`/api/masters/thresholds/${key}`, patch, 'PATCH');
+    edits.th.clear(); await reloadMasters(); renderThresholds(); notify('ok','判定基準を保存しました。');
+  }catch(e){ notify('err', e.message); }
+});
+$("thResetBtn").addEventListener('click', ()=>{ edits.th.clear(); renderThresholds(); });
+
+/* ---------- 指標の表示 ---------- */
+function msValue(key, field){
+  const e=edits.ms.get(key);
+  return (e && e[field]!==undefined) ? e[field] : MASTERS.metrics[key][field];
+}
+function renderMetricSettings(){
+  const mets=Object.values(MASTERS.metrics)
+    .sort((a,b)=> a.category===b.category ? a.sort_order-b.sort_order
+                : Object.keys(CAT_NAME).indexOf(a.category)-Object.keys(CAT_NAME).indexOf(b.category));
+  let h=`<tr><th>指標キー</th><th>表示名</th><th>表示</th><th>区分</th><th class="num">並び順</th></tr>`;
+  let cat=null;
+  for(const m of mets){
+    const k=m.metric_key;
+    if(m.category!==cat){ cat=m.category; h+=`<tr class="cat-head"><td colspan="5">${CAT_NAME[cat]||cat}</td></tr>`; }
+    h+=`<tr><td style="color:#94a3b8;font-family:monospace;">${esc(k)}</td>
+      <td><input type="text" style="width:230px;" data-msf="${k}|label" value="${esc(msValue(k,'label'))}"></td>
+      <td><label style="font-size:11.5px;"><input type="checkbox" data-msf="${k}|visible" ${Number(msValue(k,'visible'))?'checked':''}> 表示する</label></td>
+      <td><select data-msf="${k}|detail_only">
+            <option value="0" ${!Number(msValue(k,'detail_only'))?'selected':''}>標準</option>
+            <option value="1" ${Number(msValue(k,'detail_only'))?'selected':''}>詳細</option></select></td>
+      <td class="num"><input class="cell" style="width:60px;" data-msf="${k}|sort_order" value="${msValue(k,'sort_order')}"></td></tr>`;
+  }
+  $("msTable").innerHTML=h;
+  $("msDirty").textContent = edits.ms.size ? `未保存 ${edits.ms.size}指標` : '';
+}
+function markMs(key, field, value){
+  const e=edits.ms.get(key) || {}; e[field]=value; edits.ms.set(key, e);
+  $("msDirty").textContent = `未保存 ${edits.ms.size}指標`;
+}
+document.addEventListener('input', e=>{
+  const d=e.target.dataset && e.target.dataset.msf; if(!d) return;
+  const [key, field]=d.split('|');
+  markMs(key, field, e.target.type==='checkbox' ? (e.target.checked?1:0) : e.target.value);
+});
+document.addEventListener('change', e=>{
+  const d=e.target.dataset && e.target.dataset.msf; if(!d) return;
+  const [key, field]=d.split('|');
+  markMs(key, field, e.target.type==='checkbox' ? (e.target.checked?1:0) : e.target.value);
+});
+$("msSaveBtn").addEventListener('click', async ()=>{
+  if(!edits.ms.size) return notify('info','変更はありません。');
+  try{
+    for(const [key,patch] of edits.ms) await send(`/api/masters/metrics/${key}`, patch, 'PATCH');
+    edits.ms.clear(); await reloadMasters(); renderMetricSettings(); notify('ok','指標の表示設定を保存しました。');
+  }catch(e){ notify('err', e.message); }
+});
+$("msResetBtn").addEventListener('click', ()=>{ edits.ms.clear(); renderMetricSettings(); });
+
+/* ---------- 科目マッピング ---------- */
+let FIELDS=[], SECT={};
+function fieldOptionsHTML(sel){
+  const bySec={};
+  FIELDS.filter(f=>f.kind!=='calc').forEach(f=> (bySec[f.section] ||= []).push(f));
+  return Object.entries(bySec).map(([sec,list])=>
+    `<optgroup label="${esc(SECT[sec]||sec)}">`+
+    list.map(f=>`<option value="${f.key}" ${f.key===sel?'selected':''}>${esc(f.label)}</option>`).join('')+
+    `</optgroup>`).join('');
+}
+function sectionOptionsHTML(sel, withAll){
+  return (withAll?`<option value="">全セクション</option>`:'')+
+    Object.entries(SECT).map(([k,v])=>`<option value="${k}" ${k===sel?'selected':''}>${esc(v)}</option>`).join('');
+}
+async function loadAccounts(){
+  const q=$("acSearch").value.trim();
+  const r=await api('/api/masters/accounts'+(q?`?q=${encodeURIComponent(q)}`:''));
+  const rows=r.accounts||[];
+  $("acCount").textContent=`${rows.length}件`;
+  $("acTable").innerHTML=
+    `<tr><th>決算書の科目名</th><th>対応先（分析項目）</th><th>セクション</th><th>区分</th><th>操作</th></tr>`+
+    (rows.length? rows.map(a=>`<tr>
+      <td>${esc(a.pattern)}</td>
+      <td><select data-ac="${a.id}|map_key">${fieldOptionsHTML(a.map_key)}</select></td>
+      <td><select data-ac="${a.id}|section">${sectionOptionsHTML(a.section||'', true)}</select></td>
+      <td>${a.builtin?'<span class="pill fp">初期</span>':'<span class="pill admin">追加</span>'}</td>
+      <td><button class="sm danger" data-ac-del="${a.id}">削除</button></td></tr>`).join('')
+      : `<tr><td colspan="5" style="color:#94a3b8;">該当する対応はありません。</td></tr>`);
+}
+async function loadUnmapped(){
+  const r=await api('/api/masters/accounts/unmapped');
+  const rows=r.unmapped||[];
+  $("unmapTable").innerHTML=
+    `<tr><th>科目名</th><th>セクション</th><th class="num">出現</th><th>対応先を決める</th><th></th></tr>`+
+    (rows.length? rows.map((x,i)=>`<tr>
+      <td>${esc(x.source_label)}</td><td>${esc(SECT[x.section]||x.section||'')}</td>
+      <td class="num">${x.uses}</td>
+      <td><select data-um="${i}">${fieldOptionsHTML('')}</select></td>
+      <td><button class="sm pri" data-um-add="${i}"
+            data-label="${esc(x.source_label)}" data-section="${esc(x.section||'')}">対応表に追加</button></td></tr>`).join('')
+      : `<tr><td colspan="5" style="color:#94a3b8;">未対応の科目はありません。</td></tr>`);
+}
+$("acSearch").addEventListener('input', ()=>{ clearTimeout(window._acT); window._acT=setTimeout(loadAccounts,250); });
+$("acAddBtn").addEventListener('click', async ()=>{
+  try{
+    await send('/api/masters/accounts', {pattern:$("acPattern").value, map_key:$("acKey").value,
+                                          section:$("acSection").value||null});
+    $("acPattern").value='';
+    await loadAccounts(); await loadUnmapped(); notify('ok','対応表に追加しました。次回の読み取りから反映されます。');
+  }catch(e){ notify('err', e.message); }
+});
+document.addEventListener('change', async e=>{
+  const d=e.target.dataset && e.target.dataset.ac; if(!d) return;
+  const [id, field]=d.split('|');
+  try{ await send(`/api/masters/accounts/${id}`, {[field]: e.target.value||null}, 'PATCH');
+       notify('ok','対応を更新しました。'); }
+  catch(err){ notify('err', err.message); await loadAccounts(); }
+});
+document.addEventListener('click', async e=>{
+  const del=e.target.dataset && e.target.dataset.acDel;
+  if(del){
+    try{ await api(`/api/masters/accounts/${del}`,{method:'DELETE'});
+         await loadAccounts(); notify('ok','対応を削除しました。'); }
+    catch(err){ notify('err', err.message); }
+    return;
+  }
+  const add=e.target.dataset && e.target.dataset.umAdd;
+  if(add!=null){
+    const sel=document.querySelector(`select[data-um="${add}"]`);
+    try{
+      await send('/api/masters/accounts', {pattern:e.target.dataset.label,
+        map_key:sel.value, section:e.target.dataset.section||null});
+      await loadUnmapped(); await loadAccounts();
+      notify('ok',`「${e.target.dataset.label}」の対応を追加しました。`);
+    }catch(err){ notify('err', err.message); }
+  }
+});
+
+/* ---------- 読み取り履歴 ---------- */
+const fmtBytes = n => n>1048576 ? (n/1048576).toFixed(1)+'MB' : Math.max(1,Math.round(n/1024))+'KB';
+async function loadImports(){
+  const r=await api('/api/ocr/imports');
+  const rows=r.imports||[];
+  $("impTable").innerHTML=
+    `<tr><th>日時</th><th>ファイル</th><th class="num">サイズ</th><th>エンジン</th><th>取込元</th><th>担当先</th><th>実行者</th><th>操作</th></tr>`+
+    (rows.length? rows.map(x=>`<tr>
+      <td style="white-space:nowrap;">${fmtDate(x.created_at)}</td>
+      <td>${esc(x.filename)}</td><td class="num">${fmtBytes(x.size_bytes)}</td>
+      <td>${x.engine==='free'?'無料':'有料'}</td><td>${esc(x.source||'')}</td>
+      <td>${esc(x.client_name||'—')}</td><td>${esc(x.user_name||'—')}</td>
+      <td style="white-space:nowrap;">
+        <button class="sm" data-imp="${x.id}">明細を見る</button>
+        ${x.has_file?`<a class="sm" style="display:inline-block;padding:3px 9px;border:1px solid #cbd5e0;border-radius:6px;text-decoration:none;color:#334155;" href="/api/ocr/imports/${x.id}/file">元ファイル</a>`:''}
+      </td></tr>`).join('')
+      : `<tr><td colspan="8" style="color:#94a3b8;">読み取り履歴はまだありません。</td></tr>`);
+}
+$("impReloadBtn").addEventListener('click', loadImports);
+document.addEventListener('click', async e=>{
+  const id=e.target.dataset && e.target.dataset.imp; if(!id) return;
+  try{
+    const d=await api(`/api/ocr/imports/${id}`);
+    const r=d.result||{};
+    let h=`<section class="panel"><h2>${esc(d.filename)}</h2>
+      <p class="lead">${fmtDate(d.created_at)}　／　${d.engine==='free'?'無料エンジン':'有料エンジン'}
+      　／　取込元 ${esc(d.source||'')}　／　会社名 ${esc(r.company_name||'（未取得）')}
+      　／　単位 ${esc(r.unit||'不明')}</p>`;
+    const allw=(r.warnings||[]).concat((r.periods||[]).flatMap(p=>p.notes||[]));
+    if(allw.length) h+=`<div class="msg on info" style="display:block;"><b>警告・確認事項</b><ul style="margin:6px 0 0;padding-left:20px;">`+
+      allw.map(w=>`<li>${esc(w)}</li>`).join('')+`</ul></div>`;
+    for(const p of (r.periods||[])){
+      h+=`<div class="agg-sec" style="font-size:12px;font-weight:700;color:#475569;margin:14px 0 6px;">
+            ${esc(p.label||('第'+p.year+'期'))}（${(p.lines||[]).length}行／対応先なし ${(p.unmapped||[]).length}件）</div>
+          <div class="scroll"><table><tr><th>決算書の科目名</th><th class="num">金額</th><th>対応先</th><th>小計</th><th>確度</th></tr>`+
+        (p.lines||[]).map(l=>`<tr${l.map_key?'':' style="background:#fffaf0;"'}>
+          <td>${esc(l.source_label)}</td><td class="num">${Number(l.amount).toLocaleString()}</td>
+          <td>${l.map_key?esc((FIELDS.find(f=>f.key===l.map_key)||{}).label||l.map_key):'<span style="color:#b45309;">（未対応）</span>'}</td>
+          <td>${l.is_total?'✓':''}</td>
+          <td>${l.confidence==='low'?'<span style="color:#b45309;">要確認</span>':''}</td></tr>`).join('')+
+        `</table></div>`;
+    }
+    h+=`</section>`;
+    $("impDetail").innerHTML=h;
+    $("impDetail").scrollIntoView({behavior:'smooth'});
+  }catch(err){ notify('err', err.message); }
+});
+
+/* ---------- 業種マスタ ---------- */
+async function loadIndustries(){
+  const r=await api('/api/masters/industries/all');
+  $("indTable").innerHTML =
+    `<tr><th>コード</th><th>業種名</th><th class="num">並び順</th><th>状態</th><th>操作</th></tr>` +
+    (r.industries||[]).map(i=>`<tr>
+      <td style="font-family:monospace;color:#94a3b8;">${esc(i.code)}</td>
+      <td><input type="text" style="width:200px;" data-ind="${i.code}|name" value="${esc(i.name)}"></td>
+      <td class="num"><input class="cell" style="width:60px;" data-ind="${i.code}|sort_order" value="${i.sort_order}"></td>
+      <td><select data-ind="${i.code}|active">
+            <option value="1" ${i.active?'selected':''}>有効</option>
+            <option value="0" ${!i.active?'selected':''}>無効</option></select></td>
+      <td><button class="sm danger" data-ind-del="${i.code}">削除</button></td></tr>`).join('');
+}
+document.addEventListener('change', async e=>{
+  const d=e.target.dataset && e.target.dataset.ind; if(!d) return;
+  const [code, field]=d.split('|');
+  const val = field==='name' ? e.target.value : Number(e.target.value);
+  try{ await send(`/api/masters/industries/${code}`, {[field]:val}, 'PATCH');
+       await reloadMasters(); notify('ok','業種を更新しました。'); }
+  catch(err){ notify('err', err.message); await loadIndustries(); }
+});
+$("indAddBtn").addEventListener('click', async ()=>{
+  try{
+    await send('/api/masters/industries', { code:$("indCode").value.trim(), name:$("indName").value.trim() });
+    $("indCode").value=''; $("indName").value='';
+    await reloadMasters(); await loadIndustries(); notify('ok','業種を追加しました。業種平均タブで平均値を設定してください。');
+  }catch(e){ notify('err', e.message); }
+});
+document.addEventListener('click', async e=>{
+  const code=e.target.dataset && e.target.dataset.indDel; if(!code) return;
+  openModal({ title:'業種の削除', okLabel:'削除する', okClass:'danger',
+    bodyHTML:`<div>業種「${esc(code)}」と、その業種平均をすべて削除します。この操作は取り消せません。</div>
+      <div class="modal-err" id="modalErr"></div>`,
+    onOk: async ()=>{
+      try{ await api(`/api/masters/industries/${code}`,{method:'DELETE'});
+           await reloadMasters(); await loadIndustries(); notify('ok','業種を削除しました。'); }
+      catch(err){ $("modalErr").textContent=err.message; return false; } }});
+});
+
+/* ---------- 利用状況 ---------- */
+const ACTION_NAME = {
+  login:'ログイン', logout:'ログアウト', analyze:'分析実行', ocr:'決算書の読み取り',
+  save_statements:'決算データ保存', client_create:'担当先の作成', client_delete:'担当先の削除',
+  fp_create:'FPの追加', fp_update:'FPの変更', fp_delete:'FPの削除', password_change:'パスワード変更',
+  benchmark_update:'業種平均の変更', threshold_update:'判定基準の変更', metric_update:'指標設定の変更',
+  industry_create:'業種の追加', industry_update:'業種の変更', industry_delete:'業種の削除',
+};
+async function loadLogs(){
+  const r=await api('/api/fps/activity/logs');
+  $("logTable").innerHTML =
+    `<tr><th>日時</th><th>利用者</th><th>操作</th><th>内容</th></tr>` +
+    ((r.logs||[]).length ? r.logs.map(l=>`<tr>
+      <td style="white-space:nowrap;">${fmtDate(l.created_at)}</td>
+      <td>${esc(l.user_name||'（削除済み）')}</td>
+      <td>${esc(ACTION_NAME[l.action]||l.action)}</td>
+      <td>${esc(l.detail)||'—'}</td></tr>`).join('')
+      : `<tr><td colspan="4" style="color:#94a3b8;">記録はまだありません。</td></tr>`);
+}
+$("logReloadBtn").addEventListener('click', loadLogs);
+
+/* ---------- 起動 ---------- */
+async function reloadMasters(){
+  MASTERS = await api('/api/masters');
+  INDUSTRIES = MASTERS.industries || [];
+  FIELDS = MASTERS.fields || [];
+  SECT = MASTERS.sections || {};
+  if($("acKey")) $("acKey").innerHTML = fieldOptionsHTML('');
+  if($("acSection")) $("acSection").innerHTML = sectionOptionsHTML('', true);
+}
+(async function boot(){
+  try{ ME=(await api('/api/auth/me')).user; }
+  catch(e){ location.href='/login.html?next=/admin.html'; return; }
+  if(ME.role!=='admin'){ document.body.innerHTML='<p style="padding:40px;">管理者権限が必要です。</p>'; return; }
+
+  $("tbUser").innerHTML = `<span><b style="color:#fff;">${esc(ME.name)}</b></span>
+    <a class="tb-btn" href="/index.html">分析画面へ</a>
+    <button class="tb-btn" id="logoutBtn">ログアウト</button>`;
+  $("logoutBtn").addEventListener('click', async ()=>{
+    try{ await send('/api/auth/logout',{}); }catch{}
+    location.href='/login.html';
+  });
+
+  try{
+    await reloadMasters();
+    await loadFPs();
+    renderBench(); renderThresholds(); renderMetricSettings();
+    await loadIndustries();
+  }catch(e){ notify('err', `読み込みに失敗しました: ${e.message}`); }
+})();
+</script>
+</body>
+</html>
