@@ -44,6 +44,9 @@
 
 FPは自分の担当先のみ。他人の担当先にアクセスすると **404**（403ではなく404にして存在を伏せます）。
 
+`/api/masters/accounts/unmapped` も同じ方針で、FPには自分の担当先の科目だけを返します。
+科目名は担当先を特定しうる情報（「○○社向け売掛金」など）のためです。金額は返しません。
+
 **GET のレスポンス**
 
 ```json
@@ -81,8 +84,8 @@ FPは自分の担当先のみ。他人の担当先にアクセスすると **404
 | メソッド | パス | 権限 | 内容 |
 |---|---|---|---|
 | GET | `/api/masters` | 要ログイン | 画面が使う一式（業種・業種平均・判定基準・指標設定・内部項目定義） |
-| GET | `/api/masters/accounts` | 要ログイン | 科目名→内部キーの対応表。`?q=` で絞り込み |
-| GET | `/api/masters/accounts/unmapped` | 要ログイン | まだ対応先が決まっていない科目 |
+| GET | `/api/masters/accounts` | 管理者 | 科目名→内部キーの対応表。`?q=` で絞り込み |
+| GET | `/api/masters/accounts/unmapped` | 要ログイン | まだ対応先が決まっていない科目。**FPには自分の担当先のぶんだけ** |
 | POST | `/api/masters/accounts` | 管理者 | `{pattern, map_key, section}` |
 | PATCH | `/api/masters/accounts/:id` | 管理者 | `{map_key, section}` |
 | DELETE | `/api/masters/accounts/:id` | 管理者 | |

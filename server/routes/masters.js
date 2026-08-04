@@ -37,7 +37,8 @@ router.get("/", requireAuth, (_req, res) => {
 });
 
 /* ---------- 科目名 → 内部キー の対応表 ---------- */
-router.get("/accounts", requireAuth, (req, res) => {
+// 管理者が追加した pattern には特定の担当先に固有の科目名が入りうるため、管理者に限定する。
+router.get("/accounts", requireAdmin, (req, res) => {
   const q = String(req.query.q || "").trim();
   const rows = q
     ? db.prepare("SELECT * FROM account_map WHERE pattern LIKE ? ORDER BY pattern LIMIT 500").all(`%${q}%`)
@@ -45,14 +46,24 @@ router.get("/accounts", requireAuth, (req, res) => {
   res.json({ accounts: rows });
 });
 
-/** まだ対応表に無い科目の一覧。ここから紐付けると次回の読み取りから自動で入る。 */
-router.get("/accounts/unmapped", requireAuth, (_req, res) => {
-  const rows = db.prepare(`
-    SELECT l.source_label, l.section, COUNT(*) AS uses, MAX(l.amount) AS sample_amount
+/**
+ * まだ対応表に無い科目の一覧。ここから紐付けると次回の読み取りから自動で入る。
+ *
+ * 科目名は担当先を特定しうる情報（「○○社向け売掛金」など）なので、
+ * FPには自分の担当先のぶんだけを返す。金額は返さない（用途が無く、他社の実数になるため）。
+ */
+router.get("/accounts/unmapped", requireAuth, (req, res) => {
+  const mine = req.user.role !== "admin";
+  const sql = `
+    SELECT l.source_label, l.section, COUNT(*) AS uses
       FROM statement_lines l
+      JOIN statements s ON s.id = l.statement_id
+      JOIN clients   c ON c.id = s.client_id
      WHERE l.map_key IS NULL AND l.source_label <> ''
+       ${mine ? "AND c.owner_user_id = ?" : ""}
      GROUP BY l.source_label, l.section
-     ORDER BY uses DESC, l.source_label LIMIT 300`).all();
+     ORDER BY uses DESC, l.source_label LIMIT 300`;
+  const rows = mine ? db.prepare(sql).all(req.user.id) : db.prepare(sql).all();
   res.json({ unmapped: rows });
 });
 
