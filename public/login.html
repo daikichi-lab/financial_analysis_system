@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ログイン｜決算書 財務分析システム</title>
+<style>
+  :root{--accent:#2b6cb0;--bad:#c53030;--muted:#666;}
+  *{box-sizing:border-box;}
+  body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;
+       font-family:"Hiragino Kaku Gothic ProN","Meiryo","Yu Gothic",system-ui,sans-serif;
+       background:#1f2937;color:#1a1a1a;line-height:1.6;}
+  .card{background:#fff;border-radius:12px;max-width:400px;width:100%;padding:28px;box-shadow:0 14px 44px rgba(0,0,0,.35);}
+  h1{margin:0 0 4px;font-size:19px;}
+  .sub{margin:0 0 22px;font-size:12px;color:var(--muted);}
+  label{display:block;font-size:12px;font-weight:700;color:#475569;margin:14px 0 5px;}
+  input{width:100%;padding:10px 12px;font-size:15px;border:1px solid #cbd5e0;border-radius:7px;}
+  input:focus{outline:2px solid var(--accent);border-color:var(--accent);}
+  button{width:100%;margin-top:20px;padding:11px;border:none;border-radius:7px;background:var(--accent);
+         color:#fff;font-size:15px;font-weight:700;cursor:pointer;}
+  button:hover{background:#255994;}
+  button:disabled{opacity:.55;cursor:not-allowed;}
+  .err{margin-top:14px;padding:10px 12px;background:#fde8e8;color:#8a1c1c;border:1px solid #f0b4b4;
+       border-radius:7px;font-size:12.5px;display:none;}
+  .err.on{display:block;}
+  .note{margin-top:18px;font-size:11px;color:#94a3b8;line-height:1.7;border-top:1px solid #eef1f4;padding-top:14px;}
+</style>
+</head>
+<body>
+<form class="card" id="form">
+  <h1>決算書 財務分析システム</h1>
+  <p class="sub">FP・管理者用のログイン画面です</p>
+
+  <label for="email">メールアドレス</label>
+  <input type="email" id="email" autocomplete="username" required autofocus>
+
+  <label for="password">パスワード</label>
+  <input type="password" id="password" autocomplete="current-password" required>
+
+  <button type="submit" id="btn">ログイン</button>
+  <div class="err" id="err"></div>
+
+  <p class="note">アカウントの発行・パスワードの再設定は管理者にご依頼ください。</p>
+</form>
+
+<script>
+"use strict";
+const $ = id => document.getElementById(id);
+const nextUrl = new URLSearchParams(location.search).get('next') || '/index.html';
+
+$("form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const btn = $("btn"), err = $("err");
+  btn.disabled = true; err.className = 'err';
+  try {
+    const res = await fetch('/api/auth/login', {
+      method: 'POST', credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: $("email").value, password: $("password").value }),
+    });
+    const body = await res.json().catch(() => null);
+    if (!res.ok) throw new Error((body && body.error) || `ログインできませんでした (${res.status})`);
+    // 相対パスのみ許可し、外部サイトへ飛ばされないようにする
+    location.href = /^\/[^/]/.test(nextUrl) ? nextUrl : '/index.html';
+  } catch (e2) {
+    err.textContent = e2.message;
+    err.className = 'err on';
+    btn.disabled = false;
+    $("password").value = '';
+    $("password").focus();
+  }
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,31 @@
+{
+  "name": "financial_analysis_system",
+  "version": "1.0.0",
+  "description": "FP向け決算書 財務分析システム（分析画面・管理画面・決算書の読み取り）",
+  "main": "server/app.js",
+  "scripts": {
+    "start": "node --env-file-if-exists=.env server/app.js",
+    "ocr:compare": "node --env-file-if-exists=.env scripts/compare-ocr.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/daikichi-lab/financial_analysis_system.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/daikichi-lab/financial_analysis_system/issues"
+  },
+  "homepage": "https://github.com/daikichi-lab/financial_analysis_system#readme",
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.115.0",
+    "@napi-rs/canvas": "^1.0.3",
+    "exceljs": "^4.4.0",
+    "express": "^4.22.2",
+    "multer": "^2.2.0",
+    "pdfjs-dist": "^6.2.108",
+    "tesseract.js": "^7.0.0"
+  }
+}
